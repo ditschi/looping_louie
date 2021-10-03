@@ -22,12 +22,15 @@ class Motor(object):
         self.motor_pwm = machine.PWM(self.motor_pin)
         self.motor_pwm.freq(500)
         self.motor_pwm.duty(0)
-        self.delay_timer = Timer(hw_config.DELAY_TIMER)
+        self.delay_timer = Timer(hw_config.DELAY_TIMER, self._delay_timer_handler)
         self.speed_config = None
         self.new_speed = 0
         self.current_speed = 0
 
-    def start(self, speed_config):
+    def _delay_timer_handler(self):
+        raise NotImplementedError
+
+    def start(self, speed_in_percent):
         self.speed_config = speed_config
         self.new_speed = speed_config.start
         return self.__set_speed__()
@@ -35,40 +38,9 @@ class Motor(object):
     def stop(self):
         self.new_speed = 0
         self.__set_speed__()
-        self.speed_config = None
+        self.speed_config = Nonup
 
-    def update(self):
-        new_speed = None
-        if self.speed_config.mode == "fixed":
-            new_speed = self.current_speed
-        elif self.speed_config.mode == "constant_increase":
-            new_speed = self.current_speed + self.speed_config.fixed_change
-        elif self.speed_config.mode == "constant_decrease":
-            new_speed = self.current_speed - self.speed_config.fixed_change
-        elif self.speed_config.mode == "random":
-            # get new random speed with allowed in-/decrease
-            while True:
-                # get new speed between max and min
-                new_speed = get_random(self.speed_config.minimum, self.speed_config.maximum)
-                # check that spped change is in the limits
-                speed_change = abs(new_speed - self.speed_config.current)
-                if self.speed_config.min_change <= speed_change <= self.speed_config.max_change:
-                    break
-        elif self.speed_config.mode == "random_increase":
-            new_speed = self.current_speed + get_random(self.speed_config.min_change, self.speed_config.max_change)
-            if new_speed >= self.speed_config.maximum:
-                new_speed = self.speed_config.maximum
-        elif self.speed_config.mode == "random_decrease":
-            new_speed = self. current_speed + get_random(self.speed_config.min_change, self.speed_config.max_change)
-            if new_speed >= self.speed_config.maximum:
-                new_speed = self.speed_config.minimum
-        else:
-            print(f"[E] Speed mode '{self.speed_config.mode}' not supported.")
-
-        self.new_speed = new_speed
-        self.__set_speed__()
-
-    def __set_speed__(self):
+    def set_speed(self, speed):
         if not self.speed_config.change_rate:
             pwm_value = get_pwm_value(self.new_speed)
             self.motor_pwm.duty(pwm_value)
@@ -96,39 +68,33 @@ class Motor(object):
             self.delay_timer.delay(self.speed_config.change_delay)
 
 
+
+
+
 class Timer(object):
     def __init__(self, timer: int, interrupt_handler=None):
         self.timer = machine.Timer(timer)
         self.interrupt_handler = interrupt_handler
-        self.time_config = None
-        self.period = None
 
-    def start(self, time_config: gamemode.Time):
-        self.time_config = time_config
+    @staticmethod
+    def _seconds_to_period(seconds):
+        return seconds * 1000
 
-        if time_config.mode == "off":
-            pass
-        elif time_config.mode == "fixed":
-            # periodic with fixed period in ms
-            self.timer.init(period=time_config.fixed, mode=machine.Timer.PERIODIC, callback=self.interrupt_handler)
-            self.period = time_config.fixed
-        elif time_config.mode == "random":
-            time_ms = get_random(time_config.min_delay, time_config.max_delay)
-            # one shot firing after ??? ms
+    def start(self, time_in_ms):
+        period = self._seconds_to_period(seconds)
+
+    def _start_periodic_timer(self, time_ms)
+        self.timer.init(period=time_ms, mode=machine.Timer.PERIODIC, callback=self.interrupt_handler)
+
+    def _start_oneshot_timer(self, time_ms)
             self.timer.init(period=time_ms, mode=machine.Timer.ONE_SHOT, callback=self.interrupt_handler)
-            self.period = time_ms
 
     def stop(self):
         self.timer.deinit()
-        self.time_config = None
-        self.period = None
 
-    def update(self):
-        self.start(self.time_config)
-        
-    def delay(self, milliseconds):
-        self.timer.init(period=milliseconds, mode=machine.Timer.ONE_SHOT, callback=self.interrupt_handler)
-        
+    def update(self, time_ms):
+        self.start(time_ms)
+
 
 class Button(object):
     def __init__(self, pin, interrupt_handler):

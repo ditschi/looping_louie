@@ -2,7 +2,6 @@
 
 ONBOARD_LED_PIN = 2  # Onboard Led Esp8266
 
-
 MOTOR_PIN = 0
 ON_OFF_BUTTON_PIN = 0
 

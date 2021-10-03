@@ -19,7 +19,7 @@ LED BLUE:
 <button name="LED" value="OFF_BLUE" type="submit">LED OFF</button><br><br>
 LED Extern:
 <button name="LED" value="ON_EX" type="submit">LED ON</button>
-<button name="LED" value="OFF_EX" type="submit">LED OFF</button>
+<button name="LED" value="OFF_EX"    git push --set-upstream origin main type="submit">LED OFF</button>
 </form>
 </html>
 """
@@ -45,7 +45,7 @@ while True:
     LEDON_BLUE = request.find('/?LED=ON_BLUE')
     LEDOFF_BLUE = request.find('/?LED=OFF_BLUE')
     LEDON_EX = request.find('/?LED=ON_EX')
-    LEDOFF_EX = request.find('/?LED=OFF_EX')    
+    LEDOFF_EX = request.find('/?LED=OFF_EX')
 
     if LEDON_RED == 6:
         print('TURN LED0 ON')
@@ -64,7 +64,7 @@ while True:
         LED_EX.on()
     if LEDOFF_EX == 6:
         print('TURN LED2 OFF')
-        LED_EX.off()        
+        LED_EX.off()
     response = html
     conn.send(response)
     conn.close()
