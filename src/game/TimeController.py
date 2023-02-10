@@ -3,6 +3,8 @@
 
 TIME_MODES = ("off", "fixed", "random")
 
+
+
 class TimeController():
     def __init__(self, mode, fixed=0, min_delay=0, max_delay=0):
         if mode not in TIME_MODES:

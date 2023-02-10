@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
 import sys
-from gamemode import gamemode
-from hw_control import hw_control
+from .gamemode import gamemode
+from .hw_control import hw_control
 
 
 default_game = gamemode.GameMode(gamemode.Speed("fixed", start=75), gamemode.Time("off"), gamemode.Time("off"))
 
 
-class LoopingLouie(object):
+class LoopingLouie():
     def __init__(self):
         self.hw = hw_control.LoopingLouie(self.on_off_switch_interrupt_handler, self.gameplay_timer_interrupt_handler)
         self.game = Game(self.hw, default_game)

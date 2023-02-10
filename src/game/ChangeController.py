@@ -1,48 +1,43 @@
 #!/usr/bin/env python3
 
-import sys
 from abc import ABC, abstractmethod
 import random
 
 
 change_types = {
-    "Constant": {"Value"},
+    "Constant": {""},
     "Constant to End": {"Start", "End"},
     "Random to End": {"Start", "End",  "Minimum Change", "Maximum Change"},
     "Random": {"Start", "Minimum", "Maximum", "Minimum Change", "Maximum Change"},
     }
 
 
-
 class ChangeController(ABC):
     """Class for controlling a changing value"""
-    def __init__(self):
-        self.current = None
-
     @abstractmethod
     def get_new_value(self):
         """Returns the (next) value"""
-        pass
 
 
 class Deactivated(ChangeController):
     """Not used value"""
-
     def get_new_value(self):
         return None
 
+
 class Constant(ChangeController):
     """Not changing value"""
-
     def __init__(self, value):
-        self.value = value
+        super(Constant, self).__init__
+        self.current = value
 
     def get_new_value(self):
-        return self.value
+        return self.current
 
 
 class ToEndController(ChangeController):
     def __init__(self, start=0, end=100):
+        super(ToEndController, self).__init__(*args, **kwargs)
         self.start = start
         self.current = start
         self.end = end
@@ -66,8 +61,18 @@ class ToEndController(ChangeController):
 
         if self._end_is_reached:
             self.current = self.end
-
         return self.current
+
+
+class ConstantToEnd(ToEndController):
+    """Constant change until end is reached"""
+    def __init__(self, start=0, end=100, change_rate=1):
+        super.__init__(start, end)
+        self.change_rate = change_rate
+
+    def get_new_value(self):
+        return self._get_next_value(self.change_rate)
+
 
 class MinMaxChangeController(ChangeController):
     """Change within a certain range"""
@@ -80,12 +85,11 @@ class MinMaxChangeController(ChangeController):
 
     @property
     def upper_limit(self):
-            return max(self._limit_1, self._limit_2)
+        return max(self._limit_1, self._limit_2)
 
     @property
     def lower_limit(self):
-            return min(self._limit_1, self._limit_2)
-
+        return min(self._limit_1, self._limit_2)
 
     @property
     def min_change(self):
@@ -104,15 +108,7 @@ class MinMaxChangeController(ChangeController):
         return abs(self.current - self.upper_limit)
 
 
-class ConstantToEnd(ToEndController):
-    """Constant change until end is reached"""
 
-    def __init__(self, start=0, end=100, change_rate=1):
-        super.__init__(start, end)
-        self.change_rate = change_rate
-
-    def get_new_value(self):
-        return self._get_next_value(self.change_rate)
 
 
 class RandomToEnd(ToEndController, MinMaxChangeController):

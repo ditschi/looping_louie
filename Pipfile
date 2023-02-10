@@ -1,0 +1,20 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+rshell = "*"
+adafruit-ampy = "*"
+esptool = ">=4.4"
+micropy-cli = ">=4"
+pylint = "*"
+pytest = "*"
+
+[dev-packages]
+pylint = "*"
+pytest = "*"
+flake8 = "*"
+
+[requires]
+python_version = "3.10"
