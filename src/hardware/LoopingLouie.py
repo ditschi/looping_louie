@@ -1,8 +1,16 @@
 import os
-from Button import Button
-from Motor import Motor, MotorConfig
-from Timer import Timer
-from hw_config import MOTOR_TIMER, GAME_TIMER, ON_OFF_BUTTON_PIN, MOTOR_PIN
+try:
+    from hardware.Button import Button
+    from hardware.Motor import Motor, MotorConfig
+    from hardware.Timer import Timer
+    from hardware.hw_config import MOTOR_TIMER, GAME_TIMER, ON_OFF_BUTTON_PIN, MOTOR_PIN
+except ImportError:
+    import sys
+    sys.path.append('/hardware/')
+    from Button import Button
+    from Motor import Motor, MotorConfig
+    from Timer import Timer
+    from hw_config import MOTOR_TIMER, GAME_TIMER, ON_OFF_BUTTON_PIN, MOTOR_PIN
 
 
 class LoopingLouie():
@@ -21,7 +29,7 @@ class LoopingLouie():
         periodic = config["periodic"] or False
         if config["random"]:
 
-        self.timer.start(, )
+        #self.timer.start(, )
 
 
 

@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 ONBOARD_LED_PIN = 2  # Onboard Led Esp8266
 
 MOTOR_PIN = 0

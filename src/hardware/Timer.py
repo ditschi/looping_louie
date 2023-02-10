@@ -1,7 +1,6 @@
 import machine
 
 
-
 class Timer():
     def __init__(self, timer: int, interrupt_handler=None):
         self.timer = machine.Timer(timer)

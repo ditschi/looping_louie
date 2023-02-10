@@ -10,6 +10,8 @@ esptool = ">=4.4"
 micropy-cli = ">=4"
 pylint = "*"
 pytest = "*"
+picom = "*"
+mpfshell = "*"
 
 [dev-packages]
 pylint = "*"

@@ -1,6 +1,13 @@
 import time
 import machine
-from hw_config import ONBOARD_LED_PIN
+
+try:
+    from hardware.hw_config import ONBOARD_LED_PIN
+except ImportError:
+    import sys
+    print(sys.path)
+    sys.path.append('/hardware/')
+    from hw_config import ONBOARD_LED_PIN
 
 
 class Led():
@@ -13,11 +20,11 @@ class Led():
         self.machine_pin = machine.Pin(ONBOARD_LED_PIN, machine.Pin.OUT)
 
     def on(self):
-        self.led_pin.on()
+        self.machine_pin.on()
         self.active = True
 
     def off(self):
-        self.led_pin.off()
+        self.machine_pin.off()
         self.active = False
 
     def toggle(self):

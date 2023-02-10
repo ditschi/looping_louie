@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "99b33e74ec6fbfebdb2490bc863a483380c2838b00fc1169e58a96ba90a3ede5"
+            "sha256": "98721b1597e595bd9afcca06758ca6193f780faa5895e35d9807da6e8d7a7fe9"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -177,6 +177,14 @@
             ],
             "markers": "python_version >= '3.7'",
             "version": "==8.1.3"
+        },
+        "colorama": {
+            "hashes": [
+                "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44",
+                "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"
+            ],
+            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6'",
+            "version": "==0.4.6"
         },
         "cryptography": {
             "hashes": [
@@ -437,6 +445,14 @@
             "index": "pypi",
             "version": "==4.0.0"
         },
+        "mpfshell": {
+            "hashes": [
+                "sha256:3b2f176e17e9f9e08ccaf30a57503fae5bd15859d8d9efe74cc25a09abd8f349",
+                "sha256:834d359cf98b862e31e9a409c00a58e6ac9bd372ca6a7fd9dd4b99b2cfa10ea6"
+            ],
+            "index": "pypi",
+            "version": "==0.9.3"
+        },
         "mypy": {
             "hashes": [
                 "sha256:0b52778a018559a256c819ee31b2e21e10b31ddca8705624317253d6d08dbc35",
@@ -522,6 +538,13 @@
                 "sha256:7c35c5421a39bb82e58018febd90e3b6e5db34c5443aaaf742b3f33d4655f1c0"
             ],
             "version": "==0.1.2"
+        },
+        "picom": {
+            "hashes": [
+                "sha256:079ef2b513ee006c61730c1c52757e024a9b316d79d2dd540ca35981342d587b"
+            ],
+            "index": "pypi",
+            "version": "==0.6"
         },
         "platformdirs": {
             "hashes": [
@@ -810,6 +833,14 @@
                 "sha256:a5220780a404dbe3353789870978e472cfe477761f06ee55077256e509b156d0"
             ],
             "version": "==0.2.6"
+        },
+        "websocket-client": {
+            "hashes": [
+                "sha256:3f09e6d8230892547132177f575a4e3e73cfdf06526e20cc02aa1c3b47184d40",
+                "sha256:cdf5877568b7e83aa7cf2244ab56a3213de587bbe0ce9d8b9600fc77b455d89e"
+            ],
+            "markers": "python_version >= '3.7'",
+            "version": "==1.5.1"
         },
         "wrapt": {
             "hashes": [

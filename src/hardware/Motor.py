@@ -1,8 +1,15 @@
 from dataclasses import dataclass
-import machine
 import time
-from Timer import Timer
-from hw_config import MOTOR_TIMER, DEFAULT_SPEED_PERCENT, DEFAULT_MAXIMUM_SPEED_CHANGE, DEFAULT_SPEED_CHANGE_DELAY_MS
+import machine
+
+try:
+    from hardware.Timer import Timer
+    from hardware.hw_config import MOTOR_TIMER, DEFAULT_SPEED_PERCENT, DEFAULT_MAXIMUM_SPEED_CHANGE, DEFAULT_SPEED_CHANGE_DELAY_MS
+except ImportError:
+    import sys
+    sys.path.append('/hardware/')
+    from Timer import Timer
+    from hw_config import MOTOR_TIMER, DEFAULT_SPEED_PERCENT, DEFAULT_MAXIMUM_SPEED_CHANGE, DEFAULT_SPEED_CHANGE_DELAY_MS
 
 
 @dataclass
