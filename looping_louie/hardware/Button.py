@@ -20,6 +20,9 @@ class Button:
         self.interrupt_handler_short_press = handler_short_press
         self.interrupt_handler_long_press = handler_long_press if handler_long_press else handler_short_press
 
+        self.__check_button_pressed_timer_ms = 50
+        self.__long_press_minimum_time_ms = 250
+
         self.__time_pressed = 0
 
         self.__init_button()
@@ -62,14 +65,15 @@ class Button:
             self.__time_pressed += 1
             # start timer for 100 ms and check again
             wait_timer = Timer(DEBOUNCE_TIMER, interrupt_handler=self.__check_state)
-            wait_timer.start(100)
+            wait_timer.start(self.__check_button_pressed_timer_ms)
             return
         self.__enable_interrupt()
         self.__evaluate_button_press()
 
     def __evaluate_button_press(self):
         print(f"DEBUG | Button {self.pin} evaluating button press")
-        if self.__time_pressed >= 6:  # longer than 600 ms
+        print(f"DEBUG | Button {self.pin} was pressed for more than {self.__time_pressed * self.__check_button_pressed_timer_ms} ms")
+        if self.__time_pressed * self.__check_button_pressed_timer_ms >= self.__long_press_minimum_time_ms:
             print(f"DEBUG | Button {self.pin} long press detected")
             self.interrupt_handler_long_press()
         else:
