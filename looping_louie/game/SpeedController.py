@@ -7,3 +7,4 @@ SPEED_MODES = {
     3: "random_to_end",
     4: "random_decrease"
 }
+

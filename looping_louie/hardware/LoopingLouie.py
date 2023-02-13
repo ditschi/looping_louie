@@ -28,13 +28,9 @@ class LoopingLouie:
     def start_game_timer(self, config: TimeConfig):
         periodic = config["periodic"] or False
         if config["random"]:
+            pass
 
-        #self.timer.start(, )
-
-
-
-
-
+        # self.timer.start(time_ms)
 
 
 def get_random(minimum, maximum):

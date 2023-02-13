@@ -101,7 +101,7 @@ def get_known_networks(filename=KNOWN_NETWORKS_FILEPATH):
 
 
 def save_known_networks(networks):
-    save_network_config(networks, filename=KNOWN_NETWORKS_FILEPATH+".test.json")
+    save_network_config(networks, filename=KNOWN_NETWORKS_FILEPATH+".tests.json")
 
 
 def save_network_config(networks, filename: str):
