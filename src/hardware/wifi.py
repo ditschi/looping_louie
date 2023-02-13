@@ -5,10 +5,11 @@ import ujson as json
 
 KNOWN_NETWORKS_FILEPATH = "networks.json"
 
-AP_ESSID = "LoopingLouie"
+AP_SSID = "LoopingLouie"
 AP_PASS = "LoopingLouie"
 
 sta_if = network.WLAN(network.STA_IF)
+
 
 def connect() -> bool:
     print("DEBUG | Trying to connect to wifi network")
@@ -22,23 +23,23 @@ def connect() -> bool:
     return False
 
 
-def networks_known_and_available() -> dict:
+def networks_known_and_available() -> list:
     print("DEBUG | Checking for available known networks")
     sta_if.active(True)
-    available_networks = [network[0].decode("utf-8") for network in sta_if.scan()]
+    available_networks = [found_network[0].decode("utf-8") for found_network in sta_if.scan()]
     print(f"DEBUG | Found {len(available_networks)} available networks")
-    for network in available_networks:
-        print(f"DEBUG |  - '{network}'")
+    for available_network in available_networks:
+        print(f"DEBUG |  - '{available_network}'")
 
     known_networks = get_known_and_available(available_networks)
     return known_networks
 
 
-def connect_to_network(ssid, secret) -> None:
+def connect_to_network(ssid, secret) -> bool:
     await_connection_delay = 10
     if sta_if.isconnected():
         print("INFO | Already connected to wifi network")
-        return
+        return True
 
     print(f"DEBUG | Trying to connect to network '{ssid}'")
     sta_if.active(True)
@@ -48,9 +49,10 @@ def connect_to_network(ssid, secret) -> None:
         if sta_if.isconnected():
             print(f"INFO | Successfully connected to '{ssid}'")
             set_ip_address_last_value(66)
-            return
+            return True
     print(f"DEBUG | Could not connect to network '{ssid}'")
-    return 1
+    return False
+
 
 def set_ip_address_last_value(last_value):
     ifconfig = list(sta_if.ifconfig())
@@ -68,10 +70,10 @@ def set_ip_address_last_value(last_value):
 
 
 def open_access_point():
-    print(f"INFO | Activating access point '{AP_ESSID}'")
+    print(f"INFO | Activating access point '{AP_SSID}'")
     ap_if = network.WLAN(network.AP_IF)
     ap_if.active(True)
-    ap_if.config(essid=AP_ESSID, authmode=network.AUTH_WPA_WPA2_PSK, password=AP_PASS)
+    ap_if.config(essid=AP_SSID, authmode=network.AUTH_WPA_WPA2_PSK, password=AP_PASS)
     # fixed_ip = "192.168.0.1"
     # ifconfig = list(ap_if.ifconfig())
     # ifconfig[0] = fixed_ip

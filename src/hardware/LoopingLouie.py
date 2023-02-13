@@ -13,7 +13,7 @@ except ImportError:
     from hw_config import MOTOR_TIMER, GAME_TIMER, ON_OFF_BUTTON_PIN, MOTOR_PIN
 
 
-class LoopingLouie():
+class LoopingLouie:
     def __init__(self, on_off_switch_interrupt_handler, gameplay_timer_interrupt_handler, motor_config: dict = None):
         self.motor = Motor(MOTOR_PIN, motor_config)
         self.start_stop_button = Button(ON_OFF_BUTTON_PIN, on_off_switch_interrupt_handler)
