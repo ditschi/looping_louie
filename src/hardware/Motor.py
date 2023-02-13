@@ -3,23 +3,32 @@ import machine
 
 try:
     from hardware.Timer import Timer
-    from hardware.hw_config import MOTOR_TIMER, DEFAULT_SPEED_PERCENT, DEFAULT_MAXIMUM_SPEED_CHANGE, DEFAULT_SPEED_CHANGE_DELAY_MS
+    from hardware.hw_config import MOTOR_TIMER, DEFAULT_SPEED_PERCENT, \
+        DEFAULT_MAXIMUM_SPEED_CHANGE, DEFAULT_SPEED_CHANGE_DELAY_MS
 except ImportError:
     import sys
     sys.path.append('/hardware/')
     from Timer import Timer
-    from hw_config import MOTOR_TIMER, DEFAULT_SPEED_PERCENT, DEFAULT_MAXIMUM_SPEED_CHANGE, DEFAULT_SPEED_CHANGE_DELAY_MS
+    from hw_config import MOTOR_TIMER, DEFAULT_SPEED_PERCENT, \
+        DEFAULT_MAXIMUM_SPEED_CHANGE, DEFAULT_SPEED_CHANGE_DELAY_MS
 
 
 class MotorConfig:
-    def __init__(self, limit_speedchange: bool = True, max_change: int = DEFAULT_MAXIMUM_SPEED_CHANGE, change_delay_ms: int = DEFAULT_SPEED_CHANGE_DELAY_MS):
+    def __init__(self, limit_speedchange: bool = True, max_change: int = DEFAULT_MAXIMUM_SPEED_CHANGE,
+                 change_delay_ms: int = DEFAULT_SPEED_CHANGE_DELAY_MS):
         self.limit_speedchange = limit_speedchange
         self.max_change = max_change
         self.change_delay_ms = change_delay_ms
 
 
-class Motor():
-    def __init__(self, pin: int, config: MotorConfig=MotorConfig()):
+def __get_pwm_value(percent: int):
+    # duty cycle is between 0 (all off) and 1023 (all on)
+    result = (1023 / 100) * percent
+    return int(result)
+
+
+class Motor:
+    def __init__(self, pin: int, config: MotorConfig = MotorConfig()):
         self.__pin = pin
         self.__config = config
         self.__init_hw()
@@ -75,7 +84,7 @@ class Motor():
 
     def __set_pwm(self):
         print(f"DEBUG | Motor {self.__pin}  updating PWM to match a speed of {self.__speed_next}%")
-        pwm_value = self.__get_pwm_value(self.__speed_next)
+        pwm_value = __get_pwm_value(self.__speed_next)
         self.__pwm.duty(pwm_value)
         self.speed_current = self.__speed_next
 
@@ -99,7 +108,6 @@ class Motor():
         self.__speed_next = next_speed
         print(f"DEBUG | Motor {self.__pin} next limited speed is {next_speed}% (goal is {self.speed_set}%)")
 
-
         if next_speed != self.speed_set:
             delay = self.__config.change_delay_ms if self.__config.change_delay_ms else DEFAULT_SPEED_CHANGE_DELAY_MS
             if self.__timer:
@@ -107,7 +115,6 @@ class Motor():
                 print(f"DEBUG | Motor {self.__pin} starting timer for limited speed change")
                 self.__timer.start(delay)
 
-    def __get_pwm_value(self, percent: int):
-        # duty cycle is between 0 (all off) and 1023 (all on)
-        result = (1023 / 100) * percent
-        return int(result)
+
+
+

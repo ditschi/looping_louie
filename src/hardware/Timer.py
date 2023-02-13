@@ -1,11 +1,10 @@
 import machine
 
 
-class Timer():
+class Timer:
     def __init__(self, timer: int, interrupt_handler=None):
         self.__timer = machine.Timer(timer)
         self.interrupt_handler = interrupt_handler
-
 
     def start(self, time_ms, interrupt_handler=None, periodic=False):
         self.interrupt_handler = interrupt_handler or self.interrupt_handler

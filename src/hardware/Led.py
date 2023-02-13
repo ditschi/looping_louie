@@ -9,7 +9,7 @@ except ImportError:
     from hw_config import ONBOARD_LED_PIN
 
 
-class Led():
+class Led:
     def __init__(self, pin: int, pin_state_on=True):
         self.__pin = pin
         self.__pin_state_on = pin_state_on
@@ -40,13 +40,10 @@ class Led():
         print(f"DEBUG | LED {self.__pin} turned off")
 
     def toggle(self):
-        #print(f"DEBUG | LED {self.__pin} active is {self.active} value is {self.__led.value()}->{bool(self.__led.value())} on state {self.pin_state_on}")
         if self.active:
             self.off()
         else:
             self.on()
-        # value = int(not self.active)
-        # self.__led.value(value)
 
     def blink(self, count, interval_ms=300):
         self.on()
@@ -57,7 +54,7 @@ class Led():
         self.off()
 
 
-class DimmableLed():
+class DimmableLed:
     def __init__(self, pin: int, pin_state_on=True):
         self.__pin = pin
         self.__pin_state_on = pin_state_on
@@ -112,3 +109,13 @@ class DimmableLed():
 class OnboardLed(DimmableLed):
     def __init__(self):
         super().__init__(ONBOARD_LED_PIN, pin_state_on=True)
+
+
+# RGB LED -- https://randomnerdtutorials.com/micropython-ws2812b-addressable-rgb-leds-neopixel-esp32-esp8266/
+# import neopixel
+# led_count = 1
+# led_strip_pin = 1
+# led_strip = neopixel.NeoPixel(machine.Pin(led_strip_pin), led_count)
+# # turn on led 0
+# led_strip[0] = (255, 0, 0)
+# led_strip.write()
