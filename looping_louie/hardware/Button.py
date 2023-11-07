@@ -1,8 +1,8 @@
 import machine
 
 try:
-    from hardware.hw_config import DEBOUNCE_TIMER, ONBOARD_BUTTON_PIN
-    from hardware.Timer import Timer
+    from python_louie.hardware.hw_config import DEBOUNCE_TIMER, ONBOARD_BUTTON_PIN
+    from python_louie.hardware.Timer import Timer
 except ImportError:
     import sys
     print(sys.path)

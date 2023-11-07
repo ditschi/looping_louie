@@ -1,9 +1,9 @@
 import os
 try:
-    from hardware.Button import Button
-    from hardware.Motor import Motor, MotorConfig
-    from hardware.Timer import Timer
-    from hardware.hw_config import MOTOR_TIMER, GAME_TIMER, ON_OFF_BUTTON_PIN, MOTOR_PIN
+    from python_louie.hardware.Button import Button
+    from python_louie.hardware.Motor import Motor, MotorConfig
+    from python_louie.hardware.Timer import Timer
+    from python_louie.hardware.hw_config import MOTOR_TIMER, GAME_TIMER, ON_OFF_BUTTON_PIN, MOTOR_PIN
 except ImportError:
     import sys
     sys.path.append('/hardware/')

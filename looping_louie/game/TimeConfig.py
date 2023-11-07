@@ -14,7 +14,8 @@ class TimeConfig(ABC):
 
 class TimeConfigConstantChange(TimeConfig):
 
-    def __init__(self, start_time_sec: int = 0, end_time_sec: float = 10 * 1000, change_sec: float = 1, reverse_at_limit = False):
+    def __init__(self, start_time_sec: int = 0, end_time_sec: float = 10 * 1000, change_sec: float = 1,
+                 reverse_at_limit = False):
         super().__init__(self, start_time_sec)
         self.start_time_sec = start_time_sec
         self.end_time_sec = end_time_sec
