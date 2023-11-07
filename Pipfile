@@ -4,20 +4,18 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-rshell = "*"
-adafruit-ampy = "<1.1,>=1.0.5"
-esptool = ">=4.4"
-micropy-cli = ">=4"
-pylint = "*"
-pytest = "*"
-picom = "*"
-mpfshell = "*"
-docopt = ">=0.6.2,<0.7"
+
 
 [dev-packages]
-pylint = "*"
-pytest = "*"
 flake8 = "*"
+black = "*"
+pytest = "*"
+pylint = "*"
+rshell = "*"
+adafruit-ampy = "*"
+esptool = "*"
+micropy-cli = "*"
+mpfshell = "*"
 
 [requires]
 python_version = "3.10"
