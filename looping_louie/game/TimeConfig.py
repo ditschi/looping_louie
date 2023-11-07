@@ -1,41 +1,34 @@
 #!/usr/bin/env python3
-from abc import ABC, abstractmethod
 import random
 
 
-class TimeConfig(ABC):
+class TimeConfig:
     def __init__(self, time_sec: int):
         self.time_sec: int = time_sec
 
-    @abstractmethod
-    def __next(self):
-        pass
 
-
-class TimeConfigConstantChange(TimeConfig):
-
+class TimeControllerConstantChange(TimeConfig):
     def __init__(self, start_time_sec: int = 0, end_time_sec: float = 10 * 1000, change_sec: float = 1,
                  reverse_at_limit = False):
-        super().__init__(self, start_time_sec)
+        super().__init__(start_time_sec)
         self.start_time_sec = start_time_sec
         self.end_time_sec = end_time_sec
         self.change_sec = change_sec
         self.reverse_at_limit = reverse_at_limit
         self.reversed = False
 
-    def __next(self):
-        if self.__is_increase:
-            self.time_sec + self.change_sec
-        else:
-            self.time_sec - self.change_sec
+    def __next__(self):
+        self.time_sec = self.time_sec + self.change_sec if self.__is_increase else self.time_sec - self.change_sec
 
-        if self.__max_reached():
-            return self.time_sec
+        if self._max_reached():
+            self.time_sec = self.__currrent_end
+            if self.reverse_at_limit:
+                self.reversed = not self.reversed if self.reverse_at_limit else self.reversed
+        return self.time_sec
 
     @property
     def __is_increase(self):
-        result = self.start_time_sec < self.end_time_sec
-        return result if not self.reversed else not result
+        return self.__currrent_start < self.__currrent_end
 
     @property
     def __currrent_start(self):
@@ -45,7 +38,7 @@ class TimeConfigConstantChange(TimeConfig):
     def __currrent_end(self):
         return self.end_time_sec if not self.reversed else self.start_time_sec
 
-    def __max_reached(self):
+    def _max_reached(self):
         if self.__is_increase:
             return self.time_sec >= self.__currrent_end
         return self.time_sec <= self.__currrent_end
@@ -54,7 +47,6 @@ class TimeConfigConstantChange(TimeConfig):
         if self.__is_increase:
             return self.time_ms_set
 
-@dataclass
 class TimeConfigLinear(TimeConfig):
     change_in_ms: int = False
     start_ms: int = 500
@@ -64,20 +56,17 @@ class TimeConfigLinear(TimeConfig):
     def __is_increase(self):
         return self.start_ms < self.end_ms
 
-
     def get_next_time(self):
         if self.__is_increase:
 
             return self.time_ms_set
 
-@dataclass
 class TimeConfigRandom(TimeConfig):
     allow_increase: bool = True
     allow_decrease: bool = True
     min_time_sec = 0.5
     max_time_sec = 10 * 1000
     max_change_sec = 0
-
 
     def __post_init__(self):
         pass

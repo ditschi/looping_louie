@@ -2,8 +2,8 @@ import time
 import machine
 
 try:
-    from python_louie.hardware.Timer import Timer
-    from python_louie.hardware.hw_config import MOTOR_TIMER, DEFAULT_SPEED_PERCENT, \
+    from looping_louie.hardware.Timer import Timer
+    from looping_louie.hardware.hw_config import MOTOR_TIMER, DEFAULT_SPEED_PERCENT, \
         DEFAULT_MAXIMUM_SPEED_CHANGE, DEFAULT_SPEED_CHANGE_DELAY_MS
 except ImportError:
     import sys

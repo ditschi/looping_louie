@@ -2,7 +2,7 @@ import time
 import machine
 
 try:
-    from python_louie.hardware.hw_config import ONBOARD_LED_PIN
+    from looping_louie.hardware.hw_config import ONBOARD_LED_PIN
 except ImportError:
     import sys
     sys.path.append('/hardware/')
