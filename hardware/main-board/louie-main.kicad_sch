@@ -1,0 +1,19 @@
+(kicad_sch
+	(version 20250114)
+	(generator "eeschema")
+	(generator_version "9.0")
+	(uuid "d176e825-0193-4e39-9e65-29b55606e4b9")
+	(paper "A4")
+	(title_block
+		(title "Looping Louie WLAN-Upgrade – Hauptplatine")
+		(rev "0.1")
+		(comment 1 "Platine im AA-Format, siehe docs/hardware-konzept.md")
+	)
+	(lib_symbols)
+	(sheet_instances
+		(path "/"
+			(page "1")
+		)
+	)
+	(embedded_fonts no)
+)
