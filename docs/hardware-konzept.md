@@ -172,18 +172,23 @@ mehrfaches Umlegen des Original-Hebels.
 - ESP32-C3-MINI-1: 13,2 × 16,6 × 2,4 mm, Antenne integriert, bei JLCPCB bestückbar.
 - **Native USB** (GPIO18/19): Flashen und Debug ohne USB-Seriell-Wandler.
 - Updates später per WLAN (OTA).
-- Vorläufige Pinbelegung (strapping pins GPIO2/8/9 meiden):
+- Pinbelegung (Stand Schaltplan `hardware/main-board/louie-main.kicad_sch`):
 
-| GPIO | Funktion |
-|---|---|
-| 3 | SENSE Hebel (Deep-Sleep-Wake) |
-| 4 | DRV8833 IN1/IN3 (PWM) |
-| 5 | DRV8833 IN2/IN4 (PWM) |
-| 6 | DRV8833 nSLEEP |
-| 7 | DRV8833 nFAULT |
-| 0 | ADC Akkuspannung |
-| 10 | Status-LED |
-| 18/19 | USB D−/D+ |
+| GPIO | Netz | Funktion |
+|---|---|---|
+| IO0 | VBAT_ADC | ADC Akkuspannung (Teiler 470k/470k) |
+| IO1 | ISEN_ADC | ADC Motorstrom (Shunt über RC-Filter) |
+| IO2 | – | Strapping-Pin, 10k Pull-up, sonst frei |
+| IO3 | SENSE | Hebel-Erkennung, Deep-Sleep-Wake |
+| IO4 | MOT_IN1 | DRV8833 AIN1+BIN1 (PWM) |
+| IO5 | MOT_IN2 | DRV8833 AIN2+BIN2 (PWM) |
+| IO6 | MOT_nSLEEP | DRV8833 Sleep (low = aus) |
+| IO7 | MOT_nFAULT | DRV8833 Fehler (Open Drain, interner Pull-up) |
+| IO8 | – | Strapping-Pin, 10k Pull-up, sonst frei |
+| IO9 | BOOT | Testpad; beim Reset auf GND = Download-Modus |
+| IO10 | LED | Status-LED über 1k |
+| IO18/IO19 | USB_D−/USB_D+ | Native USB über das Kabel zur Ladeplatine |
+| RXD0/TXD0 | RXD/TXD | Testpads (serielle Konsole, Reserve) |
 
 ## 6. Mechanik und Adapter
 
@@ -230,6 +235,8 @@ Die Turbo-Grenzen sind Schätzwerte und werden im Betrieb festgelegt.
 - [ ] Kontakte an den Platinenenden und Halt der Platine im AA-Fach (Halbschale?)
 - [ ] Teile der Ladeplatine mit Status „zu prüfen“ in `teile.csv` bestätigen
 - [ ] Lizenz für Hardware und Firmware festlegen
+- [ ] Strapping-Pins IO2/IO8/IO9 gegen das ESP32-C3-Datenblatt prüfen (Pull-ups nötig?)
+- [ ] AP2112K bei leerem Akku: Dropout ca. 250 mV bei 600 mA → unter ca. 3,5 V Akku sinkt 3V3 leicht; ESP32-C3 läuft ab 3,0 V
 - [ ] Optional: Motorstrom messen (Turbo-Grenze, Akkugröße)
 - [ ] Optional: *Salto Sammy Pro* als Referenz kaufen (Kontaktmechanik)
 

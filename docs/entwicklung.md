@@ -41,6 +41,8 @@ just check
 just check         Werkzeuge prüfen
 just parts         fehlende LCSC-Teile aus hardware/bom/teile.csv nach hardware/lib holen
 just parts-update  alle LCSC-Teile neu holen
+just symbols       projekteigene Symbole erzeugen (hardware/lib/louie.kicad_sym)
+just schematic     Schaltplan der Hauptplatine aus dem Generator erzeugen (überschreibt!) + ERC
 just outline       AA-Umriss der Hauptplatine setzen (Maße in hardware/scripts/board_outline.py)
 just erc           Schaltplan prüfen
 just drc           Platine prüfen, inkl. Abgleich mit dem Schaltplan
@@ -65,6 +67,17 @@ Alle Ausgaben landen in `build/<platine>/` (nicht im Git).
 - Neues Teil: Zeile in `teile.csv` ergänzen (`bibliothek` = `lcsc`, LCSC-Nummer eintragen), dann `just parts`.
 - Die EasyEDA-API sperrt bei zu vielen Abfragen kurzzeitig (HTTP 403). Das Skript pausiert deshalb
   zwischen den Teilen; bei einer Sperre einfach später erneut aufrufen.
+
+## Schaltplan
+
+- Der erste Schaltplan der Hauptplatine wird von `hardware/scripts/gen_main_schematic.py` erzeugt.
+  Die Schaltung steht dort als Python-Liste (Bauteile, Werte, Footprints, Pin → Netz).
+  Jeder Pin bekommt ein Netz-Label, unbenutzte Pins ein No-Connect-Kreuz.
+- Symbole: KiCad-Standardbibliothek, wo vorhanden. Eigene Symbole (ESP32-C3-MINI-1,
+  DRV8833 im Parallelbetrieb) erzeugt `hardware/scripts/gen_symbols.py`, weil die LCSC-Symbole
+  keine Pin-Typen haben und die ERC-Prüfung damit wertlos wäre.
+- **Sobald der Schaltplan im KiCad-GUI bearbeitet wird, ist der GUI-Stand maßgeblich.**
+  Dann `just schematic` nicht mehr aufrufen, es würde die Änderungen überschreiben.
 
 ## KiCad-Projekte
 

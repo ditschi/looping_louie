@@ -17,6 +17,15 @@ parts:
 parts-update:
     @python3 {{hw}}/scripts/fetch_parts.py --overwrite
 
+# Projekteigene Symbole erzeugen (hardware/lib/louie.kicad_sym)
+symbols:
+    @python3 {{hw}}/scripts/gen_symbols.py
+
+# Schaltplan der Hauptplatine aus gen_main_schematic.py erzeugen (überschreibt!)
+schematic: symbols
+    @python3 {{hw}}/scripts/gen_main_schematic.py
+    @just erc
+
 # AA-Umriss der Hauptplatine setzen (Maße in hardware/scripts/board_outline.py)
 outline:
     @{{kicad_python}} {{hw}}/scripts/board_outline.py 2>&1 | grep -v "swig/python detected a memory leak"

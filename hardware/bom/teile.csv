@@ -1,8 +1,8 @@
 platine,ref,anzahl,funktion,wert,bauteil,hersteller,gehaeuse,lcsc,alternativen,bibliothek,status
 haupt,U1,1,MCU + WLAN,,ESP32-C3-MINI-1-N4,Espressif,Modul 13.2x16.6x2.4 mm,C2838502,ESP32-C3-MINI-1U-N4 (externe Antenne),lcsc,geprueft
-haupt,U2,1,Motortreiber H-Bruecke (beide Kanaele parallel),,DRV8833PWPR,Texas Instruments,HTSSOP-16 mit Thermal-Pad,C50506,,lcsc,geprueft
-haupt,U3,1,LDO 3.3 V / 600 mA,,AP2112K-3.3TRG1,Diodes Inc.,SOT-23-5,C51118,TLV75533PDBVR (TI); ME6211C33M5G,lcsc,geprueft
-haupt,J1,1,Kabel zur Ladeplatine (VSYS GND D+ D-),,SM04B-SRSS-TB,JST,JST-SH 1.0 mm 4-polig seitlich SMD,C160404,alternativ Loetpads fuer Litzen,lcsc,geprueft
+haupt,U2,1,Motortreiber H-Bruecke (beide Kanaele parallel),,DRV8833PWPR,Texas Instruments,HTSSOP-16 mit Thermal-Pad,C50506,,kicad,geprueft
+haupt,U3,1,LDO 3.3 V / 600 mA,,AP2112K-3.3TRG1,Diodes Inc.,SOT-23-5,C51118,TLV75533PDBVR (TI); ME6211C33M5G,kicad,geprueft
+haupt,J1,1,Kabel zur Ladeplatine (1 VSYS 2 D+ 3 D- 4 GND),,SM04B-SRSS-TB,JST,JST-SH 1.0 mm 4-polig seitlich SMD,C160404,alternativ Loetpads fuer Litzen,kicad,geprueft
 haupt,R1,1,Shunt Motorstrom / Strombegrenzung 2 A,0.1 R 1% 0.25 W,generisch,,0805,,,kicad,
 haupt,C1-C3,3,Puffer Motorversorgung,47 uF 10 V X5R,generisch,,1206,,,kicad,
 haupt,C4-C5,2,Abblock VM,100 nF 16 V X7R,generisch,,0603,,,kicad,
@@ -15,17 +15,18 @@ haupt,R2+C12,1,ESP32 EN Reset-RC,10 k / 1 uF,generisch,,0603,,,kicad,
 haupt,R3,1,Hebel-Erkennung Pull-up an OUT1,100 k,generisch,,0603,,,kicad,
 haupt,R4,1,Hebel-Erkennung Pull-down an OUT2,10 k,generisch,,0603,,,kicad,
 haupt,R5,1,Schutzwiderstand SENSE -> GPIO,100 k,generisch,,0603,,,kicad,
-haupt,R6-R7+C13,1,Teiler Akkuspannung,100 k / 100 k / 100 nF,generisch,,0603,,,kicad,
+haupt,R6-R7+C13,1,Teiler Akkuspannung (4.5 uA Ruhestrom),470 k / 470 k / 100 nF,generisch,,0603,,,kicad,
 haupt,R8+C14,1,RC-Filter Shunt -> ADC,1 k / 100 nF,generisch,,0603,,,kicad,
 haupt,D1+R9,1,Status-LED,gruen / 1 k,generisch,,0603,,,kicad,
-haupt,TP1-TP6,6,Testpads (3V3 GND EN BOOT/GPIO9 TX RX),,Pad,,1.5 mm rund,,,kicad,
-haupt,BT1-BT2,2,Batteriekontakte an den Platinenenden,,offen,,,,,offen,Mechanik klaeren
-lade,J2,1,USB-C Buchse (Laden + Daten),,TYPE-C-31-M-12,Korean Hroparts,USB-C 16-polig SMD,C165948,beliebige 16-polige USB-C-Buchse,lcsc,geprueft
-lade,U4,1,LiPo-Laderegler 1S,,MCP73831T-2ACI/OT,Microchip,SOT-23-5,C424093,TP4056 (mehr Strom),lcsc,geprueft
-lade,Q1+D2,1,Load-Sharing (Power-Path) P-MOSFET + Schottky,,DMG2305UX + B5819W,Diodes Inc.,SOT-23 / SOD-123,,,lcsc,zu pruefen
-lade,U5,1,ESD-Schutz USB,,USBLC6-2SC6,ST,SOT-23-6,,,lcsc,zu pruefen
-lade,J3,1,LiPo-Anschluss,,S2B-PH-SM4-TB,JST,JST-PH 2.0 mm 2-polig SMD,,,lcsc,zu pruefen
-lade,R10-R11,2,USB-C CC-Widerstaende,5.1 k,generisch,,0603,,,kicad,
-lade,R12,1,Ladestrom-Programmierung (500 mA),2 k,generisch,,0603,,,kicad,
-lade,C15-C16,2,Laderegler Ein-/Ausgang,4.7 uF 10 V,generisch,,0603,,,kicad,
+haupt,R10-R11,2,Pull-ups Strapping-Pins IO2 und IO8,10 k,generisch,,0603,,,kicad,
+haupt,TP1-TP6,6,Testpads (3V3 GND EN BOOT/IO9 TXD RXD),,Pad,,1.5 mm rund,,,kicad,
+haupt,BT1-BT2,2,Kontakte an den Platinenenden (MOT_A / MOT_B),,offen,,Platzhalter-Pad 3x3 mm,,,kicad,Mechanik klaeren
+lade,J101,1,USB-C Buchse (Laden + Daten),,TYPE-C-31-M-12,Korean Hroparts,USB-C 16-polig SMD,C165948,beliebige 16-polige USB-C-Buchse,lcsc,geprueft
+lade,U101,1,LiPo-Laderegler 1S,,MCP73831T-2ACI/OT,Microchip,SOT-23-5,C424093,TP4056 (mehr Strom),lcsc,geprueft
+lade,Q101+D101,1,Load-Sharing (Power-Path) P-MOSFET + Schottky,,DMG2305UX + B5819W,Diodes Inc.,SOT-23 / SOD-123,,,lcsc,zu pruefen
+lade,U102,1,ESD-Schutz USB,,USBLC6-2SC6,ST,SOT-23-6,,,lcsc,zu pruefen
+lade,J102,1,LiPo-Anschluss,,S2B-PH-SM4-TB,JST,JST-PH 2.0 mm 2-polig SMD,,,lcsc,zu pruefen
+lade,R101-R102,2,USB-C CC-Widerstaende,5.1 k,generisch,,0603,,,kicad,
+lade,R103,1,Ladestrom-Programmierung (500 mA),2 k,generisch,,0603,,,kicad,
+lade,C101-C102,2,Laderegler Ein-/Ausgang,4.7 uF 10 V,generisch,,0603,,,kicad,
 bruecke,-,0,reine Kupferbruecke ohne Bauteile,,,,,,,,
