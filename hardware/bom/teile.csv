@@ -1,5 +1,5 @@
 platine,ref,anzahl,funktion,wert,bauteil,hersteller,gehaeuse,lcsc,alternativen,bibliothek,status
-haupt,U1,1,MCU + WLAN,,ESP32-C3-MINI-1-N4,Espressif,Modul 13.2x16.6x2.4 mm,C2838502,ESP32-C3-MINI-1U-N4 (externe Antenne),lcsc,geprueft
+haupt,U1,1,MCU + WLAN,,ESP32-C3-MINI-1-N4,Espressif,Modul 13.2x16.6x2.4 mm,C2838502,ESP32-C3-MINI-1-N4X (Nachfolger! N4 laut Mouser abgekuendigt); ESP32-C3-MINI-1U (externe Antenne),lcsc,geprueft
 haupt,U2,1,Motortreiber H-Bruecke (beide Kanaele parallel),,DRV8833PWPR,Texas Instruments,HTSSOP-16 mit Thermal-Pad,C50506,,kicad,geprueft
 haupt,U3,1,LDO 3.3 V / 600 mA,,AP2112K-3.3TRG1,Diodes Inc.,SOT-23-5,C51118,TLV75533PDBVR (TI); ME6211C33M5G,kicad,geprueft
 haupt,J1,1,Kabel zur Ladeplatine (1 VSYS 2 D+ 3 D- 4 GND),,SM04B-SRSS-TB,JST,JST-SH 1.0 mm 4-polig seitlich SMD,C160404,alternativ Loetpads fuer Litzen,kicad,geprueft
