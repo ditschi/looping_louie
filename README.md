@@ -16,7 +16,7 @@ Spielmodi, eigenen Modi, Spielleiter- und Spielerrollen. Der Original-Hebel blei
 | **Ladeplatine** | Extern beim Akku: USB-C (Laden + Flashen), Laderegler, LiPo-Anschluss |
 | **C-Hülse** | 3D-Druck-Adapter, damit die Hauptplatine ins Baby-Fach des alten Louie passt |
 
-Details: [docs/hardware-konzept.md](docs/hardware-konzept.md)
+Details: [docs/hardware-konzept.md](docs/hardware-konzept.md), [docs/software-konzept.md](docs/software-konzept.md)
 
 ## Verzeichnisse
 

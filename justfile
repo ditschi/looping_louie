@@ -30,6 +30,19 @@ schematic: symbols
 outline:
     @{{kicad_python}} {{hw}}/scripts/board_outline.py 2>&1 | grep -v "swig/python detected a memory leak"
 
+# Schaltplan auf die Platine übertragen und platzieren (überschreibt Layout!), Variante: zweiseitig | einseitig
+pcb variant="zweiseitig":
+    @{{kicad_python}} {{hw}}/scripts/gen_main_pcb.py {{variant}} 2>&1 | grep -v "swig/python detected a memory leak"
+    @just plot
+
+# Platzierung mit Luftlinien als Bild (build/main-board/placement.png)
+plot:
+    @{{kicad_python}} {{hw}}/scripts/plot_layout.py 2>&1 | grep -v "swig/python detected a memory leak"
+
+# Automatisch routen (Freerouting) und Masseflächen füllen
+route:
+    @{{kicad_python}} {{hw}}/scripts/route.py 2>&1 | grep -v "swig/python detected a memory leak"
+
 # Schaltplan prüfen
 erc board="main-board": (_out board)
     kicad-cli sch erc --exit-code-violations -o build/{{board}}/erc.rpt {{hw}}/{{board}}/{{project}}.kicad_sch

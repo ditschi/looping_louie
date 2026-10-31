@@ -34,7 +34,7 @@ C0603 = "Capacitor_SMD:C_0603_1608Metric"
 C0805 = "Capacitor_SMD:C_0805_2012Metric"
 C1206 = "Capacitor_SMD:C_1206_3216Metric"
 TP_SMALL = "TestPoint:TestPoint_Pad_D1.5mm"
-TP_CONTACT = "TestPoint:TestPoint_Pad_3.0x3.0mm"  # Platzhalter, Kontaktmechanik offen
+TP_CONTACT = "TestPoint:TestPoint_Pad_2.0x2.0mm"  # Platzhalter, Kontaktmechanik offen
 
 
 def R(ref, value, n1, n2, at, fp=R0603):
@@ -46,7 +46,8 @@ def C(ref, value, n1, n2, at, fp=C0603):
 
 
 def TP(ref, value, net, at, fp=TP_SMALL):
-    return dict(ref=ref, lib="Connector:TestPoint", value=value, fp=fp, at=at, pins={"1": net})
+    # reine Kupferfläche: nicht in der Stückliste
+    return dict(ref=ref, lib="Connector:TestPoint", value=value, fp=fp, at=at, pins={"1": net}, bom=False)
 
 
 def FLAG(n, net, at):
@@ -110,7 +111,7 @@ PARTS = [
 
     # --- Motorstufe ---------------------------------------------------------------------------
     dict(ref="U2", lib="louie:DRV8833PWP_parallel", value="DRV8833PWP", lcsc="C50506",
-         fp="Package_SO:HTSSOP-16-1EP_4.4x5mm_P0.65mm_EP3.4x5mm_Mask2.46x2.31mm_ThermalVias",
+         fp="Package_SO:HTSSOP-16-1EP_4.4x5mm_P0.65mm_EP3.4x5mm_Mask2.46x2.31mm",  # Vias selbst setzen (0,3 mm)
          at=(304.8, 76.2), ref_at=(-10.16, -8.89), val_at=(2.54, 10.16),
          pins={"1": "MOT_nSLEEP", "11": "VCP", "3": "ISEN", "16": "MOT_IN1", "15": "MOT_IN2",
                "13": "GND", "14": "VINT", "12": "VSYS", "8": "MOT_nFAULT", "2": "MOT_A", "4": "MOT_B"}),
@@ -184,6 +185,7 @@ def main():
         pins = pin_cache[part["lib"]]
         x, y = part["at"]
         is_power = part["ref"].startswith("#")
+        in_bom = part.get("bom", True) and not is_power
 
         # Bauteil
         rx, ry = part.get("ref_at", (2.54, -1.27))
@@ -202,7 +204,7 @@ def main():
         pin_text = "".join(f'\t\t(pin "{p["number"]}" (uuid "{uid()}"))\n' for p in pins)
         items.append(
             f'\t(symbol (lib_id "{part["lib"]}") (at {fmt(x)} {fmt(y)} 0) (unit 1)\n'
-            f'\t\t(exclude_from_sim no) (in_bom {"no" if is_power else "yes"}) (on_board {"no" if is_power else "yes"}) (dnp no)\n'
+            f'\t\t(exclude_from_sim no) (in_bom {"yes" if in_bom else "no"}) (on_board {"no" if is_power else "yes"}) (dnp no)\n'
             f'\t\t(uuid "{uid()}")\n{prop_text}{pin_text}'
             f'\t\t(instances (project "louie-main" (path "/{root}" (reference "{part["ref"]}") (unit 1))))\n'
             '\t)\n')

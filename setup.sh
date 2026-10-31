@@ -4,7 +4,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-APT_PACKAGES=(kicad kicad-packages3d just zip python3)
+APT_PACKAGES=(kicad kicad-packages3d just zip python3 python3-matplotlib default-jre curl)
 
 echo "== System-Pakete (apt)"
 missing=()
@@ -29,6 +29,17 @@ if command -v easyeda2kicad >/dev/null; then
     echo "easyeda2kicad vorhanden."
 else
     uv tool install easyeda2kicad
+fi
+
+echo "== Autorouter Freerouting (tools/freerouting.jar)"
+if [[ -f tools/freerouting.jar ]]; then
+    echo "vorhanden."
+else
+    url=$(curl -fsSL https://api.github.com/repos/freerouting/freerouting/releases/latest \
+        | python3 -c 'import json,sys; print(next(a["browser_download_url"] for a in json.load(sys.stdin)["assets"] if a["name"].endswith(".jar")))')
+    echo "Lade $url"
+    mkdir -p tools
+    curl -fL -o tools/freerouting.jar "$url"
 fi
 
 if [[ ! -f "$HOME/.config/kicad/9.0/sym-lib-table" ]]; then

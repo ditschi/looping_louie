@@ -130,7 +130,7 @@
 		(exclude_from_sim no) (in_bom yes) (on_board yes)
 		(property "Reference" "U" (at -10.16 8.89 0) (effects (font (size 1.27 1.27)) (justify left)))
 		(property "Value" "DRV8833PWP" (at 10.16 -8.89 0) (effects (font (size 1.27 1.27)) (justify right)))
-		(property "Footprint" "Package_SO:HTSSOP-16-1EP_4.4x5mm_P0.65mm_EP3.4x5mm_Mask2.46x2.31mm_ThermalVias" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))
+		(property "Footprint" "Package_SO:HTSSOP-16-1EP_4.4x5mm_P0.65mm_EP3.4x5mm_Mask2.46x2.31mm" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))
 		(property "Datasheet" "https://www.ti.com/lit/ds/symlink/drv8833.pdf" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))
 		(property "Description" "Dual-H-Brücke, hier im Parallelbetrieb (bis ca. 3 A)" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))
 		(property "LCSC Part" "C50506" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))

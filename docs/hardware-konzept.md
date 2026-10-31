@@ -77,6 +77,9 @@ bekannt; der *Salto Sammy* zeigt, dass Elektronik in diese Form passt.
    Bauteil). Die Platine wird trotzdem beidseitig gefertigt, nur einseitig bestückt.
 3. **Beidseitig bestückt**: letzter Ausweg (teurer, nicht bei jedem Hersteller günstig).
 
+**Ergebnis der Probeplatzierung (2026-11-01):** Weg 1 passt nicht, **Weg 2 passt mit Reserve**,
+Platine B bleibt eine reine Brücke. Details und Zahlen: [offene-punkte.md](offene-punkte.md).
+
 Bauteile sind so gewählt, dass alle drei Wege gehen: kleinste Bauform 0603, ICs mit Beinchen
 (SOT-23, HTSSOP), gängige Teile mehrerer Hersteller (siehe `hardware/bom/teile.csv`).
 - **Die beiden Enden sind direkt die H-Brücken-Ausgänge** (OUT1 / OUT2). Deshalb ist die
@@ -207,7 +210,7 @@ mehrfaches Umlegen des Original-Hebels.
   also keine Längenüberbrückung.
 - Altes Modell hat keinen Deckel → Kabel kommt einfach oben aus dem Fach.
 
-## 7. Software (Kurzüberblick, eigenes Dokument folgt)
+## 7. Software (Kurzüberblick, Details in [software-konzept.md](software-konzept.md))
 
 - Firmware: **MicroPython + Microdot** (asynchroner Webserver, WebSockets) als Empfehlung,
   da das bestehende Projekt MicroPython nutzt. Alternative: Arduino/PlatformIO mit

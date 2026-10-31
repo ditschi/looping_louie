@@ -40,5 +40,6 @@ else
     warn "sym-lib-table fehlt  → KiCad-Schaltplaneditor einmal öffnen"
 fi
 if command -v java >/dev/null; then ok "java (für Freerouting)"; else warn "java fehlt (nur für Freerouting nötig)"; fi
+if [[ -f "$(dirname "$0")/../../tools/freerouting.jar" || -n "${FREEROUTING_JAR:-}" ]]; then ok "Freerouting"; else warn "Freerouting fehlt (für just route)  → ./setup.sh"; fi
 
 exit $fail

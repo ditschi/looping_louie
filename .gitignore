@@ -7,8 +7,11 @@ fp-info-cache
 _autosave-*
 *.bak
 
-# Erzeugte Ausgaben (make erc/drc/render/fab)
+# Erzeugte Ausgaben (just erc/drc/render/fab)
 build/
+
+# Heruntergeladene Werkzeuge (setup.sh)
+tools/
 
 # Python
 __pycache__/

@@ -18,7 +18,8 @@ Einzeln:
 | just | Befehls-Runner (alle Entwicklungsbefehle) | `sudo apt install just` | ja |
 | zip, python3 | ZIP der Gerber-Daten, Skripte | meist vorhanden | ja |
 | kicad-packages3d | 3D-Modelle der KiCad-Standardbauteile (für Renders) | `sudo apt install kicad-packages3d` | empfohlen |
-| Java | nur für den Autorouter Freerouting | z. B. `sudo apt install default-jre` | nein |
+| Java ≥ 21 + Freerouting | Autorouter (`just route`); `setup.sh` lädt `tools/freerouting.jar` | `sudo apt install default-jre` | für Routing |
+| python3-matplotlib | Platzierungsbild (`just plot`) | `sudo apt install python3-matplotlib` | ja |
 
 Nach der Installation KiCad einmal mit Schaltplan- und Platineneditor öffnen, damit die globalen
 Bibliothekstabellen angelegt werden. Dann:
@@ -44,6 +45,9 @@ just parts-update  alle LCSC-Teile neu holen
 just symbols       projekteigene Symbole erzeugen (hardware/lib/louie.kicad_sym)
 just schematic     Schaltplan der Hauptplatine aus dem Generator erzeugen (überschreibt!) + ERC
 just outline       AA-Umriss der Hauptplatine setzen (Maße in hardware/scripts/board_outline.py)
+just pcb           Schaltplan auf die Platine übertragen und platzieren (überschreibt Layout!)
+just plot          Platzierung mit Luftlinien als Bild (build/main-board/placement.png)
+just route         automatisch routen (Freerouting) und Masseflächen füllen
 just erc           Schaltplan prüfen
 just drc           Platine prüfen, inkl. Abgleich mit dem Schaltplan
 just sch-pdf       Schaltplan als PDF
@@ -78,6 +82,16 @@ Alle Ausgaben landen in `build/<platine>/` (nicht im Git).
   keine Pin-Typen haben und die ERC-Prüfung damit wertlos wäre.
 - **Sobald der Schaltplan im KiCad-GUI bearbeitet wird, ist der GUI-Stand maßgeblich.**
   Dann `just schematic` nicht mehr aufrufen, es würde die Änderungen überschreiben.
+
+## Layout
+
+- `just pcb` überträgt den Schaltplan per Skript auf die Platine (`gen_main_pcb.py`): Footprints mit
+  Netzen, Designregeln, Netzklasse „Power“ (0,6 mm), Antennen-Sperrflächen, Thermal-Vias, Masseflächen.
+  Die Platzierung steht in `placement_zweiseitig.py` (bzw. `placement_einseitig.py` als Machbarkeitstest).
+- `just plot` zeichnet Ober- und Unterseite mit Luftlinien und meldet Überlappungen.
+- `just route` routet mit Freerouting. Danach `just drc` und im GUI nacharbeiten.
+- **Wie beim Schaltplan gilt:** Sobald im GUI geroutet oder verschoben wird, ist der GUI-Stand
+  maßgeblich; `just pcb` würde alles überschreiben.
 
 ## KiCad-Projekte
 

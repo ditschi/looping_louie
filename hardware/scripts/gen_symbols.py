@@ -101,7 +101,7 @@ def drv8833_parallel():
         '\t\t(exclude_from_sim no) (in_bom yes) (on_board yes)\n'
         f'\t\t(property "Reference" "U" (at {-half_w} {top + 1.27} 0) (effects (font (size 1.27 1.27)) (justify left)))\n'
         f'\t\t(property "Value" "DRV8833PWP" (at {half_w} {bottom - 1.27} 0) (effects (font (size 1.27 1.27)) (justify right)))\n'
-        '\t\t(property "Footprint" "Package_SO:HTSSOP-16-1EP_4.4x5mm_P0.65mm_EP3.4x5mm_Mask2.46x2.31mm_ThermalVias"'
+        '\t\t(property "Footprint" "Package_SO:HTSSOP-16-1EP_4.4x5mm_P0.65mm_EP3.4x5mm_Mask2.46x2.31mm"'
         f' (at 0 0 0) {HIDDEN})\n'
         f'\t\t(property "Datasheet" "https://www.ti.com/lit/ds/symlink/drv8833.pdf" (at 0 0 0) {HIDDEN})\n'
         f'\t\t(property "Description" "Dual-H-Brücke, hier im Parallelbetrieb (bis ca. 3 A)" (at 0 0 0) {HIDDEN})\n'
