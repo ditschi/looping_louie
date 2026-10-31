@@ -70,3 +70,34 @@ Bilder: `just plot` → `build/main-board/placement.png`, `just render` → `bui
 | Bestückungsdruck | Bezeichner nur auf der Fab-Ebene | auf 13,5 mm Breite nicht lesbar unterzubringen |
 | Endkontakt-Pads | 2 × 2 mm Platzhalter | 3 × 3 mm kollidiert mit der Antennen-Sperrfläche |
 | Routing | Freerouting (Autorouter) als Startpunkt | Skript-Routing: unrealistisch; nur Hand-Routing: dauert, kommt danach |
+
+---
+
+## Ideen (später analysieren)
+
+### I1: Versorgung über USB-C-Akku-AA-Zellen statt LiPo + Ladeplatine
+
+Idee: Bei den 2×AA-Modellen eine handelsübliche, per USB-C ladbare AA-Zelle als Stromquelle nutzen
+(z. B. im zweiten Fach statt der Brücke). Laden wäre dann gelöst, Ladeplatine und externer Akku entfallen.
+
+Erste Gedanken, noch nicht geprüft:
+- Solche Zellen liefern **konstant 1,5 V** (interner Li-Ion-Akku + Abwärtswandler). Eine Zelle reicht nicht
+  für ESP32 (3,3 V) und Motor → bräuchte einen Aufwärtswandler auf der Hauptplatine. Motorspannung über
+  1,5 V hinaus (Turbo) ebenfalls nur per Aufwärtswandler.
+- Belegt ein Fach → die Hauptplatine müsste dann allein in das andere Fach, und die Fachbrücke/Kontakte
+  ändern sich (Akku-Zelle und Hauptplatine wären in Reihe statt Brücke).
+- Strombelastbarkeit dieser Zellen (oft 2–3 A max., interne Schutzabschaltung) und Kapazität
+  (meist 1500–2500 mWh) prüfen.
+- Beim alten Modell (1× C) nicht direkt übertragbar.
+
+### I2: USB-C-Buchse direkt auf der Hauptplatine, nach oben zeigend
+
+Idee: Eine USB-C-Buchse senkrecht ("vertical"/"upright") auf der Platine, Öffnung nach oben bzw. zur Seite,
+sodass man wie bei einer USB-C-Akkuzelle direkt ein Kabel an die Platine im Fach stecken kann.
+
+Erste Gedanken, noch nicht geprüft:
+- Es gibt **vertikale USB-C-Buchsen** (Platinenmontage, Stecker kommt senkrecht von oben) und
+  **mid-mount**-Varianten. Bauhöhe vertikal meist 6–10 mm → passt in der AA-Hülle nur am Rand der Kurve
+  bzw. gar nicht; mid-mount (Platinenausschnitt) könnte passen. Zu prüfen.
+- Dann könnte der Laderegler auf die Hauptplatine; der Akku bleibt extern (oder I1).
+- Zugänglichkeit: neues Modell hat einen Deckel → Buchse nur bei offenem Fach erreichbar.
