@@ -143,19 +143,21 @@ def antenna_keepout(board, module):
         x0, x1 = pad_right + mm(0.5), crt.GetRight()
     y0, y1 = mm(ORIGIN[1] - BOARD_W / 2), mm(ORIGIN[1] + BOARD_W / 2 - ANTENNA_TRACK_STRIP)
 
-    def rule_area(name, layers, footprints):
+    def rule_area(name, layers, footprints, xa=None, xb=None, tracks=True, ya=None, yb=None):
+        xa, xb = x0 if xa is None else xa, x1 if xb is None else xb
+        ya, yb = y0 if ya is None else ya, y1 if yb is None else yb
         zone = pcbnew.ZONE(board)
         zone.SetIsRuleArea(True)
         zone.SetZoneName(name)
         zone.SetLayerSet(layers)
-        zone.SetDoNotAllowTracks(True)
+        zone.SetDoNotAllowTracks(tracks)
         zone.SetDoNotAllowVias(True)
         zone.SetDoNotAllowCopperPour(True)
         zone.SetDoNotAllowPads(footprints)
         zone.SetDoNotAllowFootprints(footprints)
         outline = zone.Outline()
         outline.NewOutline()
-        for x, y in [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]:
+        for x, y in [(xa, ya), (xb, ya), (xb, yb), (xa, yb)]:
             outline.Append(x, y)
         board.Add(zone)
 
@@ -163,6 +165,12 @@ def antenna_keepout(board, module):
     bottom = pcbnew.LSET()
     bottom.AddLayer(pcbnew.B_Cu)
     rule_area("Antenne unten", bottom, footprints=True)
+    # Platinenende vor der Antenne: keine Kupferfläche und keine Vias, aber Endkontakt und
+    # dessen Leiterbahn erlaubt
+    if x0 > mm(ORIGIN[0] - BOARD_L / 2):
+        rule_area("Antenne Ende", pcbnew.LSET.AllCuMask(), footprints=False,
+                  xa=mm(ORIGIN[0] - BOARD_L / 2), xb=x0, tracks=False,
+                  ya=mm(ORIGIN[1] - BOARD_W / 2), yb=mm(ORIGIN[1] + BOARD_W / 2))
     return pcbnew.ToMM(x1 - x0)
 
 
@@ -254,6 +262,15 @@ def module_ground_vias(board, module):
             gnd = pad.GetNet()
             q = pad.GetPosition()
             add_via(board, gnd, q.x, q.y)
+
+
+def ground_via_at_pad(board, footprint, number, dx, dy, width=0.4):
+    """Festes GND-Via neben einem Pad (dx/dy in mm relativ zur Padmitte) mit Stichleitung."""
+    pad = pad_of(footprint, number)
+    q = pad.GetPosition()
+    v = (q.x + mm(dx), q.y + mm(dy))
+    add_track(board, pad.GetNet(), pcbnew.F_Cu, width, (q.x, q.y), v)
+    add_via(board, pad.GetNet(), *v)
 
 
 def preroute_supply(board, fps):
@@ -415,6 +432,8 @@ def main(variant):
     preroute_outputs(board, footprints["U2"], footprints["BT1"], footprints["BT2"], footprints["R1"], footprints["R4"])
     preroute_supply(board, footprints)
     module_ground_vias(board, footprints["U1"])
+    ground_via_at_pad(board, footprints["R1"], "2", 0.84, -0.55)   # Shunt: Motor-Rückstrom nach GND
+    ground_via_at_pad(board, footprints["C12"], "2", 0.0, -1.0, width=0.25)
     copper_zones(board, netinfo["/GND"], netinfo["/VSYS"])
     pcbnew.SaveBoard(str(PCB), board)
     top = sum(1 for p in placement.values() if p[3] == "F")

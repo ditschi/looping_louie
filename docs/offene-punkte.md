@@ -21,12 +21,14 @@ Erreicht (`just pcb` + `just route`):
   DRV8833, ca. 40 Stitching-Vias
 - Antennenbereich frei von Kupfer (Randstreifen für die OUT_A-Bahn zum Endkontakt)
 
-**Rest für die Handarbeit im KiCad-GUI** (Stand letzter Lauf, schwankt je Lauf leicht):
-- 3 Signalverbindungen: +3V3 → R3, DRV_IN1 (Modul → DRV8833), DRV_nFAULT (Modul → DRV8833)
-- 1 GND-Pad (C12) und einige kleine GND-Flächeninseln ohne Verbindung → je ein Via setzen
-- 3 GND-Pads mit nur einer Thermal-Speiche (C14, U3, C6) → Speichen/Verbindung ergänzen
-- 3 überflüssige Vias (USB_D±, EN) entfernen
-- Danach: **ab hier im GUI weiterarbeiten** – `just pcb` und `just route` würden alles überschreiben.
+**Rest für die Handarbeit im KiCad-GUI** (letzter Lauf; die Liste schwankt je Freerouting-Lauf leicht):
+- 3 dünne Messleitungen: ISEN → R8, SENSE (R5 → Modul), VBAT_ADC (R6/R7 → Modul)
+- 2 kleine GND-Flächeninseln → je ein Via setzen
+- 3 GND-Pads mit nur einer Thermal-Speiche → Verbindung verbessern; 1 überflüssiges Via entfernen
+- 1 Via von Freerouting ggf. 0,05 mm zu nah am Rand (je nach Lauf) → verschieben
+- **Ab hier im GUI weiterarbeiten** – `just pcb` und `just route` würden die Handarbeit überschreiben.
+- Vor der Bestellung zusätzlich: ESP-Footprint gegen Datenblatt prüfen (A11), N4X-Frage (F12),
+  Endkontakte/Mechanik (F3).
 
 Bilder: `just plot`, `just render`, Kupferlagen: siehe Befehle in `docs/entwicklung.md`.
 
