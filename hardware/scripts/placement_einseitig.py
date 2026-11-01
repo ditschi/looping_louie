@@ -30,6 +30,9 @@ PLACEMENT = {
     # 3V3-Kondensatoren
     "C10": (COL2, 4.25, 0, "F"),        # 100 nF 3V3
     "C9": (0.65, 5.6, 0, "F"),           # 10 µF 3V3 (0603)
+    # Beschleunigungssensor: Position auf der Platine ist für die Messung egal
+    "U4": (20.9, -4.6, 0, "F"),         # LIS2DH12 (rechte obere Ecke)
+    "C15": (20.9, -2.4, 0, "F"),        # 100 nF
     # Ausgangsstufe: DRV8833 um 90° gedreht – Eingangsreihe (Pins 9–16) zum Rand (-y),
     # Ausgangsreihe (Pins 1–8) zur Platinenmitte
     "U2": (4.6, -1.0, 90, "F"),
@@ -39,7 +42,7 @@ PLACEMENT = {
     "R8": (7.7, 3.5, 0, "F"),           # Filter Shunt -> ADC
     "C14": (7.7, 4.7, 0, "F"),
     "R3": (9.7, 5.95, 0, "F"),          # Pull-up OUT_A (Erkennung)
-    "R5": (7.7, 5.95, 0, "F"),          # OUT_A -> SENSE
+    "R5": (-1.9, 5.5, 0, "F"),          # OUT_A -> SENSE, an der Modulkante (OUT_A per Via von unten)
     "R4": (20.0, 4.5, 0, "F"),          # Pull-down OUT_B, neben Endkontakt B
     "R6": (9.6, 2.4, 0, "F"),           # Akkuspannungs-Teiler oben
     "R7": (11.6, 2.4, 0, "F"),          # Teiler unten
@@ -56,14 +59,9 @@ PLACEMENT = {
 
     # ---- Unterseite: nur Kupferflächen ---------------------------------------------------------
     "J1": (18.5, 0, 0, "B"),            # Lötpads Kabel zur Ladeplatine
-    "TP1": (-12.7, 3.8, 0, "B"),        # 3V3
-    "TP7": (-10.0, 3.8, 0, "B"),        # IO2 (frei)
-    "TP3": (-7.3, 3.8, 0, "B"),         # EN
-    "TP2": (-4.6, 3.8, 0, "B"),         # GND
-    "TP8": (-12.7, -3.8, 0, "B"),       # IO8 (frei)
-    "TP5": (-10.0, -3.8, 0, "B"),       # TXD
-    "TP6": (-7.3, -3.8, 0, "B"),        # RXD
-    "TP4": (-4.6, -3.8, 0, "B"),        # BOOT
+    # Lötpads im 2,54-mm-Raster (Stiftleiste/Kabel möglich)
+    "J2": (-8.55, 3.8, 0, "B"),         # Erweiterung: 3V3, GND, SDA/IO8, SCL/IO2, INT/RXD
+    "J3": (-9.39, -3.8, 0, "B"),        # Service: EN, TXD, BOOT, GND (Taster an BOOT+GND)
     "BT1": (-21.4, 0, 0, "B"),          # Endkontakt OUT_A (Antennen-Ende)
     "BT2": (21.4, 0, 0, "B"),           # Endkontakt OUT_B
 }

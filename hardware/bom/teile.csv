@@ -19,7 +19,10 @@ haupt,R6-R7+C13,1,Teiler Akkuspannung (4.5 uA Ruhestrom),470 k / 470 k / 100 nF,
 haupt,R8+C14,1,RC-Filter Shunt -> ADC,1 k / 100 nF,generisch,,0402,,,kicad,
 haupt,D1+R9,1,Status-LED,gruen / 1 k,generisch,,0402,,,kicad,
 haupt,R10-R11,2,Pull-ups Strapping-Pins IO2 und IO8,10 k,generisch,,0402,,,kicad,
-haupt,TP1-TP8,8,Testpads unten (3V3 GND EN BOOT/IO9 TXD RXD IO2 IO8; IO2/IO8 frei z. B. fuer I2C),,Pad,,1.5 mm rund,,,kicad,
+haupt,J2,1,Erweiterungs-Loetpads unten (3V3 GND SDA/IO8 SCL/IO2 INT/RXD) fuer externe I2C-Module,,Loetpads (keine Bestueckung),,5 Pads 1.4 mm Raster 2.54 mm,,,louie,
+haupt,J3,1,Service-Loetpads unten (EN TXD BOOT GND); Taster an BOOT+GND,,Loetpads (keine Bestueckung),,4 Pads 1.4 mm Raster 2.54 mm,,,louie,
+haupt,U4,1,Beschleunigungssensor (I2C 0x18 INT1 an RXD),,LIS2DH12TR,ST,LGA-12 2x2x1 mm,C110926,LIS2DW12TR; SC7A20 (Klon),louie,geprueft
+haupt,C15,1,Abblock LIS2DH12,100 nF 10 V X7R,generisch,,0402,,,kicad,
 haupt,BT1-BT2,2,Kontakte an den Platinenenden (OUT_A / OUT_B),,offen,,Platzhalter-Pad 3x3 mm,,,kicad,Mechanik klaeren
 lade,J101,1,USB-C Buchse (Laden + Daten),,TYPE-C-31-M-12,Korean Hroparts,USB-C 16-polig SMD,C165948,beliebige 16-polige USB-C-Buchse,lcsc,geprueft
 lade,U101,1,LiPo-Laderegler 1S,,MCP73831T-2ACI/OT,Microchip,SOT-23-5,C424093,TP4056 (mehr Strom),lcsc,geprueft

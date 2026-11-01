@@ -309,7 +309,7 @@ def preroute_supply(board, fps):
     add_track(board, net, pcbnew.F_Cu, w, v2, (c4[0], bus_y))
 
 
-def preroute_outputs(board, driver, contact_a, contact_b, shunt, pulldown_b):
+def preroute_outputs(board, driver, contact_a, contact_b, shunt, pulldown_b, isen_filter, sense_r):
     """Ausgangsseite des DRV8833 vorab routen (Pinfolge der Ausgangsreihe: nSLEEP, A, ISEN, B, B,
     ISEN, A, nFAULT – verschachtelt, daran scheitert der Autorouter).
 
@@ -331,6 +331,8 @@ def preroute_outputs(board, driver, contact_a, contact_b, shunt, pulldown_b):
     add_track(board, isen, pcbnew.F_Cu, w, (x["3"], row_y), (x["3"], bar_y), (x["6"], bar_y), (x["6"], row_y))
     s1 = pad_of(shunt, "1").GetPosition()
     add_track(board, isen, pcbnew.F_Cu, w, (x["3"], bar_y), (s1.x, s1.y))
+    f1 = pad_of(isen_filter, "1").GetPosition()  # Abgriff zum Strommess-Filter R8
+    add_track(board, isen, pcbnew.F_Cu, SUPPLY_TRACK, (x["6"], bar_y), (f1.x - mm(0.32), bar_y), (f1.x, f1.y))
     # OUT_B
     mid_b = (x["4"] + x["5"]) // 2
     add_track(board, out_b, pcbnew.F_Cu, 0.3, (mid_b, row_y), (mid_b, via_y))
@@ -352,6 +354,10 @@ def preroute_outputs(board, driver, contact_a, contact_b, shunt, pulldown_b):
     run_y = mm(ORIGIN[1] + 4.95)
     add_track(board, out_a, pcbnew.B_Cu, w, (ca.x, ca.y), (ca.x, strip_y), (mm(ORIGIN[0] - 14.0), strip_y),
               (mm(ORIGIN[0] - 12.85), run_y), (x["2"] - mm(1.8), run_y), (x["2"], via_y))
+    # SENSE-Schutzwiderstand R5 holt OUT_A per Via von der Bahn unten
+    r5 = pad_of(sense_r, "1").GetPosition()
+    add_track(board, out_a, pcbnew.F_Cu, SUPPLY_TRACK, (r5.x, r5.y), (r5.x, run_y))
+    add_via(board, out_a, r5.x, run_y)
 
 
 def copper_zones(board, gnd, vsys):
@@ -429,11 +435,14 @@ def main(variant):
 
     keepout = antenna_keepout(board, footprints["U1"])
     thermal_vias(board, footprints["U2"], netinfo["/GND"])
-    preroute_outputs(board, footprints["U2"], footprints["BT1"], footprints["BT2"], footprints["R1"], footprints["R4"])
+    preroute_outputs(board, footprints["U2"], footprints["BT1"], footprints["BT2"], footprints["R1"], footprints["R4"],
+                     footprints["R8"], footprints["R5"])
     preroute_supply(board, footprints)
     module_ground_vias(board, footprints["U1"])
-    ground_via_at_pad(board, footprints["R1"], "2", 0.84, -0.55)   # Shunt: Motor-Rückstrom nach GND
+    ground_via_at_pad(board, footprints["R1"], "2", 0.84, -0.35)   # Shunt: Motor-Rückstrom nach GND
     ground_via_at_pad(board, footprints["C12"], "2", 0.0, -1.0, width=0.25)
+    ground_via_at_pad(board, footprints["C10"], "2", 0.0, -0.9, width=0.25)
+    ground_via_at_pad(board, footprints["C15"], "2", 0.0, 0.9, width=0.25)
     copper_zones(board, netinfo["/GND"], netinfo["/VSYS"])
     pcbnew.SaveBoard(str(PCB), board)
     top = sum(1 for p in placement.values() if p[3] == "F")

@@ -182,17 +182,18 @@ mehrfaches Umlegen des Original-Hebels.
 |---|---|---|
 | IO0 | VBAT_ADC | ADC Akkuspannung (Teiler 470k/470k) |
 | IO1 | ISEN_ADC | ADC Motorstrom (Shunt über RC-Filter) |
-| IO2 | – | Strapping-Pin, 10k Pull-up, sonst frei |
+| IO2 | SCL | I²C-Takt (LIS2DH12, Pad J2), Strapping-Pin, 10k Pull-up |
 | IO3 | SENSE | Hebel-Erkennung, Deep-Sleep-Wake |
 | IO4 | MOT_IN1 | DRV8833 AIN1+BIN1 (PWM) |
 | IO5 | MOT_IN2 | DRV8833 AIN2+BIN2 (PWM) |
 | IO6 | MOT_nSLEEP | DRV8833 Sleep (low = aus) |
 | IO7 | MOT_nFAULT | DRV8833 Fehler (Open Drain, interner Pull-up) |
-| IO8 | – | Strapping-Pin, 10k Pull-up, sonst frei |
-| IO9 | BOOT | Testpad; beim Reset auf GND = Download-Modus |
+| IO8 | SDA | I²C-Daten (LIS2DH12, Pad J2), Strapping-Pin, 10k Pull-up |
+| IO9 | BOOT | Pad J3, Taster gegen GND; beim Reset gedrückt = Download-Modus |
 | IO10 | LED | Status-LED über 1k |
 | IO18/IO19 | USB_D−/USB_D+ | Native USB über das Kabel zur Ladeplatine |
-| RXD0/TXD0 | RXD/TXD | Testpads (serielle Konsole, Reserve) |
+| RXD0 | RXD | INT1 des LIS2DH12, Pad J2 |
+| TXD0 | TXD | Pad J3 (serielle Konsole, Reserve; gibt beim Booten Daten aus) |
 
 ## 6. Mechanik und Adapter
 

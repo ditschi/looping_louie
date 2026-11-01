@@ -65,6 +65,7 @@ BLOCKS = [
     ("Ausgangsstufe (DRV8833, beide Kanäle parallel, Strombegrenzung ca. 2 A)", (254, 25.4)),
     ("Schalter-/Last-Erkennung und Kontakte an den Platinenenden", (254, 175.26)),
     ("Akkuspannung", (25.4, 175.26)),
+    ("Beschleunigungssensor (I2C 0x18, INT1 an RXD)", (25.4, 228.6)),
 ]
 
 PARTS = [
@@ -103,14 +104,13 @@ PARTS = [
     R("R9", "1k", "LED", "LED_A", (152.4, 162.56)),
     dict(ref="D1", lib="Device:LED", value="grün", fp="LED_SMD:LED_0402_1005Metric",
          at=(170.18, 172.72), pins={"2": "LED_A", "1": "GND"}),
-    TP("TP1", "3V3", "+3V3", (190.5, 162.56)),
-    TP("TP2", "GND", "GND", (203.2, 162.56)),
-    TP("TP3", "EN", "EN", (215.9, 162.56)),
-    TP("TP4", "BOOT", "BOOT", (228.6, 162.56)),
-    TP("TP5", "TXD", "TXD", (190.5, 185.42)),
-    TP("TP6", "RXD", "RXD", (203.2, 185.42)),
-    TP("TP7", "IO2", "IO2", (215.9, 185.42)),     # frei für andere Spielzeuge
-    TP("TP8", "IO8", "IO8", (228.6, 185.42)),     # frei für andere Spielzeuge
+    # Unterseite: Lötpads im 2,54-mm-Raster (Stiftleiste/Kabel), keine Bestückung
+    dict(ref="J2", lib="Connector_Generic:Conn_01x05", value="Erweiterung I2C", bom=False,
+         fp="louie:SolderPads_1x05_P2.54mm", at=(203.2, 172.72),
+         pins={"1": "+3V3", "2": "GND", "3": "IO8", "4": "IO2", "5": "RXD"}),   # 3V3 GND SDA SCL INT
+    dict(ref="J3", lib="Connector_Generic:Conn_01x04", value="Service Taster", bom=False,
+         fp="louie:SolderPads_1x04_P2.54mm", at=(228.6, 172.72),
+         pins={"1": "EN", "2": "TXD", "3": "BOOT", "4": "GND"}),                # Taster an 3+4
 
     # --- Ausgangsstufe ---------------------------------------------------------------------------
     dict(ref="U2", lib="louie:DRV8833PWP_parallel", value="DRV8833PWP", lcsc="C50506",
@@ -133,6 +133,12 @@ PARTS = [
     R("R3", "100k", "+3V3", "OUT_A", (269.24, 198.12)),
     R("R4", "10k", "OUT_B", "GND", (284.48, 198.12)),
     R("R5", "100k", "OUT_A", "SENSE", (299.72, 198.12)),
+    # --- Beschleunigungssensor ----------------------------------------------------------------
+    dict(ref="U4", lib="louie:LIS2DH12", value="LIS2DH12TR", lcsc="C110926",
+         fp="Package_LGA:LGA-12_2x2mm_P0.5mm", at=(76.2, 246.38), ref_at=(-7.62, -8.89), val_at=(2.54, 11.43),
+         pins={"9": "+3V3", "10": "+3V3", "2": "+3V3", "3": "GND", "5": "GND", "6": "GND",
+               "1": "IO2", "4": "IO8", "12": "RXD"}),
+    C("C15", "100n", "+3V3", "GND", (38.1, 246.38)),
     TP("BT1", "Kontakt A", "OUT_A", (322.58, 198.12), fp=TP_CONTACT),
     TP("BT2", "Kontakt B", "OUT_B", (337.82, 198.12), fp=TP_CONTACT),
 ]

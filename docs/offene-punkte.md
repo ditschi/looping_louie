@@ -21,11 +21,17 @@ Erreicht (`just pcb` + `just route`):
   DRV8833, ca. 40 Stitching-Vias
 - Antennenbereich frei von Kupfer (Randstreifen für die OUT_A-Bahn zum Endkontakt)
 
-**Rest für die Handarbeit im KiCad-GUI** (letzter Lauf; die Liste schwankt je Freerouting-Lauf leicht):
-- 3 dünne Messleitungen: ISEN → R8, SENSE (R5 → Modul), VBAT_ADC (R6/R7 → Modul)
-- 2 kleine GND-Flächeninseln → je ein Via setzen
-- 3 GND-Pads mit nur einer Thermal-Speiche → Verbindung verbessern; 1 überflüssiges Via entfernen
-- 1 Via von Freerouting ggf. 0,05 mm zu nah am Rand (je nach Lauf) → verschieben
+**Neu (2026-11-01):** Beschleunigungssensor **LIS2DH12 oben (maschinell bestückt)**, rechte obere Ecke,
+I²C an IO2/IO8 (0x18), INT1 an RXD. Unten zwei Lötpad-Reihen im 2,54-mm-Raster:
+**J2 Erweiterung** (3V3, GND, SDA, SCL, INT) für externe I²C-Module und **J3 Service** (EN, TXD, BOOT, GND)
+– ein Taster kommt an BOOT + GND. Weitere freie Pins gibt es nicht (alle GPIOs belegt).
+
+**Rest für die Handarbeit im KiCad-GUI** – Freerouting ist hier am Limit und schwankt stark:
+ein Lauf hatte alle Signale geroutet, andere lassen 4–6 dünne Leitungen offen (zuletzt z. B. EN,
+ISEN_ADC, USB_D+, DRV_IN2, DRV_nSLEEP) plus einzelne GND-Inseln.
+- offene Leitungen im GUI ziehen (alles Signale ohne Strom, 0,2 mm reichen)
+- GND-Inseln / schwach angebundene GND-Pads mit je einem Via versehen
+- vereinzelte Vias zu nah am Rand verschieben
 - **Ab hier im GUI weiterarbeiten** – `just pcb` und `just route` würden die Handarbeit überschreiben.
 - Vor der Bestellung zusätzlich: ESP-Footprint gegen Datenblatt prüfen (A11), N4X-Frage (F12),
   Endkontakte/Mechanik (F3).
@@ -73,6 +79,8 @@ Bilder: `just plot`, `just render`, Kupferlagen: siehe Befehle in `docs/entwickl
 | A13 | Die **Unterseiten-Bauteile** (max. ca. 0,9 mm hoch) stören in der AA-Hülle nicht. | Abhängig von F4. | – |
 | A15 | **Mindest-Bahnbreite 0,12 mm** (Freerouting verjüngt an Pads). | Aisler & Co. verlangen teils 0,125–0,15 mm. | Engstellen im GUI auf 0,15 mm verbreitern |
 | A16 | **Leistungsbahnen 0,4 mm**, OUT_A/OUT_B je über **ein** Via 0,3 mm pro Lagenwechsel. | Ein 0,3-mm-Via trägt grob 1 A; reicht bei < 1 A Motorstrom. | zweites Via parallel, breitere Bahnen |
+| A18 | **LIS2DH12-INT1 an RXD (GPIO20)**: INT ist nach dem Einschalten Push-Pull aktiv-high; an RXD stört das den Boot nicht. Wecken nur aus Light Sleep (GPIO20 kann nicht aus Deep Sleep wecken). | Laut Recherche, Datenblatt noch prüfen. | BMA400 (INT aktiv-low) an IO2 für Deep-Sleep-Wecken |
+| A19 | **Ob ein Schlag auf die Spielertaste sich vom laufenden Motor abhebt**, ist ungeklärt. | Nicht gemessen. | Messen am Steckbrett-Prototyp mit Breakout-Modul |
 | A17 | **GND-Vias direkt in den Mittel-Pads des ESP-Moduls** und im Thermal-Pad des DRV8833 (ungefüllt). | Lot kann bei der Bestückung abfließen. | gefüllte Vias (Aufpreis), Vias neben den Pads |
 | A14 | **Testpads** (3V3, GND, EN, BOOT, TXD, RXD) reichen für Erstinbetriebnahme und Notfall-Flashen. | – | Tag-Connect-Footprint (größer) |
 

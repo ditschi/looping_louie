@@ -118,13 +118,49 @@ def drv8833_parallel():
     )
 
 
+def lis2dh12():
+    """ST LIS2DH12 Beschleunigungssensor, LGA-12 2×2 mm (Pinbelegung laut Datenblatt/LCSC C110926)."""
+    half_w, top, bottom = 7.62, 7.62, -7.62
+    left = [("VDD", ["9"], "power_in"), ("VDD_IO", ["10"], "power_in"), ("CS", ["2"], "input"),
+            ("SDO/SA0", ["3"], "input"), ("RES", ["5"], "passive")]
+    right = [("SCL/SPC", ["1"], "input"), ("SDA/SDI", ["4"], "bidirectional"),
+             ("INT1", ["12"], "output"), ("INT2", ["11"], "output")]
+    pins = []
+    for i, (name, nums, ptype) in enumerate(left):
+        pins.append(pin(ptype, -half_w - 2.54, round(top - 2.54 * (i + 1), 2), 0, name, nums[0]))
+    for i, (name, nums, ptype) in enumerate(right):
+        pins.append(pin(ptype, half_w + 2.54, round(top - 2.54 * (i + 1), 2), 180, name, nums[0]))
+    for i, num in enumerate(["6", "7", "8"]):
+        pins.append(pin("power_in" if i == 0 else "passive", 0, bottom - 2.54, 90, "GND", num, hidden=i > 0))
+    return (
+        '\t(symbol "LIS2DH12"\n'
+        '\t\t(pin_names (offset 1.016))\n'
+        '\t\t(exclude_from_sim no) (in_bom yes) (on_board yes)\n'
+        f'\t\t(property "Reference" "U" (at {-half_w} {top + 1.27} 0) (effects (font (size 1.27 1.27)) (justify left)))\n'
+        f'\t\t(property "Value" "LIS2DH12" (at {half_w} {top + 1.27} 0) (effects (font (size 1.27 1.27)) (justify right)))\n'
+        f'\t\t(property "Footprint" "Package_LGA:LGA-12_2x2mm_P0.5mm" (at 0 0 0) {HIDDEN})\n'
+        f'\t\t(property "Datasheet" "https://www.st.com/resource/en/datasheet/lis2dh12.pdf" (at 0 0 0) {HIDDEN})\n'
+        f'\t\t(property "Description" "3-Achsen-Beschleunigungssensor, I2C/SPI, 2 µA" (at 0 0 0) {HIDDEN})\n'
+        f'\t\t(property "LCSC Part" "C110926" (at 0 0 0) {HIDDEN})\n'
+        '\t\t(symbol "LIS2DH12_0_1"\n'
+        f'\t\t\t(rectangle (start {-half_w} {top}) (end {half_w} {bottom})\n'
+        '\t\t\t\t(stroke (width 0.254) (type default)) (fill (type background)))\n'
+        '\t\t)\n'
+        '\t\t(symbol "LIS2DH12_1_1"\n'
+        + "".join(pins) +
+        '\t\t)\n'
+        '\t\t(embedded_fonts no)\n'
+        '\t)\n'
+    )
+
+
 def main():
     LIB.write_text(
         '(kicad_symbol_lib\n'
         '\t(version 20241209)\n'
         '\t(generator "louie_gen_symbols")\n'
         '\t(generator_version "1.0")\n'
-        + esp32_c3_mini_1() + drv8833_parallel() +
+        + esp32_c3_mini_1() + drv8833_parallel() + lis2dh12() +
         ')\n'
     )
     print(f"{LIB.relative_to(LIB.parent.parent.parent)} geschrieben")

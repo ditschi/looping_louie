@@ -44,7 +44,11 @@ def _inside_board(board, pos):
 
 
 def _in_rule_area(board, pos):
-    return any(z.GetIsRuleArea() and z.GetDoNotAllowVias() and z.Outline().Contains(pos) for z in board.Zones())
+    """Liegt das Via (mit Radius und Abstand) ganz oder teilweise in einer Sperrfläche für Vias?"""
+    r = mm(VIA_D / 2)
+    probes = [pos] + [pcbnew.VECTOR2I(pos.x + dx, pos.y + dy) for dx, dy in ((r, 0), (-r, 0), (0, r), (0, -r))]
+    return any(z.GetIsRuleArea() and z.GetDoNotAllowVias() and z.Outline().Contains(q)
+               for z in board.Zones() for q in probes)
 
 
 def _in_zone(board, pos, layer, net):
