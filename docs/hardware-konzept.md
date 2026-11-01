@@ -212,6 +212,25 @@ mehrfaches Umlegen des Original-Hebels.
   also keine Längenüberbrückung.
 - Altes Modell hat keinen Deckel → Kabel kommt einfach oben aus dem Fach.
 
+### 6.1 Druckteile (`hardware/mechanik/huelle.scad`, Export: `just stl`)
+
+Alle Teile drucken **ohne Stützmaterial**; Montage nur durch Stecken, kein Werkzeug.
+
+| Teil | Anzahl | Druckausrichtung | Aufgabe |
+|---|---|---|---|
+| AA-Schale | 1 | aufrecht (gleicher Querschnitt über die Länge) | trägt die Platine von unten, Tasche für Lötpads und Kabel, Kabelfenster seitlich an J1 |
+| Kappe plus / minus | je 1 | Innenseite auf dem Bett | halten die Platinenenden in einem Schlitz (0,8 mm Überdeckung), Pluspol-Nippel optional |
+| C-Hülse | 1 (nur altes Modell) | aufrecht | AA→C-Adapter, Längsschlitz für das Kabel |
+
+- **Oberseite im AA-Format offen:** Die Platine (13,5 mm) ist fast so breit wie die AA-Hülle
+  (14,5 mm), über dem Modul bleibt am Rand keine Wandstärke. Das Fach selbst umschließt den
+  Einsatz; beim C-Adapter ist er vollständig eingeschlossen.
+- **Endkontakte:** Nickelband 4 × 0,15 mm auf BT1/BT2 löten, unter der Platine durch den
+  Schlitz der Kappe führen und außen über die Mitte umbiegen (beantwortet F3 vorläufig).
+- **Dübel:** 4 Stücke 1,75-mm-Filament à ca. 6 mm (Loch 1,95 mm), bei Bedarf mit einem Tropfen Kleber.
+- Montage: Bänder anlöten → Kabel an J1 löten und durchs Fenster führen → Platine in die Schale
+  → Kappen mit Dübeln aufstecken, Bänder umbiegen → (C) in die Hülse schieben, Kabel im Schlitz.
+
 ## 7. Software (Kurzüberblick, Details in [software-konzept.md](software-konzept.md))
 
 - Firmware: **MicroPython + Microdot** (asynchroner Webserver, WebSockets) als Empfehlung,

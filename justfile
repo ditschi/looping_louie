@@ -55,7 +55,7 @@ drc board="main-board": (_out board)
 sch-pdf board="main-board": (_out board)
     kicad-cli sch export pdf -o build/{{board}}/{{project}}-schaltplan.pdf {{hw}}/{{board}}/{{project}}.kicad_sch
 
-# 3D-Ansichten als PNG (oben, unten, schräg)
+# 3D-Ansichten als PNG (oben, unten, schräg oben, schräg unten)
 render board="main-board": (_out board + "/render")
     #!/usr/bin/env bash
     set -euo pipefail
@@ -64,6 +64,7 @@ render board="main-board": (_out board + "/render")
     kicad-cli pcb render --side top    --width 1600 --height 700 -o $out/top.png    $pcb
     kicad-cli pcb render --side bottom --width 1600 --height 700 -o $out/bottom.png $pcb
     kicad-cli pcb render --side top --rotate '-45,0,30' --zoom 1.3 --width 1600 --height 900 -o $out/iso.png $pcb
+    kicad-cli pcb render --side bottom --rotate '45,0,-30' --zoom 1.3 --width 1600 --height 900 -o $out/iso-bottom.png $pcb
 
 # Fertigungsdaten: Gerber, Bohrdaten, Bestückung, Stückliste (+ ZIP)
 fab board="main-board": (erc board) (drc board) (_out board + "/fab/gerber")
@@ -79,6 +80,59 @@ fab board="main-board": (erc board) (drc board) (_out board + "/fab/gerber")
         --group-by 'Value,Footprint' -o $out/{{project}}-stueckliste.csv $sch
     rm -f $out/{{project}}-gerber.zip && zip -qj $out/{{project}}-gerber.zip $out/gerber/*
     echo "Fertigungsdaten in $out/"
+
+# 3D-Druckteile der Hülle als STL (build/mechanik/), Vorschau als PNG
+stl: (_out "mechanik")
+    #!/usr/bin/env bash
+    set -euo pipefail
+    scad={{hw}}/mechanik/huelle.scad
+    for t in aa_schale kappe_plus kappe_minus c_huelse; do
+        openscad -q -D "teil=\"druck_$t\"" -o build/mechanik/$t.stl $scad
+    done
+    for t in baugruppe baugruppe_c explosion; do
+        openscad -q -D "teil=\"$t\"" --render --imgsize 1600,900 --viewall --autocenter \
+            --camera 0,0,0,55,0,25,0 --colorscheme Tomorrow -o build/mechanik/$t.png $scad
+    done
+    echo "STL und Vorschau in build/mechanik/"
+
+# 3D-Modell der Platine: STEP (CAD), GLB (Ansehen), STL (3D-Druck/OpenSCAD) in build/<platine>/3d/
+modell board="main-board": (_out board + "/3d")
+    #!/usr/bin/env bash
+    set -euo pipefail
+    pcb={{hw}}/{{board}}/{{project}}.kicad_pcb
+    out=build/{{board}}/3d
+    kicad-cli pcb export step --force --subst-models --include-tracks --include-pads --include-zones \
+        --include-silkscreen --include-soldermask -o $out/{{project}}.step $pcb >/dev/null
+    kicad-cli pcb export glb  --force --subst-models --include-tracks --include-pads --include-zones \
+        --include-silkscreen --include-soldermask -o $out/{{project}}.glb  $pcb >/dev/null
+    kicad-cli pcb export stl  --force --subst-models -o $out/{{project}}.stl $pcb >/dev/null
+    ls -la $out
+
+# Alle Bilder der Hauptplatine neu erzeugen (docs/bilder/: 3D, Kupferlagen, Schaltplan, Platzierung)
+images board="main-board":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    pcb={{hw}}/{{board}}/{{project}}.kicad_pcb
+    sch={{hw}}/{{board}}/{{project}}.kicad_sch
+    out=docs/bilder
+    tmp=$(mktemp -d)
+    mkdir -p $out
+    kicad-cli pcb render --side top    --width 1800 --height 700 -o $out/platine-oben.png  $pcb >/dev/null
+    kicad-cli pcb render --side bottom --width 1800 --height 700 -o $out/platine-unten.png $pcb >/dev/null
+    kicad-cli pcb render --side top    --rotate '-45,0,30'  --zoom 1.3 --width 1800 --height 1000 -o $out/platine-3d-oben.png  $pcb >/dev/null
+    kicad-cli pcb render --side bottom --rotate '45,0,-30'  --zoom 1.3 --width 1800 --height 1000 -o $out/platine-3d-unten.png $pcb >/dev/null
+    for L in F B; do
+        mirror=""; [ $L = B ] && mirror="--mirror"
+        kicad-cli pcb export svg --mode-single --layers $L.Cu,Edge.Cuts,$L.Fab --fit-page-to-board \
+            --exclude-drawing-sheet $mirror -o $tmp/cu_$L.svg $pcb >/dev/null
+        inkscape $tmp/cu_$L.svg -w 1800 -b white -o $out/kupfer-$( [ $L = F ] && echo oben || echo unten ).png 2>/dev/null
+    done
+    kicad-cli sch export pdf -o $tmp/sch.pdf $sch >/dev/null
+    inkscape $tmp/sch.pdf -o $out/schaltplan.png -d 110 2>/dev/null
+    {{kicad_python}} {{hw}}/scripts/plot_layout.py 2>&1 | grep -v "swig/python detected a memory leak" >/dev/null || true
+    cp build/{{board}}/placement.png $out/platzierung.png
+    rm -rf $tmp
+    ls $out
 
 # Erzeugte Ausgaben löschen (build/)
 clean:
