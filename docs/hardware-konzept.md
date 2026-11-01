@@ -77,7 +77,8 @@ bekannt; der *Salto Sammy* zeigt, dass Elektronik in diese Form passt.
    Bauteil). Die Platine wird trotzdem beidseitig gefertigt, nur einseitig bestückt.
 3. **Beidseitig bestückt**: letzter Ausweg (teurer, nicht bei jedem Hersteller günstig).
 
-**Ergebnis der Probeplatzierung (2026-11-01):** Weg 1 passt nicht, **Weg 2 passt mit Reserve**,
+**Ergebnis (2026-11-01):** Mit 0603 passt Weg 1 nicht, Weg 2 passt. Aus Kostengründen gewählt:
+**Weg 1b – einseitig mit 0402-Passiven und Lötpads statt Stecker** (passt, zu ca. 95 % geroutet).
 Platine B bleibt eine reine Brücke. Details und Zahlen: [offene-punkte.md](offene-punkte.md).
 
 Bauteile sind so gewählt, dass alle drei Wege gehen: kleinste Bauform 0603, ICs mit Beinchen

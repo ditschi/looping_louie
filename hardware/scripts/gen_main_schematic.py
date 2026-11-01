@@ -29,7 +29,8 @@ LIBS = {
     "power": KICAD_SYMBOLS / "power.kicad_sym",
 }
 
-R0603 = "Resistor_SMD:R_0603_1608Metric"
+R0402 = "Resistor_SMD:R_0402_1005Metric"
+C0402 = "Capacitor_SMD:C_0402_1005Metric"
 C0603 = "Capacitor_SMD:C_0603_1608Metric"
 C0805 = "Capacitor_SMD:C_0805_2012Metric"
 C1206 = "Capacitor_SMD:C_1206_3216Metric"
@@ -37,11 +38,11 @@ TP_SMALL = "TestPoint:TestPoint_Pad_D1.5mm"
 TP_CONTACT = "TestPoint:TestPoint_Pad_2.0x2.0mm"  # Platzhalter, Kontaktmechanik offen
 
 
-def R(ref, value, n1, n2, at, fp=R0603):
+def R(ref, value, n1, n2, at, fp=R0402):
     return dict(ref=ref, lib="Device:R", value=value, fp=fp, at=at, pins={"1": n1, "2": n2})
 
 
-def C(ref, value, n1, n2, at, fp=C0603):
+def C(ref, value, n1, n2, at, fp=C0402):
     return dict(ref=ref, lib="Device:C", value=value, fp=fp, at=at, pins={"1": n1, "2": n2})
 
 
@@ -61,15 +62,15 @@ BLOCKS = [
     ("Versorgung und Kabel zur Ladeplatine", (25.4, 25.4)),
     ("3,3-V-Regler", (25.4, 111.76)),
     ("ESP32-C3", (139.7, 25.4)),
-    ("Motorstufe (beide Kanäle parallel, Strombegrenzung ca. 2 A)", (254, 25.4)),
-    ("Hebel-Erkennung und Kontakte an den Platinenenden", (254, 175.26)),
+    ("Ausgangsstufe (DRV8833, beide Kanäle parallel, Strombegrenzung ca. 2 A)", (254, 25.4)),
+    ("Schalter-/Last-Erkennung und Kontakte an den Platinenenden", (254, 175.26)),
     ("Akkuspannung", (25.4, 175.26)),
 ]
 
 PARTS = [
     # --- Kabel zur Ladeplatine: 1 VSYS, 2 D+, 3 D-, 4 GND --------------------------------------
-    dict(ref="J1", lib="Connector_Generic:Conn_01x04", value="Ladeplatine",
-         fp="Connector_JST:JST_SH_SM04B-SRSS-TB_1x04-1MP_P1.00mm_Horizontal", lcsc="C160404",
+    dict(ref="J1", lib="Connector_Generic:Conn_01x04", value="Kabel Ladeplatine",
+         fp="louie:SolderPads_1x04_P2.00mm", bom=False,  # Lötpads für Litzen, keine Bestückung
          at=(50.8, 50.8), pins={"1": "VSYS", "2": "USB_D+", "3": "USB_D-", "4": "GND"}),
     FLAG(1, "VSYS", (76.2, 43.18)),
     FLAG(2, "GND", (88.9, 43.18)),
@@ -90,17 +91,17 @@ PARTS = [
     dict(ref="U1", lib="louie:ESP32-C3-MINI-1", value="ESP32-C3-MINI-1-N4", lcsc="C2838502",
          fp="lcsc:WIFIM-SMD_ESP32-C3-MINI-1", at=(177.8, 76.2), ref_at=(-12.7, -16.51), val_at=(2.54, 15.24),
          pins={"3": "+3V3", "8": "EN", "12": "VBAT_ADC", "13": "ISEN_ADC", "5": "IO2", "6": "SENSE",
-               "18": "MOT_IN1", "19": "MOT_IN2", "20": "MOT_nSLEEP", "21": "MOT_nFAULT",
+               "18": "DRV_IN1", "19": "DRV_IN2", "20": "DRV_nSLEEP", "21": "DRV_nFAULT",
                "22": "IO8", "23": "BOOT", "16": "LED", "26": "USB_D-", "27": "USB_D+",
                "30": "RXD", "31": "TXD", "1": "GND"}),
-    C("C9", "10u", "+3V3", "GND", (152.4, 127), fp=C0805),
+    C("C9", "10u", "+3V3", "GND", (152.4, 127), fp=C0603),
     C("C10", "100n", "+3V3", "GND", (165.1, 127)),
     R("R2", "10k", "+3V3", "EN", (190.5, 127)),
     C("C12", "1u", "EN", "GND", (203.2, 127)),
     R("R10", "10k", "+3V3", "IO2", (215.9, 127)),   # Strapping-Pin
     R("R11", "10k", "+3V3", "IO8", (228.6, 127)),   # Strapping-Pin
     R("R9", "1k", "LED", "LED_A", (152.4, 162.56)),
-    dict(ref="D1", lib="Device:LED", value="grün", fp="LED_SMD:LED_0603_1608Metric",
+    dict(ref="D1", lib="Device:LED", value="grün", fp="LED_SMD:LED_0402_1005Metric",
          at=(170.18, 172.72), pins={"2": "LED_A", "1": "GND"}),
     TP("TP1", "3V3", "+3V3", (190.5, 162.56)),
     TP("TP2", "GND", "GND", (203.2, 162.56)),
@@ -108,13 +109,15 @@ PARTS = [
     TP("TP4", "BOOT", "BOOT", (228.6, 162.56)),
     TP("TP5", "TXD", "TXD", (190.5, 185.42)),
     TP("TP6", "RXD", "RXD", (203.2, 185.42)),
+    TP("TP7", "IO2", "IO2", (215.9, 185.42)),     # frei für andere Spielzeuge
+    TP("TP8", "IO8", "IO8", (228.6, 185.42)),     # frei für andere Spielzeuge
 
-    # --- Motorstufe ---------------------------------------------------------------------------
+    # --- Ausgangsstufe ---------------------------------------------------------------------------
     dict(ref="U2", lib="louie:DRV8833PWP_parallel", value="DRV8833PWP", lcsc="C50506",
          fp="Package_SO:HTSSOP-16-1EP_4.4x5mm_P0.65mm_EP3.4x5mm_Mask2.46x2.31mm",  # Vias selbst setzen (0,3 mm)
          at=(304.8, 76.2), ref_at=(-10.16, -8.89), val_at=(2.54, 10.16),
-         pins={"1": "MOT_nSLEEP", "11": "VCP", "3": "ISEN", "16": "MOT_IN1", "15": "MOT_IN2",
-               "13": "GND", "14": "VINT", "12": "VSYS", "8": "MOT_nFAULT", "2": "MOT_A", "4": "MOT_B"}),
+         pins={"1": "DRV_nSLEEP", "11": "VCP", "3": "ISEN", "16": "DRV_IN1", "15": "DRV_IN2",
+               "13": "GND", "14": "VINT", "12": "VSYS", "8": "DRV_nFAULT", "2": "OUT_A", "4": "OUT_B"}),
     C("C1", "47u 10V", "VSYS", "GND", (269.24, 124.46), fp=C1206),
     C("C2", "47u 10V", "VSYS", "GND", (281.94, 124.46), fp=C1206),
     C("C3", "47u 10V", "VSYS", "GND", (294.64, 124.46), fp=C1206),
@@ -126,12 +129,12 @@ PARTS = [
     R("R8", "1k", "ISEN", "ISEN_ADC", (284.48, 147.32)),
     C("C14", "100n", "ISEN_ADC", "GND", (299.72, 147.32)),
 
-    # --- Hebel-Erkennung: Hebel offen -> SENSE 3,3 V, Hebel zu -> ca. 0,3 V --------------------
-    R("R3", "100k", "+3V3", "MOT_A", (269.24, 198.12)),
-    R("R4", "10k", "MOT_B", "GND", (284.48, 198.12)),
-    R("R5", "100k", "MOT_A", "SENSE", (299.72, 198.12)),
-    TP("BT1", "Kontakt A", "MOT_A", (322.58, 198.12), fp=TP_CONTACT),
-    TP("BT2", "Kontakt B", "MOT_B", (337.82, 198.12), fp=TP_CONTACT),
+    # --- Schalter-/Last-Erkennung: Schalter offen -> SENSE 3,3 V, zu -> ca. 0,3 V --------------------
+    R("R3", "100k", "+3V3", "OUT_A", (269.24, 198.12)),
+    R("R4", "10k", "OUT_B", "GND", (284.48, 198.12)),
+    R("R5", "100k", "OUT_A", "SENSE", (299.72, 198.12)),
+    TP("BT1", "Kontakt A", "OUT_A", (322.58, 198.12), fp=TP_CONTACT),
+    TP("BT2", "Kontakt B", "OUT_B", (337.82, 198.12), fp=TP_CONTACT),
 ]
 
 # ---------------------------------------------------------------------------------------------

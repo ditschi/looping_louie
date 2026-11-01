@@ -7,18 +7,90 @@ Freerouting-JAR: Umgebungsvariable FREEROUTING_JAR oder tools/freerouting.jar (s
 Aufruf (über just):  just route
 Muss mit dem System-Python laufen, das das KiCad-Modul pcbnew enthält.
 """
+import json
 import os
+import re
+import shutil
+import tempfile
 import subprocess
 import sys
 from pathlib import Path
 
 import pcbnew
 
+sys.path.insert(0, str(Path(__file__).parent))
+from stitch import stitch, stitch_grid  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent.parent
 PCB = ROOT / "hardware" / "main-board" / "louie-main.kicad_pcb"
 WORK = ROOT / "build" / "main-board" / "route"
 JAR = Path(os.environ.get("FREEROUTING_JAR", ROOT / "tools" / "freerouting.jar"))
 PASSES = os.environ.get("FREEROUTING_PASSES", "40")
+ATTEMPTS = int(os.environ.get("FREEROUTING_ATTEMPTS", "6"))
+# Freerouting ist deterministisch; unterschiedliche Durchlaufzahlen liefern verschiedene Ergebnisse
+PASS_VARIANTS = [40, 25, 60, 15, 100, 30]
+
+
+# Netze, die vollständig über Kupferflächen laufen und von Freerouting nicht geroutet werden sollen
+PLANE_NETS = ["/GND"]
+
+
+def drop_nets(dsn, nets):
+    """Entfernt Netze aus dem network-Abschnitt der DSN-Datei (Freerouting ignoriert sie dann)."""
+    sys.path.insert(0, str(Path(__file__).parent))
+    from sexpr import block_end
+    text = dsn.read_text()
+    for net in nets:
+        start = text.find(f"(net {net}\n")
+        if start < 0:
+            start = text.find(f"(net {net} ")
+        if start >= 0:
+            text = text[:start] + text[block_end(text, start):]
+        text = text.replace(f" {net}\n", "\n").replace(f" {net} ", " ").replace(f" {net})", ")")
+    dsn.write_text(text)
+
+
+def freerouting_round(dsn, ses, keep_tracks, passes=None):
+    """Eine Freerouting-Runde. keep_tracks=False: vorher alle ungesperrten Bahnen entfernen."""
+    board = pcbnew.LoadBoard(str(PCB))
+    if not keep_tracks:
+        for track in list(board.GetTracks()):
+            if not track.IsLocked():
+                board.Delete(track)
+        pcbnew.SaveBoard(str(PCB), board)
+
+    # Für Freerouting ohne Kupferflächen exportieren: sonst gelten die flächigen Zonen als
+    # belegtes Kupfer und blockieren das Routing. Die Flächen werden nach dem Import gefüllt.
+    export = pcbnew.LoadBoard(str(PCB))
+    for zone in list(export.Zones()):
+        if not zone.GetIsRuleArea():
+            export.Delete(zone)
+    if not pcbnew.ExportSpecctraDSN(export, str(dsn)):
+        sys.exit("DSN-Export fehlgeschlagen")
+    drop_nets(dsn, PLANE_NETS)
+
+    result = subprocess.run(["java", "-jar", str(JAR), "-de", str(dsn), "-do", str(ses), "-mp", str(passes or PASSES),
+                             "--gui.enabled=false"], capture_output=True, text=True)
+    log = result.stdout + result.stderr
+    (WORK / "freerouting.log").write_text(log)
+    m = re.findall(r"final score: [\d.]+ \((\d+) unrouted", log)
+    unrouted = int(m[-1]) if m else -1
+
+    board = pcbnew.LoadBoard(str(PCB))
+    if not pcbnew.ImportSpecctraSES(board, str(ses)):
+        sys.exit("SES-Import fehlgeschlagen")
+    pcbnew.ZONE_FILLER(board).Fill(board.Zones())
+    pcbnew.SaveBoard(str(PCB), board)
+    return unrouted
+
+
+def unconnected_count():
+    with tempfile.TemporaryDirectory() as tmp:
+        report = Path(tmp) / "drc.json"
+        subprocess.run(["kicad-cli", "pcb", "drc", "--format", "json", "-o", str(report), str(PCB)],
+                       capture_output=True)
+        data = json.loads(report.read_text())
+    return len(data.get("unconnected_items", [])), len(data.get("violations", []))
 
 
 def main():
@@ -26,22 +98,30 @@ def main():
         sys.exit(f"Freerouting nicht gefunden: {JAR}\n→ ./setup.sh ausführen oder FREEROUTING_JAR setzen")
     WORK.mkdir(parents=True, exist_ok=True)
     dsn, ses = WORK / "louie-main.dsn", WORK / "louie-main.ses"
+    start = WORK / "start.kicad_pcb"
+    best_file = WORK / "best.kicad_pcb"
+    shutil.copy(PCB, start)
 
-    board = pcbnew.LoadBoard(str(PCB))
-    for track in list(board.GetTracks()):  # alte, nicht gesperrte Leiterbahnen entfernen
-        if not track.IsLocked():
-            board.Delete(track)
-    if not pcbnew.ExportSpecctraDSN(board, str(dsn)):
-        sys.exit("DSN-Export fehlgeschlagen")
-
-    subprocess.run(["java", "-jar", str(JAR), "-de", str(dsn), "-do", str(ses), "-mp", PASSES,
-                    "--gui.enabled=false"], check=True)
-
-    if not pcbnew.ImportSpecctraSES(board, str(ses)):
-        sys.exit("SES-Import fehlgeschlagen")
-    pcbnew.ZONE_FILLER(board).Fill(board.Zones())
-    pcbnew.SaveBoard(str(PCB), board)
-    print(f"geroutet: {PCB.relative_to(ROOT)} – jetzt: just drc")
+    best = None
+    for attempt in range(1, ATTEMPTS + 1):
+        shutil.copy(start, PCB)
+        passes = PASS_VARIANTS[(attempt - 1) % len(PASS_VARIANTS)]
+        unrouted = freerouting_round(dsn, ses, keep_tracks=False, passes=passes)
+        for _ in range(2):  # GND-Pads ohne Flächenkontakt per Via anbinden
+            done, _failed = stitch(PCB, PLANE_NETS)
+            if not done:
+                break
+        grid = stitch_grid(PCB)  # GND-Flächen oben/unten im Raster verbinden
+        open_items, violations = unconnected_count()
+        print(f"Versuch {attempt} ({passes} Durchläufe): Freerouting {unrouted} offen → nach Stitching {open_items} unverbunden, "
+              f"{violations} DRC-Meldungen, {grid} Stitching-Vias")
+        if best is None or (open_items, violations) < best:
+            best = (open_items, violations)
+            shutil.copy(PCB, best_file)
+        if open_items == 0:
+            break
+    shutil.copy(best_file, PCB)
+    print(f"bestes Ergebnis übernommen: {best[0]} unverbunden – jetzt: just drc")
 
 
 if __name__ == "__main__":

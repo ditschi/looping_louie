@@ -2,16 +2,33 @@
 
 Stand: 2026-11-01 · Zum gemeinsamen Durchgehen. Bitte direkt hier kommentieren oder abhaken.
 
-## Zwischenstand Layout Hauptplatine
+## Stand Layout Hauptplatine (2026-11-01)
+
+**Gewählt: Variante 1b – einseitig maschinell bestückt, Passive in 0402, universell.**
+Unten nur Kupferflächen (Testpads, Kabel-Lötpads, Endkontakte). Platine B bleibt reine Brücke.
 
 | Variante | Ergebnis |
 |---|---|
-| **1: einseitig bestückt** (alles oben) | **Passt nicht.** Selbst dicht gepackt mit 0,4 mm Abstand und ohne Platz für Leiterbahnen bleiben 12 Bauteile übrig (`just pcb einseitig`). Neben dem Modul sind nur ca. 25 × 13 mm frei; die Bauteile bräuchten ca. 75 % dieser Fläche als reine Courtyard-Fläche. Mit zwei Lagen ist das nicht routbar. |
-| **2: oben Maschine, unten Handlöten** | **Passt mit Reserve.** Oben 14 Bauteile (Modul, DRV8833, LDO, Puffer-/Abblockkondensatoren, Shunt, Stecker), unten 15 Kleinteile in 0603 plus Testpads und Endkontakte als reine Kupferflächen. Unten ist noch etwa die Hälfte frei. Platzierung ist DRC-sauber, Routing steht aus. |
-| 3: beidseitig maschinell | nicht nötig (Variante 2 kann man auch beidseitig bestücken lassen, falls günstiger) |
-| A + B (zwei Platinen) | **nicht nötig.** Platine B bleibt eine reine Brücke. |
+| 1 (einseitig, 0603) | passt nicht (12 Teile bleiben selbst dicht gepackt übrig) |
+| **1b (einseitig, 0402, Lötpads statt JST)** | **passt und ist zu ca. 95 % geroutet** (siehe unten) |
+| 2 (oben Maschine, unten Hand, 0603) | passt; als Rückfallebene in `placement_zweiseitig.py` erhalten |
 
-Bilder: `just plot` → `build/main-board/placement.png`, `just render` → `build/main-board/render/`.
+Erreicht (`just pcb` + `just route`):
+- alle 40 Bauteile platziert, kein Überlapp, Schaltplan-Abgleich fehlerfrei
+- DRV8833 um 90° gedreht; Ausgangsseite (OUT_A, OUT_B, ISEN, Shunt) und VSYS-Sammelschiene
+  per Skript vorgeroutet, Rest mit Freerouting
+- Masseflächen oben und unten, GND-Vias in den Mittel-Pads des Moduls und im Thermal-Pad des
+  DRV8833, ca. 40 Stitching-Vias
+- Antennenbereich frei von Kupfer (Randstreifen für die OUT_A-Bahn zum Endkontakt)
+
+**Rest für die Handarbeit im KiCad-GUI** (Stand letzter Lauf, schwankt je Lauf leicht):
+- 3 Signalverbindungen: +3V3 → R3, DRV_IN1 (Modul → DRV8833), DRV_nFAULT (Modul → DRV8833)
+- 1 GND-Pad (C12) und einige kleine GND-Flächeninseln ohne Verbindung → je ein Via setzen
+- 3 GND-Pads mit nur einer Thermal-Speiche (C14, U3, C6) → Speichen/Verbindung ergänzen
+- 3 überflüssige Vias (USB_D±, EN) entfernen
+- Danach: **ab hier im GUI weiterarbeiten** – `just pcb` und `just route` würden alles überschreiben.
+
+Bilder: `just plot`, `just render`, Kupferlagen: siehe Befehle in `docs/entwicklung.md`.
 
 ---
 
@@ -52,6 +69,9 @@ Bilder: `just plot` → `build/main-board/placement.png`, `just render` → `bui
 | A11 | **LCSC-Footprint des ESP32-C3-MINI-1** stimmt mit dem Datenblatt überein. | Von easyeda2kicad konvertiert, nicht gegen das Datenblatt geprüft. | eigenen Footprint nach Datenblatt zeichnen – **vor Bestellung prüfen!** |
 | A12 | **Loopin' Chewie** hat 2 × AA. | Nicht gesehen. | wird sonst nicht unterstützt (deine Vorgabe) |
 | A13 | Die **Unterseiten-Bauteile** (max. ca. 0,9 mm hoch) stören in der AA-Hülle nicht. | Abhängig von F4. | – |
+| A15 | **Mindest-Bahnbreite 0,12 mm** (Freerouting verjüngt an Pads). | Aisler & Co. verlangen teils 0,125–0,15 mm. | Engstellen im GUI auf 0,15 mm verbreitern |
+| A16 | **Leistungsbahnen 0,4 mm**, OUT_A/OUT_B je über **ein** Via 0,3 mm pro Lagenwechsel. | Ein 0,3-mm-Via trägt grob 1 A; reicht bei < 1 A Motorstrom. | zweites Via parallel, breitere Bahnen |
+| A17 | **GND-Vias direkt in den Mittel-Pads des ESP-Moduls** und im Thermal-Pad des DRV8833 (ungefüllt). | Lot kann bei der Bestückung abfließen. | gefüllte Vias (Aufpreis), Vias neben den Pads |
 | A14 | **Testpads** (3V3, GND, EN, BOOT, TXD, RXD) reichen für Erstinbetriebnahme und Notfall-Flashen. | – | Tag-Connect-Footprint (größer) |
 
 ---
@@ -69,13 +89,20 @@ Bilder: `just plot` → `build/main-board/placement.png`, `just render` → `bui
 | DRV8833-Footprint | ohne eingebaute Thermal-Vias (die haben 0,2 mm Bohrung), eigene 0,3-mm-Vias | 0,2 mm kostet bei vielen Herstellern Aufpreis |
 | Bestückungsdruck | Bezeichner nur auf der Fab-Ebene | auf 13,5 mm Breite nicht lesbar unterzubringen |
 | Endkontakt-Pads | 2 × 2 mm Platzhalter | 3 × 3 mm kollidiert mit der Antennen-Sperrfläche |
+| DRV8833-Lage | um 90° gedreht: Eingangsreihe zum Rand, Ausgangsreihe zur Mitte | ungedreht: alle Ausgangspins zwischen Modul und 0402-Reihen eingeklemmt |
+| VSYS-Verteilung | vorgeroutete 0,4-mm-Sammelschiene oben | VSYS-Fläche unten: Freerouting zerschneidet sie mit Signalen in Inseln |
+| Flächen beim Autorouting | Export **ohne** Kupferflächen, GND nicht an Freerouting; danach füllen + Stitching | mit Flächen: Freerouting behandelt sie als belegtes Kupfer → kaum routbar |
+| 0402-Anordnung | eine Reihe am Modul, Rest unter/neben dem DRV8833 | zwei Reihen: Signale vom Modul zum DRV8833 kommen nicht durch |
 | Routing | Freerouting (Autorouter) als Startpunkt | Skript-Routing: unrealistisch; nur Hand-Routing: dauert, kommt danach |
 
 ---
 
 ## Ideen (später analysieren)
 
-### I1: Versorgung über USB-C-Akku-AA-Zellen statt LiPo + Ladeplatine
+### I1: Versorgung über USB-C-Akku-AA-Zellen statt LiPo + Ladeplatine — **verworfen**
+
+> Verworfen (2026-11-01): Eine Zelle liefert 1,5 V, gebraucht werden 3 V (zwei Zellen) bzw. mehr für Turbo.
+> Ein Fach ist zudem durch die Hauptplatine belegt. Ginge nur mit Aufwärtswandler, lohnt nicht.
 
 Idee: Bei den 2×AA-Modellen eine handelsübliche, per USB-C ladbare AA-Zelle als Stromquelle nutzen
 (z. B. im zweiten Fach statt der Brücke). Laden wäre dann gelöst, Ladeplatine und externer Akku entfallen.
@@ -101,3 +128,17 @@ Erste Gedanken, noch nicht geprüft:
   bzw. gar nicht; mid-mount (Platinenausschnitt) könnte passen. Zu prüfen.
 - Dann könnte der Laderegler auf die Hauptplatine; der Akku bleibt extern (oder I1).
 - Zugänglichkeit: neues Modell hat einen Deckel → Buchse nur bei offenem Fach erreichbar.
+
+### I3: Optionale Handlöt-Bestückung und Erweiterungs-Pads auf der Unterseite
+
+Kupfer, Lötstopplack und Pads auf der Unterseite kosten bei einer 2-Lagen-Platine nichts extra; nur die
+**maschinelle Bestückung** der Unterseite kostet. Deshalb nach Fertigstellung der ersten Platine prüfen:
+- **Optionale Footprints unten** (nicht bestückt, „DNP“), die man bei Bedarf selbst lötet, z. B. größere
+  Puffer-Elkos, ein Taster an IO9 (BOOT), eine zweite LED, Spannungsteiler für Sensoren.
+- **Erweiterungs-Lötpads** für I²C oder andere Busse: Beim ESP32-C3 lässt sich I²C auf beliebige GPIOs
+  legen. Schon jetzt liegen IO2, IO8, RXD, TXD, 3V3 und GND unten auf Pads → empfohlen SDA = IO8,
+  SCL = IO2 (beide haben bereits 10k Pull-ups; Begründung in der Recherche unten). Prüfen: Pad-Raster für eine
+  Stiftleiste oder ein JST-SH-Kabel (Qwiic/STEMMA-QT-kompatibel), Platz unter dem Modul.
+- Gilt besonders für den Einsatz als **Tuning-Modul in anderen 2×AA-Spielzeugen** (eigene Firmware).
+- Recherche mit 16 Kandidaten (Beschleunigungssensor, Hall, Ladezustand, I²C-Pads …) und Empfehlung:
+  [idee-optionale-hardware.md](idee-optionale-hardware.md)
