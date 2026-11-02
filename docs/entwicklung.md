@@ -47,7 +47,9 @@ just schematic     Schaltplan der Hauptplatine aus dem Generator erzeugen (über
 just outline       AA-Umriss der Hauptplatine setzen (Maße in hardware/scripts/board_outline.py)
 just pcb           Schaltplan auf die Platine übertragen und platzieren (überschreibt Layout!)
 just plot          Platzierung mit Luftlinien als Bild (build/main-board/placement.png)
-just route         automatisch routen (Freerouting) und Masseflächen füllen
+just route         automatisch routen (Freerouting) und Masseflächen füllen (just route charger-board)
+just charger-schematic  Schaltplan der Ladeplatine erzeugen (überschreibt!) + ERC
+just charger-pcb   Ladeplatine anlegen, platzieren und routen (überschreibt Layout!)
 just erc           Schaltplan prüfen
 just drc           Platine prüfen, inkl. Abgleich mit dem Schaltplan
 just sch-pdf       Schaltplan als PDF

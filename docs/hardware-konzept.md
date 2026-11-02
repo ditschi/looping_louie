@@ -46,9 +46,9 @@ kein Kondensator, keine Diode. Kein Regler, kein Rückwärtslauf.
    │  Hebel-Erkennung          │
    │  Puffer-Kondensator       │
    └───────────┬───────────────┘
-               │ Kabel: VSYS, GND, USB D+, USB D−   (Flachband, außen oder innen verlegt)
+               │ Kabel: VSYS, D+, D−, GND (4 Adern, siehe ladeplatine.md)
    ┌───────────┴───────────────┐
-   │ Ladeplatine (extern)      │
+   │ Ladeplatine (AA / Basis)  │
    │  USB-C, Laderegler,       │
    │  Power-Path, Akkuschutz   │──── JST ──── 1S-LiPo
    └───────────────────────────┘
@@ -93,6 +93,7 @@ Bauteile sind so gewählt, dass alle drei Wege gehen: kleinste Bauform 0603, ICs
 ### 4.2 Platine B: Brücke (nur bei 2× AA)
 
 - Reine Kupferbrücke oberes ↔ unteres Ende im AA-Format, keine Bauteile, sehr billig.
+- **Entfällt, wenn die Ladeplatine hochkant in Fach 2 steckt** – sie hat dieselbe Brücke eingebaut.
 - Motorstrom läuft `Kontakt 1 → A → Fachbrücke → B → Kontakt 2`.
 - **Reserve:** Reicht auch die beidseitige Bestückung von A nicht, ziehen Puffer-Kondensator und
   Kabelanschluss auf B um. Dann braucht es 2–3 Adern zwischen A und B über die Trennwand der
@@ -101,15 +102,18 @@ Bauteile sind so gewählt, dass alle drei Wege gehen: kleinste Bauform 0603, ICs
   Verworfen: eine breitere Sondervariante von A für die C-Hülse. Das wäre ein zweites
   Platinendesign ohne Vorteil, da A und B ohnehin in die Hülse passen.
 
-### 4.3 Ladeplatine (extern)
+### 4.3 Ladeplatine
 
-- USB-C-Buchse, Laderegler mit **Power-Path** (z. B. BQ24072), damit man beim Laden spielen kann.
-  Einfache Alternative: TP4056 + DW01.
-- JST-PH-Buchse für den LiPo, optional Schiebeschalter als Transport-Aus.
+Ausgearbeitet in [ladeplatine.md](ladeplatine.md) (Schaltung, Layout, Halter, **Verdrahtungsbild**).
+
+- **AA-Format** (46 × 12,5 × 1,6 mm). Steckt **hochkant** im zweiten AA-Fach und übernimmt dort die
+  Brücke; die liegende USB-C-Buchse an der Längskante zeigt dann nach oben aus dem Fach.
+  Alternativ flach in einem Halter in der Basis, Buchse durch ein Loch in der Wand.
+- MCP73831 (500 mA) mit **Load-Sharing** (Schottky + P-MOSFET, Microchip AN1149): spielen beim Laden.
+- ESD-Schutz USBLC6-2SC6, Ladeanzeige-LED, JST-PH und Lötpads für den Akku.
 - USB D+/D− werden zur Platine A durchgereicht → **eine Buchse zum Laden und Flashen**.
-- Kabel zu A: 4 Adern (VSYS, GND, D+, D−), z. B. dünnes Flachband. Wird je nach Spiel außen
-  am Gehäuse entlang geführt oder innen in der Basis verstaut.
-- Akku und Ladeplatine sitzen in der Basis oder in einem kleinen externen Gehäuse.
+- Kabel zu A: 4 Adern (VSYS, D+, D−, GND), gleiche Reihenfolge wie J1.
+- Der Akku sitzt in der Basis.
 
 ## 5. Schaltungsdetails
 
@@ -199,7 +203,7 @@ mehrfaches Umlegen des Original-Hebels.
 
 | Modell | Platine A | Platine B | Adapter |
 |---|---|---|---|
-| 2× AA (neu, Chewie) | direkt in Kammer 1 | direkt in Kammer 2 (Brücke) | keiner; Kabel am Deckel vorbei |
+| 2× AA (neu, Chewie) | direkt in Kammer 1 | Kammer 2: **Ladeplatine hochkant** (übernimmt die Brücke); Platine B nur, wenn die Ladeplatine in der Basis sitzt | AA-Einsatz der Ladeplatine; Kabel am Deckel vorbei |
 | 1× C (alt) | in 3D-gedruckter C-Hülse | entfällt (im Reservefall ebenfalls in der Hülse, Brücke ungenutzt) | Hülse Ø 26 × 50 mm |
 
 - Reservefall A + B in der C-Hülse: beide Platinen übereinander mit ca. 10 mm Abstand
@@ -257,7 +261,8 @@ Die Turbo-Grenzen sind Schätzwerte und werden im Betrieb festgelegt.
 - [ ] Funktest: ESP32-C3-Board mit Metallfeder vor der Antenne ins Fach legen, RSSI prüfen
 - [ ] Neues Modell: prüfen, ob eine Diode in Reihe liegt (Hebel-Erkennung)
 - [ ] Kontakte an den Platinenenden und Halt der Platine im AA-Fach (Halbschale?)
-- [ ] Teile der Ladeplatine mit Status „zu prüfen“ in `teile.csv` bestätigen
+- [x] Teile der Ladeplatine in `teile.csv` geprüft (LCSC-Nummern verifiziert, 2026-11-01)
+- [ ] Offene Punkte der Ladeplatine L1–L6 ([ladeplatine.md](ladeplatine.md))
 - [ ] Lizenz für Hardware und Firmware festlegen
 - [ ] Strapping-Pins IO2/IO8/IO9 gegen das ESP32-C3-Datenblatt prüfen (Pull-ups nötig?)
 - [ ] AP2112K bei leerem Akku: Dropout ca. 250 mV bei 600 mA → unter ca. 3,5 V Akku sinkt 3V3 leicht; ESP32-C3 läuft ab 3,0 V

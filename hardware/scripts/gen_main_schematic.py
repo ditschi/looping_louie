@@ -27,6 +27,9 @@ LIBS = {
     "Connector": KICAD_SYMBOLS / "Connector.kicad_sym",
     "Connector_Generic": KICAD_SYMBOLS / "Connector_Generic.kicad_sym",
     "power": KICAD_SYMBOLS / "power.kicad_sym",
+    "Battery_Management": KICAD_SYMBOLS / "Battery_Management.kicad_sym",
+    "Power_Protection": KICAD_SYMBOLS / "Power_Protection.kicad_sym",
+    "Transistor_FET": KICAD_SYMBOLS / "Transistor_FET.kicad_sym",
 }
 
 R0402 = "Resistor_SMD:R_0402_1005Metric"
@@ -183,12 +186,18 @@ def label_effects(angle):
     return f"(effects (font (size 1.27 1.27)) (justify {justify} bottom))"
 
 
-def main():
+TITLE = "Looping Louie WLAN-Upgrade – Hauptplatine"
+COMMENT = "Platine im AA-Format, siehe docs/hardware-konzept.md"
+
+
+def main(sch=SCH, parts=PARTS, blocks=BLOCKS, title=TITLE, comment=COMMENT, project="louie-main",
+         generator="gen_main_schematic.py"):
+    """Schreibt den Schaltplan. Andere Platinen (gen_charger_schematic.py) rufen das mit eigenen Daten auf."""
     root = uid()
     lib_symbols, pin_cache = {}, {}
     items = []
 
-    for part in PARTS:
+    for part in parts:
         if part["lib"] not in lib_symbols:
             lib_symbols[part["lib"]], pin_cache[part["lib"]] = embedded_symbol(part["lib"])
         pins = pin_cache[part["lib"]]
@@ -215,7 +224,7 @@ def main():
             f'\t(symbol (lib_id "{part["lib"]}") (at {fmt(x)} {fmt(y)} 0) (unit 1)\n'
             f'\t\t(exclude_from_sim no) (in_bom {"yes" if in_bom else "no"}) (on_board {"no" if is_power else "yes"}) (dnp no)\n'
             f'\t\t(uuid "{uid()}")\n{prop_text}{pin_text}'
-            f'\t\t(instances (project "louie-main" (path "/{root}" (reference "{part["ref"]}") (unit 1))))\n'
+            f'\t\t(instances (project "{project}" (path "/{root}" (reference "{part["ref"]}") (unit 1))))\n'
             '\t)\n')
 
         # Drähte, Labels, No-Connects
@@ -242,12 +251,12 @@ def main():
             items.append(f'\t(label "{net}" (at {fmt(ex)} {fmt(ey)} {int(angle)}) {label_effects(int(angle))}\n'
                          f'\t\t(uuid "{uid()}"))\n')
 
-    for title, (tx, ty) in BLOCKS:
-        items.append(f'\t(text "{title}" (exclude_from_sim no) (at {fmt(tx)} {fmt(ty)} 0)\n'
+    for block, (tx, ty) in blocks:
+        items.append(f'\t(text "{block}" (exclude_from_sim no) (at {fmt(tx)} {fmt(ty)} 0)\n'
                      '\t\t(effects (font (size 2 2) (bold yes)) (justify left bottom))\n'
                      f'\t\t(uuid "{uid()}"))\n')
 
-    SCH.write_text(
+    sch.write_text(
         '(kicad_sch\n'
         '\t(version 20250114)\n'
         '\t(generator "eeschema")\n'
@@ -255,10 +264,10 @@ def main():
         f'\t(uuid "{root}")\n'
         '\t(paper "A3")\n'
         '\t(title_block\n'
-        '\t\t(title "Looping Louie WLAN-Upgrade – Hauptplatine")\n'
+        f'\t\t(title "{title}")\n'
         '\t\t(rev "0.1")\n'
-        '\t\t(comment 1 "Platine im AA-Format, siehe docs/hardware-konzept.md")\n'
-        '\t\t(comment 2 "Erzeugt mit hardware/scripts/gen_main_schematic.py")\n'
+        f'\t\t(comment 1 "{comment}")\n'
+        f'\t\t(comment 2 "Erzeugt mit hardware/scripts/{generator}")\n'
         '\t)\n'
         '\t(lib_symbols\n' + "".join("\t\t" + s.replace("\n", "\n\t\t") + "\n" for s in lib_symbols.values()) + '\t)\n'
         + "".join(items) +
@@ -266,7 +275,7 @@ def main():
         '\t(embedded_fonts no)\n'
         ')\n'
     )
-    print(f"{SCH.relative_to(HARDWARE.parent)}: {len(PARTS)} Bauteile")
+    print(f"{sch.relative_to(HARDWARE.parent)}: {len(parts)} Bauteile")
 
 
 if __name__ == "__main__":

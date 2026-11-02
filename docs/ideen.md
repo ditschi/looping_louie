@@ -94,7 +94,7 @@ Verbindungsanzeige, Gamepad-Ansicht, Countdown, Blockier-Erkennung, Notaus.
 | **Turbo-Zeitbudget** über Nennspannung | technik-5 |
 | **Rate-Limit** pro Sitzung, **Sitzplatz-Diebstahl** verhindern | technik-28, technik-30 |
 
-Klickbarer Prototyp dieser Auswahl: [web/prototype/index.html](../web/prototype/index.html) (im Browser öffnen;
+Erster klickbarer Entwurf dieser Auswahl (überholt, siehe [web-ui-konzept.md](web-ui-konzept.md) und [web/poc](../web/poc/index.html)): [web/prototype/index.html](../web/prototype/index.html) (im Browser öffnen;
 Hebel, Mitspieler, Verbindung und Akku werden über die Leiste „Simulation“ gesteuert).
 
 ## 4. Kandidaten für V1.1 und später

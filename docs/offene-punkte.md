@@ -53,7 +53,7 @@ Bilder: `just plot`, `just render`, Kupferlagen: siehe Befehle in `docs/entwickl
 | F7 | **Platinendicke 0,8 mm** (wegen Modulhöhe in der AA-Hülle). | 0,8 mm (Aufpreis bei manchen Herstellern) · 1,0 mm · 0,6 mm | Kostenabschätzung abwarten |
 | F8 | **Bestückungsstrategie final.** | Variante 2 · einseitig mit 0402-Passiven (siehe Alternative unten) | Variante 2, nach Routing neu bewerten |
 | F9 | **Lizenz** für Hardware und Firmware. | z. B. CERN-OHL-S/-P (Hardware), MIT/GPL (Firmware) | offen |
-| F10 | **Ladeplatine:** Teile mit Status „zu prüfen“ in `hardware/bom/teile.csv`. | – | beim Ladeplatinen-Design |
+| F10 | ~~**Ladeplatine:** Teile mit Status „zu prüfen“~~ – erledigt (2026-11-01): Ladeplatine im AA-Format entworfen, Teile geprüft. Neue Punkte L1–L6 in [ladeplatine.md](ladeplatine.md). | – | – |
 | F12 | **ESP32-C3-MINI-1-N4 ist laut Mouser abgekündigt** (nicht für neue Designs). Nachfolger: ESP32-C3-MINI-1-**N4X**, pinkompatibel. | Lagerbestand bei JLCPCB/LCSC prüfen, LCSC-Nummer des N4X ermitteln und umstellen | umstellen, sobald verfügbar bestätigt |
 | F13 | **Kosten:** Variante 2 entspricht kostenmäßig etwa Szenario A der [Kostenabschätzung](kostenabschaetzung.md) (einseitig maschinell, Economic), die Unterseite lötest du selbst. Ca. 9 €/Stück bei 10, ca. 3,40 €/Stück bei 100. | – | Angebot mit echten Daten einholen, wenn das Layout fertig ist |
 | F11 | **Freerouting**: Ergebnis des Autorouters prüfen und ggf. von Hand nacharbeiten. | – | nach `just route` |

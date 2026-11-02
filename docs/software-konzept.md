@@ -109,6 +109,8 @@ Heimnetz). Kostet etwas RAM und Funkzeit, deshalb standardmäßig aus.
 
 ## 4. Rollen und Berechtigungen
 
+> Überarbeitet in [web-ui-konzept.md](web-ui-konzept.md) (Rollen, Spielleiter-Übergabe, Mitspieler-Handys).
+
 ### 4.1 Rollen
 
 | Rolle | Wie erhält man sie | Darf |
@@ -230,6 +232,8 @@ Verbindungsabbruch ein deutlicher Hinweis und automatisches Neuverbinden.
 5. Fertig: Hinweis auf QR-Aufkleber und `louie.local`
 
 ### 6.2 Hauptansichten
+
+> Überarbeitet in [web-ui-konzept.md](web-ui-konzept.md), klickbar in [web/poc/index.html](../web/poc/index.html).
 
 | Ansicht | Inhalt |
 |---|---|

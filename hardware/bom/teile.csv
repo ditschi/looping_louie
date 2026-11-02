@@ -24,12 +24,19 @@ haupt,J3,1,Service-Loetpads unten (EN TXD BOOT GND); Taster an BOOT+GND,,Loetpad
 haupt,U4,1,Beschleunigungssensor (I2C 0x18 INT1 an RXD),,LIS2DH12TR,ST,LGA-12 2x2x1 mm,C110926,LIS2DW12TR; SC7A20 (Klon),louie,geprueft
 haupt,C15,1,Abblock LIS2DH12,100 nF 10 V X7R,generisch,,0402,,,kicad,
 haupt,BT1-BT2,2,Kontakte an den Platinenenden (OUT_A / OUT_B),,offen,,Platzhalter-Pad 3x3 mm,,,kicad,Mechanik klaeren
-lade,J101,1,USB-C Buchse (Laden + Daten),,TYPE-C-31-M-12,Korean Hroparts,USB-C 16-polig SMD,C165948,beliebige 16-polige USB-C-Buchse,lcsc,geprueft
-lade,U101,1,LiPo-Laderegler 1S,,MCP73831T-2ACI/OT,Microchip,SOT-23-5,C424093,TP4056 (mehr Strom),lcsc,geprueft
-lade,Q101+D101,1,Load-Sharing (Power-Path) P-MOSFET + Schottky,,DMG2305UX + B5819W,Diodes Inc.,SOT-23 / SOD-123,,,lcsc,zu pruefen
-lade,U102,1,ESD-Schutz USB,,USBLC6-2SC6,ST,SOT-23-6,,,lcsc,zu pruefen
-lade,J102,1,LiPo-Anschluss,,S2B-PH-SM4-TB,JST,JST-PH 2.0 mm 2-polig SMD,,,lcsc,zu pruefen
-lade,R101-R102,2,USB-C CC-Widerstaende,5.1 k,generisch,,0603,,,kicad,
-lade,R103,1,Ladestrom-Programmierung (500 mA),2 k,generisch,,0603,,,kicad,
-lade,C101-C102,2,Laderegler Ein-/Ausgang,4.7 uF 10 V,generisch,,0603,,,kicad,
+lade,J101,1,USB-C-Buchse liegend (Laden + Daten); Stecker quer zur Zellachse,,TYPE-C-31-M-12,Korean Hroparts,USB-C 16-polig SMD + 4 THT-Laschen,C165948,beliebige 16-polige HRO-kompatible Buchse,kicad,geprueft
+lade,U101,1,LiPo-Laderegler 1S 4.2 V,,MCP73831T-2ACI/OT,Microchip,SOT-23-5,C424093,TP4056 (1 A; groesser),kicad,geprueft
+lade,R103,1,Ladestrom 500 mA (I = 1000 V / R),2 k,generisch,,0603,,3.3 k = 300 mA fuer kleine Akkus,kicad,
+lade,C101-C102,2,Laderegler Ein-/Ausgang,4.7 uF 10 V X5R,generisch,,0603,,,kicad,
+lade,D101+R104,1,Ladeanzeige (leuchtet beim Laden),rot / 1 k,Hubei KENTO KT-0603R,,0603,C2286,,kicad,geprueft
+lade,Q101,1,Load-Sharing: Akku -> VSYS ohne USB (P-MOSFET),,AO3401A,Alpha & Omega,SOT-23,C15127,DMG2305UX,kicad,geprueft
+lade,D102,1,Load-Sharing: USB -> VSYS (Schottky 3 A),,SS34,MDD,SMA,C8678,SS24; B5819W nur 1 A,kicad,geprueft
+lade,R105,1,Gate-Pull-down Q101 / VBUS entladen,100 k,generisch,,0603,,,kicad,
+lade,C103,1,Puffer VSYS,10 uF 10 V X5R,generisch,,0805,,,kicad,
+lade,U102,1,ESD-Schutz USB D+/D- und VBUS,,USBLC6-2SC6,ST,SOT-23-6,C7519,,kicad,geprueft
+lade,R101-R102,2,USB-C CC-Widerstaende (Senke),5.1 k,generisch,,0603,,,kicad,
+lade,J102,1,LiPo-Anschluss (Pin 1 = +; Polaritaet des Akkus pruefen!),,S2B-PH-SM4-TB,JST,JST-PH 2.0 mm 2-polig SMD liegend,C295747,Loetpads TP101/TP102 parallel,kicad,geprueft
+lade,TP101-TP102,2,Akku-Loetpads (Alternative zum JST),,Loetpads (keine Bestueckung),,2 x 2 mm,,,kicad,
+lade,J103,1,Kabel zur Hauptplatine (1 VSYS 2 D+ 3 D- 4 GND; wie J1),,Loetpads (keine Bestueckung),,4 Pads 1.4x1.6 mm Raster 2 mm,,,louie,
+lade,BT101-BT102,2,Endkontakte der Bruecke (ersetzt Platine B im AA-Fach),,Loetpads unten fuer Nickelband,,2 x 2 mm,,,kicad,
 bruecke,-,0,reine Kupferbruecke ohne Bauteile,,,,,,,,

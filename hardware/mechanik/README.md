@@ -1,5 +1,8 @@
 # Mechanik: Hülle für die Hauptplatine
 
+> Der Halter für die **Ladeplatine** (AA-Einsatz hochkant oder Basis-Halter) steht in
+> [`ladeplatine.scad`](ladeplatine.scad), beschrieben in [docs/ladeplatine.md](../../docs/ladeplatine.md) Kapitel 4.
+
 Ein 3D-gedruckter Einsatz, der die Hauptplatine in AA-Größe bringt (neues Louie, Chewie),
 dazu eine Adapterhülse für das alte Louie mit C-Zelle.
 

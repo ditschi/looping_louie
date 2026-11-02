@@ -57,11 +57,11 @@ def pos(x, y):
     return pcbnew.VECTOR2I(mm(ORIGIN[0] + x), mm(ORIGIN[1] + y))
 
 
-def read_netlist():
+def read_netlist(sch=SCH):
     with tempfile.TemporaryDirectory() as tmp:
         out = Path(tmp) / "net.net"
         subprocess.run(["kicad-cli", "sch", "export", "netlist", "--format", "kicadsexpr",
-                        "-o", str(out), str(SCH)], check=True, capture_output=True)
+                        "-o", str(out), str(sch)], check=True, capture_output=True)
         text = out.read_text()
     comps = {}
     for m in re.finditer(r"\(comp \(ref \"([^\"]+)\"\)", text):

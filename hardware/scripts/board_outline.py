@@ -38,12 +38,12 @@ def add_shape(board, shape, **kwargs):
     board.Add(item)
 
 
-def draw_outline(board):
+def draw_outline(board, length=LENGTH_MM, width=WIDTH_MM):
     for item in list(board.GetDrawings()):
         if item.GetLayer() == pcbnew.Edge_Cuts:
             board.Remove(item)
 
-    l, w, r = LENGTH_MM, WIDTH_MM, CORNER_MM
+    l, w, r = length, width, CORNER_MM
     # Koordinaten relativ zur Platinenmitte, x entlang der Länge
     x0, x1, y0, y1 = -l / 2, l / 2, -w / 2, w / 2
     for a, b in [((x0 + r, y0), (x1 - r, y0)), ((x1, y0 + r), (x1, y1 - r)),
