@@ -14,7 +14,7 @@ HARDWARE = Path(__file__).resolve().parent.parent
 PCB = HARDWARE / "main-board" / "louie-main.kicad_pcb"
 
 LENGTH_MM = 46.0  # AA = 50,5 mm; Rest bleibt für die Kontakte an den Enden
-WIDTH_MM = 13.5  # ESP32-C3-MINI-1 ist 13,2 mm breit
+WIDTH_MM = 13.5  # ESP32-C6-MINI-1 (wie C3) ist 13,2 mm breit
 THICKNESS_MM = 0.8  # dünn, damit das Modul in der AA-Hülle Platz hat
 CORNER_MM = 0.5
 ORIGIN_MM = (100.0, 75.0)  # Platinenmitte auf dem Blatt

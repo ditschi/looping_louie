@@ -4,7 +4,8 @@
 - liest die Netzliste des Schaltplans (kicad-cli)
 - setzt Footprints mit Netzen und Schaltplan-Verknüpfung (für den DRC-Abgleich)
 - setzt Designregeln, Netzklassen und die Sperrfläche unter der Antenne
-- Leiterbahnen werden NICHT gezogen (siehe docs/offene-punkte.md)
+- routet vorab nur die kritischen Bahnen (Motorausgänge, VSYS/VBUS/BAT_IN, USB-Paar, kurze Brücken);
+  den Rest übernimmt Freerouting (just route)
 
 Muss mit dem System-Python laufen, das das KiCad-Modul pcbnew enthält.
 Aufruf (über just):  just pcb
@@ -30,16 +31,33 @@ PROJECT_FP_LIBS = {"lcsc": HARDWARE / "lib" / "lcsc.pretty", "louie": HARDWARE /
 ORIGIN = (100.0, 75.0)  # Platinenmitte (wie board_outline.py)
 BOARD_L, BOARD_W = 46.0, 13.5
 
-# Designregeln: konservativ, damit praktisch jeder Hersteller sie im Standardpreis fertigt
-RULES = dict(clearance=0.15, track=0.2, track_min=0.12, via_d=0.6, via_drill=0.3, edge=0.3)
-POWER_NETS = ["/OUT_A", "/OUT_B", "/ISEN"]  # Motorstrom
-POWER_TRACK = 0.4  # passt noch an die 0,65-mm-Pins des DRV8833; ca. 1,5 A bei 35 µm Kupfer
-# Streifen am Rand (+y) im Antennenbereich, frei für die Leiterbahn zum Endkontakt MOT_A
+# Designregeln (docs/hauptplatine-c6.md, Abschnitt „Fertigungsregeln“): JLCPCB-Standardpreis für 2 Lagen,
+# 1 oz ist 0,10/0,10 mm Bahn/Abstand, Via 0,3 mm Bohrung / 0,6 mm Durchmesser (Aufpreis erst bei Bohrung
+# < 0,3 mm mit Durchmesser < 0,45 mm), Kupfer–Fräskante 0,2 mm, PTH–Bahn 0,28 mm. Hier mit Reserve:
+# Abstand und Mindestbahn 0,13 mm (+30 %), Standardbahn 0,15 mm, Kantenabstand 0,3 mm, Loch–Kupfer 0,28 mm.
+RULES = dict(clearance=0.13, track=0.15, track_min=0.13, via_d=0.6, via_drill=0.3, edge=0.3, hole_clearance=0.28,
+             hole_to_hole=0.25, annular=0.15)
+# Motorstrom und Einspeisung (bis 2 A). OUT_A/OUT_B und die Hauptwege von VBUS und BAT_IN sind vorgeroutet;
+# die übrigen Anschlüsse dieser Netze (Erkennungswiderstände, Gate, Teiler, ESD) führen nur µA bis mA und
+# bleiben wie ISEN (IPROPI) in der Standardklasse, damit Freerouting sie schmal führen kann.
+POWER_NETS = ["/VSYS", "/BAT_IN"]
+POWER_TRACK = 0.4  # ca. 1,5 A bei 35 µm Kupfer; an den 0,5-mm-Pins des DRV8213 nur kurze 0,3-mm-Stiche
+STUB_TRACK = 0.3   # Stiche an Fine-Pitch-Pins
+MAIN_TRACK = 0.5   # vorgeroutete VSYS-Hauptbahn (Schottky -> Puffer -> VM)
+# Randstreifen im Antennenbereich, frei für die Leiterbahn OUT_A zum Endkontakt BT1. Kante -y, weil der
+# DRV8213 an der Modulecke -y sitzt: OUT_A läuft so ohne Kreuzung unten am Rand entlang.
 ANTENNA_TRACK_STRIP = 1.2
-SUPPLY_TRACK = 0.3  # VSYS, 3V3, GND
-# Unterseite: links GND-Fläche, rechts ab hier VSYS-Fläche (mm relativ zur Platinenmitte)
-VSYS_SPLIT_X = 1.5
+ANTENNA_TRACK_SIDE = -1
+SUPPLY_TRACK = 0.25  # 3V3, GND (passt noch an die 0,5-mm-Pins von LIS2DH12/DRV8213)
+EDGE_TRACK_Y = BOARD_W / 2 - 0.6  # Abstand der Randbahnen OUT_A/OUT_B von der Mitte (unten)
+COL1_X = -1.9  # 0402-Reihe an den rechten Modulpins (placement_einseitig.COL1)
 
+
+
+# Feste GND-Vias neben Pads (Referenz, Pad, dx, dy in mm)
+GROUND_VIAS = []
+# GND-Pins des DRV8213 (Pin 4 GND, Pin 7 GAINSEL) direkt aufs Thermal-Pad (dessen Vias führen nach unten)
+EP_TIES = [("U2", "4", "9"), ("U2", "7", "9")]
 
 
 def load_placement(variant):
@@ -105,6 +123,9 @@ def setup_rules(board):
     ds.m_ViasMinSize = mm(RULES["via_d"])
     ds.m_MinThroughDrill = mm(RULES["via_drill"])
     ds.m_CopperEdgeClearance = mm(RULES["edge"])
+    ds.m_HoleClearance = mm(RULES["hole_clearance"])
+    ds.m_HoleToHoleMin = mm(RULES["hole_to_hole"])
+    ds.m_ViasMinAnnularWidth = mm(RULES["annular"])
     ns = ds.m_NetSettings
     default = ns.GetDefaultNetclass()
     default.SetClearance(mm(RULES["clearance"]))
@@ -119,19 +140,27 @@ def setup_rules(board):
     ns.SetNetclass("Power", power)
     for net in POWER_NETS:
         ns.SetNetclassPatternAssignment(net, "Power")
-    # VSYS: verteilt über die VSYS-Fläche unten, Zuleitungen zu den 0402-Pads etwas schmaler
+    # 3V3 und GND: Zuleitungen zu den 0402-Pads
     supply = pcbnew.NETCLASS("Supply")
     supply.SetClearance(mm(RULES["clearance"]))
     supply.SetTrackWidth(mm(SUPPLY_TRACK))
     supply.SetViaDiameter(mm(RULES["via_d"]))
     supply.SetViaDrill(mm(RULES["via_drill"]))
     ns.SetNetclass("Supply", supply)
-    for net in ("/VSYS", "/+3V3", "/GND"):
+    for net in ("/+3V3", "/GND"):
         ns.SetNetclassPatternAssignment(net, "Supply")
 
 
 def antenna_keepout(board, module):
-    """Sperrfläche (Kupfer, Vias, Bauteile) unter dem Antennenteil des ESP-Moduls, beide Lagen."""
+    """Sperrflächen unter dem Antennenteil des ESP-Moduls (docs/analyse-funk-controller.md 2.3, L2):
+
+    - "Antenne": alle Lagen, keine Kupferfläche, keine Vias, keine Leiterbahnen
+    - "Antenne Rand": Randstreifen (ANTENNA_TRACK_STRIP), alle Lagen, keine Kupferfläche und keine Vias,
+      Leiterbahnen erlaubt (OUT_A zum Endkontakt). Früher sparte die Sperrfläche den Streifen ganz aus,
+      dann lag oben ein GND-Streifen unter der Antenne.
+    - "Antenne unten": keine Bauteile/Pads auf der Unterseite
+    - "Antenne Ende": Platinenende vor der Antenne, keine Fläche und keine Vias, Endkontakt erlaubt
+    """
     crt = module.GetCourtyard(pcbnew.F_CrtYd).BBox()
     pad_left = min(p.GetBoundingBox().GetLeft() for p in module.Pads())
     pad_right = max(p.GetBoundingBox().GetRight() for p in module.Pads())
@@ -141,11 +170,16 @@ def antenna_keepout(board, module):
         x0, x1 = crt.GetLeft(), pad_left - mm(0.5)
     else:
         x0, x1 = pad_right + mm(0.5), crt.GetRight()
-    y0, y1 = mm(ORIGIN[1] - BOARD_W / 2), mm(ORIGIN[1] + BOARD_W / 2 - ANTENNA_TRACK_STRIP)
+    top, bot = mm(ORIGIN[1] - BOARD_W / 2), mm(ORIGIN[1] + BOARD_W / 2)
+    strip = mm(ANTENNA_TRACK_STRIP)
+    if ANTENNA_TRACK_SIDE < 0:
+        main_y, strip_y = (top + strip, bot), (top, top + strip)
+    else:
+        main_y, strip_y = (top, bot - strip), (bot - strip, bot)
 
-    def rule_area(name, layers, footprints, xa=None, xb=None, tracks=True, ya=None, yb=None):
+    def rule_area(name, layers, footprints, ys, xa=None, xb=None, tracks=True):
         xa, xb = x0 if xa is None else xa, x1 if xb is None else xb
-        ya, yb = y0 if ya is None else ya, y1 if yb is None else yb
+        ya, yb = ys
         zone = pcbnew.ZONE(board)
         zone.SetIsRuleArea(True)
         zone.SetZoneName(name)
@@ -161,34 +195,46 @@ def antenna_keepout(board, module):
             outline.Append(x, y)
         board.Add(zone)
 
-    rule_area("Antenne", pcbnew.LSET.AllCuMask(), footprints=False)
+    rule_area("Antenne", pcbnew.LSET.AllCuMask(), False, main_y)
+    rule_area("Antenne Rand", pcbnew.LSET.AllCuMask(), False, strip_y, tracks=False)
     bottom = pcbnew.LSET()
     bottom.AddLayer(pcbnew.B_Cu)
-    rule_area("Antenne unten", bottom, footprints=True)
-    # Platinenende vor der Antenne: keine Kupferfläche und keine Vias, aber Endkontakt und
-    # dessen Leiterbahn erlaubt
+    rule_area("Antenne unten", bottom, True, main_y)
     if x0 > mm(ORIGIN[0] - BOARD_L / 2):
-        rule_area("Antenne Ende", pcbnew.LSET.AllCuMask(), footprints=False,
-                  xa=mm(ORIGIN[0] - BOARD_L / 2), xb=x0, tracks=False,
-                  ya=mm(ORIGIN[1] - BOARD_W / 2), yb=mm(ORIGIN[1] + BOARD_W / 2))
+        rule_area("Antenne Ende", pcbnew.LSET.AllCuMask(), False, (top, bot),
+                  xa=mm(ORIGIN[0] - BOARD_L / 2), xb=x0, tracks=False)
     return pcbnew.ToMM(x1 - x0)
 
 
+def edge_keepout(board, width=RULES["edge"] + 0.02):
+    """Randstreifen ohne Leiterbahnen und Vias (Freerouting kennt den Kantenabstand nicht)."""
+    x0, x1 = mm(ORIGIN[0] - BOARD_L / 2), mm(ORIGIN[0] + BOARD_L / 2)
+    y0, y1 = mm(ORIGIN[1] - BOARD_W / 2), mm(ORIGIN[1] + BOARD_W / 2)
+    w = mm(width)
+    for xa, ya, xb, yb in [(x0, y0, x1, y0 + w), (x0, y1 - w, x1, y1), (x0, y0, x0 + w, y1), (x1 - w, y0, x1, y1)]:
+        zone = pcbnew.ZONE(board)
+        zone.SetIsRuleArea(True)
+        zone.SetZoneName("Rand")
+        zone.SetLayerSet(pcbnew.LSET.AllCuMask())
+        zone.SetDoNotAllowTracks(True)
+        zone.SetDoNotAllowVias(True)
+        zone.SetDoNotAllowCopperPour(False)
+        zone.SetDoNotAllowPads(False)
+        zone.SetDoNotAllowFootprints(False)
+        outline = zone.Outline()
+        outline.NewOutline()
+        for x, y in [(xa, ya), (xb, ya), (xb, yb), (xa, yb)]:
+            outline.Append(x, y)
+        board.Add(zone)
+
+
 def thermal_vias(board, driver, gnd):
-    """Vias im Thermal-Pad des DRV8833 zur Massefläche unten (0,3 mm, gängige Herstellergröße)."""
-    ep = next(p for p in driver.Pads() if p.GetNumber() == "17" and p.GetSize().x > mm(2))
-    cx, cy = ep.GetPosition().x, ep.GetPosition().y
-    horizontal = driver.GetOrientationDegrees() % 180 == 0
-    for dx, dy in [(-0.8, -1.4), (0.8, -1.4), (-0.8, 0), (0.8, 0), (-0.8, 1.4), (0.8, 1.4)]:
-        if horizontal:
-            dx, dy = dy, dx
-        via = pcbnew.PCB_VIA(board)
-        via.SetPosition(pcbnew.VECTOR2I(cx + mm(dx), cy + mm(dy)))
-        via.SetWidth(mm(RULES["via_d"]))
-        via.SetDrill(mm(RULES["via_drill"]))
-        via.SetNet(gnd)
-        via.SetLocked(True)
-        board.Add(via)
+    """Zwei Vias im Thermal-Pad (Pad 9, 0,9 × 1,6 mm) des DRV8213 zur Massefläche unten."""
+    ep = next(p for p in driver.Pads() if p.GetNumber() == "9")
+    c = ep.GetPosition()
+    long_y = ep.GetBoundingBox().GetHeight() > ep.GetBoundingBox().GetWidth()
+    for d in (-0.4, 0.4):
+        add_via(board, gnd, c.x + (0 if long_y else mm(d)), c.y + (mm(d) if long_y else 0))
 
 
 def add_track(board, net, layer, width, *points):
@@ -212,41 +258,6 @@ def add_via(board, net, x, y):
     via.SetNet(net)
     via.SetLocked(True)
     board.Add(via)
-
-
-def preroute_driver(board, driver):
-    """Verbindet die parallel geschalteten Pinpaare des DRV8833 vorab (Freerouting scheitert daran).
-
-    - OUT2: Pins 4 und 5 liegen nebeneinander → kurze Brücke oben
-    - IN1 (Pins 9/16) liegen an den Enden der Eingangsreihe → Vias in Reihenrichtung außerhalb
-      der Reihe, Verbindung unten direkt unter der Pinreihe
-    - IN2 (Pins 10/15) → Vias zum Platinenrand hin, Verbindung unten parallel dazu
-    Funktioniert für jede Drehung um 0/90/180/270°.
-    """
-    center = driver.GetPosition()
-    pad = {p.GetNumber(): p for p in driver.Pads() if max(p.GetSize().x, p.GetSize().y) < mm(2)}
-    p4, p5 = pad["4"].GetPosition(), pad["5"].GetPosition()
-    add_track(board, pad["4"].GetNet(), pcbnew.F_Cu, 0.3, (p4.x, p4.y), (p5.x, p5.y))
-
-    def sign(v):
-        return 1 if v > 0 else -1
-
-    for (a, b), mode in [(("16", "9"), "row"), (("15", "10"), "out")]:
-        net = pad[a].GetNet()
-        ends = []
-        for num in (a, b):
-            pp = pad[num].GetPosition()
-            dx, dy = pp.x - center.x, pp.y - center.y
-            row_along_x = abs(pad["9"].GetPosition().y - pad["16"].GetPosition().y) < mm(0.1)
-            if mode == "row":   # entlang der Reihe nach außen
-                off = (sign(dx) * mm(0.88), 0) if row_along_x else (0, sign(dy) * mm(0.88))
-            else:               # senkrecht zur Reihe nach außen (zum Rand)
-                off = (0, sign(dy) * mm(1.24)) if row_along_x else (sign(dx) * mm(1.24), 0)
-            vx, vy = pp.x + off[0], pp.y + off[1]
-            add_track(board, net, pcbnew.F_Cu, 0.2, (pp.x, pp.y), (vx, vy))
-            add_via(board, net, vx, vy)
-            ends.append((vx, vy))
-        add_track(board, net, pcbnew.B_Cu, 0.2, *ends)
 
 
 def pad_of(footprint, number):
@@ -274,100 +285,255 @@ def ground_via_at_pad(board, footprint, number, dx, dy, width=0.4):
 
 
 def preroute_supply(board, fps):
-    """VSYS vorab routen: Sammelschiene oben vom Kabel-Via über LDO, C2, C1 bis C4/C5, Abzweige zu
-    C8, R6, C3 und über ein Via-Paar unten herum zum VM-Pin 12 des DRV8833 (der zwischen den
-    Eingangspins liegt) samt VCP-Kondensator C7."""
+    """VSYS-Hauptbahn vorab (0,5 mm): Kathode der Schottky D2 -> C1 -> C2 (senkrecht an den linken
+    Pads), Abzweig C1 -> C4 -> VM-Pin 1 des DRV8213. Der Rest von VSYS (Q1, LDO, Teiler) und BAT_IN/VBUS
+    laufen über Freerouting in der Netzklasse Power."""
     def at(ref, num):
         q = pad_of(fps[ref], num).GetPosition()
         return q.x, q.y
 
-    net = pad_of(fps["C4"], "1").GetNet()
-    bus_y = at("C1", "1")[1] - mm(0.5)                 # Unterkante der C1/C2-Pads
-    c4, c5, c8 = at("C4", "1"), at("C5", "1"), at("C8", "1")
-    u3_vin, u3_en = at("U3", "1"), at("U3", "3")
-    j1 = at("J1", "1")
-    via_j1 = (u3_en[0] + mm(1.1), bus_y)
-    w, wb = POWER_TRACK, SUPPLY_TRACK
-    add_track(board, net, pcbnew.F_Cu, w, (c4[0], bus_y), via_j1)
-    add_via(board, net, *via_j1)
-    add_track(board, net, pcbnew.B_Cu, w, via_j1, j1)
-    add_track(board, net, pcbnew.F_Cu, wb, c5, c4, (c4[0], bus_y))
-    add_track(board, net, pcbnew.F_Cu, wb, u3_vin, (u3_vin[0] - mm(1.05), u3_vin[1]), (u3_vin[0] - mm(1.05), bus_y))
-    add_track(board, net, pcbnew.F_Cu, wb, c8, (c8[0], bus_y))
-    # Abzweig zu R6 und C3
-    r6, c3 = at("R6", "1"), at("C3", "1")
-    add_track(board, net, pcbnew.F_Cu, wb, c5, (c5[0], c5[1] + mm(1.5)), (r6[0], r6[1] - mm(0.4)), r6)
-    add_track(board, net, pcbnew.F_Cu, wb, r6, (r6[0], r6[1] + mm(0.9)), (c3[0] - mm(0.7), r6[1] + mm(0.9)), c3)
-    # VM-Pin 12 und C7: Via unter dem Pin, unten nach rechts, Via hoch zur Schiene
-    vm, c7 = at("U2", "12"), at("C7", "2")
-    v1 = (vm[0], vm[1] - mm(1.14))
-    v2 = (c4[0] + mm(0.48), v1[1])
-    add_track(board, net, pcbnew.F_Cu, w, vm, v1, c7)
-    add_via(board, net, *v1)
-    add_track(board, net, pcbnew.B_Cu, w, v1, v2)
-    add_via(board, net, *v2)
-    add_track(board, net, pcbnew.F_Cu, w, v2, (c4[0], bus_y))
+    net = pad_of(fps["C1"], "1").GetNet()
+    k, c1, c2, c4, vm = at("D2", "1"), at("C1", "1"), at("C2", "1"), at("C4", "1"), at("U2", "1")
+    add_track(board, net, pcbnew.F_Cu, MAIN_TRACK, k, (c1[0], k[1] + mm(0.6)), c1, c2)
+    add_track(board, net, pcbnew.F_Cu, MAIN_TRACK, c1, (c4[0] + mm(0.3), c4[1]), c4)
+    add_track(board, net, pcbnew.F_Cu, STUB_TRACK, c4, (vm[0], vm[1] + mm(0.45)), vm)
 
 
-def preroute_outputs(board, driver, contact_a, contact_b, shunt, pulldown_b, isen_filter, sense_r):
-    """Ausgangsseite des DRV8833 vorab routen (Pinfolge der Ausgangsreihe: nSLEEP, A, ISEN, B, B,
-    ISEN, A, nFAULT – verschachtelt, daran scheitert der Autorouter).
-
-    - ISEN: Pins 3 und 6 senkrecht nach außen auf einen Querbalken (darunter sitzt der Shunt R1)
-    - OUT_B: von der Brücke 4–5 ein Via, unten weiter zum Endkontakt B
-    - OUT_A: Pins 2 und 7 je ein Via, unten verbunden und weiter zum Endkontakt A
-      (durch den Randstreifen neben der Antenne)
-    Erwartet: Ausgangsreihe zeigt nach +y (Drehung 90°).
-    """
-    assert round(driver.GetOrientationDegrees()) % 360 == 90, "preroute_outputs erwartet Drehung 90°"
-    pad = {p.GetNumber(): p for p in driver.Pads() if max(p.GetSize().x, p.GetSize().y) < mm(2)}
-    row_y = pad["2"].GetPosition().y
-    x = {n: pad[n].GetPosition().x for n in ("2", "3", "4", "5", "6", "7")}
-    via_y, bar_y, link_y = row_y + mm(1.29), row_y + mm(2.05), row_y + mm(0.44)
-    isen, out_a, out_b = pad["3"].GetNet(), pad["2"].GetNet(), pad["4"].GetNet()
-    w = POWER_TRACK
-
-    # ISEN
-    add_track(board, isen, pcbnew.F_Cu, w, (x["3"], row_y), (x["3"], bar_y), (x["6"], bar_y), (x["6"], row_y))
-    s1 = pad_of(shunt, "1").GetPosition()
-    add_track(board, isen, pcbnew.F_Cu, w, (x["3"], bar_y), (s1.x, s1.y))
-    f1 = pad_of(isen_filter, "1").GetPosition()  # Abgriff zum Strommess-Filter R8
-    add_track(board, isen, pcbnew.F_Cu, SUPPLY_TRACK, (x["6"], bar_y), (f1.x - mm(0.32), bar_y), (f1.x, f1.y))
-    # OUT_B
-    mid_b = (x["4"] + x["5"]) // 2
-    add_track(board, out_b, pcbnew.F_Cu, 0.3, (mid_b, row_y), (mid_b, via_y))
-    add_via(board, out_b, mid_b, via_y)
-    cb = next(iter(contact_b.Pads())).GetPosition()
-    low_y = mm(ORIGIN[1] + BOARD_W / 2 - 1.15)
-    add_track(board, out_b, pcbnew.B_Cu, w, (mid_b, via_y), (mid_b, low_y), (cb.x - mm(0.8), low_y), (cb.x, low_y - mm(0.8)),
-              (cb.x, cb.y))
-    r4 = pad_of(pulldown_b, "1").GetPosition()  # Pull-down R4 per Via auf die OUT_B-Bahn unten
-    add_track(board, out_b, pcbnew.F_Cu, 0.3, (r4.x, r4.y), (r4.x, low_y))
-    add_via(board, out_b, r4.x, low_y)
-    # OUT_A
-    for n in ("2", "7"):
-        add_track(board, out_a, pcbnew.F_Cu, w, (x[n], row_y), (x[n], via_y))
-        add_via(board, out_a, x[n], via_y)
-    add_track(board, out_a, pcbnew.B_Cu, w, (x["2"], via_y), (x["2"], link_y), (x["7"], link_y), (x["7"], via_y))
+def preroute_outputs(board, driver, contact_a, contact_b):
+    """Ausgänge des DRV8213 vorab: OUT1 (Pin 2, OUT_A) und OUT2 (Pin 3, OUT_B) je mit 0,3-mm-Stich auf ein
+    Via, unten mit 0,4 mm am Rand -y entlang: OUT_A nach links unter Modul und Antenne (Randstreifen) zum
+    Endkontakt BT1, OUT_B nach rechts zum Endkontakt BT2. Erwartet Drehung 180° (Pins 1–4 zeigen nach +x)."""
+    assert round(driver.GetOrientationDegrees()) % 360 == 180, "preroute_outputs erwartet Drehung 180°"
+    pa, pb = pad_of(driver, "2").GetPosition(), pad_of(driver, "3").GetPosition()
+    out_a, out_b = pad_of(driver, "2").GetNet(), pad_of(driver, "3").GetNet()
+    edge_y = mm(ORIGIN[1] - EDGE_TRACK_Y)
+    # OUT_A: Via rechts neben dem Pin, unten schräg unter dem Treiber hindurch zum Rand, dann nach links
+    va = (pa.x + mm(1.15), pa.y)
+    add_track(board, out_a, pcbnew.F_Cu, STUB_TRACK, (pa.x, pa.y), va)
+    add_via(board, out_a, *va)
     ca = next(iter(contact_a.Pads())).GetPosition()
-    strip_y = mm(ORIGIN[1] + BOARD_W / 2 - ANTENNA_TRACK_STRIP / 2)
-    run_y = mm(ORIGIN[1] + 4.95)
-    add_track(board, out_a, pcbnew.B_Cu, w, (ca.x, ca.y), (ca.x, strip_y), (mm(ORIGIN[0] - 14.0), strip_y),
-              (mm(ORIGIN[0] - 12.85), run_y), (x["2"] - mm(1.8), run_y), (x["2"], via_y))
-    # SENSE-Schutzwiderstand R5 holt OUT_A per Via von der Bahn unten
-    r5 = pad_of(sense_r, "1").GetPosition()
-    add_track(board, out_a, pcbnew.F_Cu, SUPPLY_TRACK, (r5.x, r5.y), (r5.x, run_y))
-    add_via(board, out_a, r5.x, run_y)
+    add_track(board, out_a, pcbnew.B_Cu, POWER_TRACK, va, (va[0] - mm(0.75), edge_y), (ca.x + mm(0.8), edge_y),
+              (ca.x, edge_y + mm(0.8)), (ca.x, ca.y))
+    # OUT_B: Stich schräg nach rechts unten (am GND-Pin 4 vorbei), Via, unten am Rand nach rechts
+    vb = (pb.x + mm(1.7), pb.y - mm(0.4))
+    add_track(board, out_b, pcbnew.F_Cu, STUB_TRACK, (pb.x, pb.y), (pb.x + mm(0.6), pb.y),
+              (pb.x + mm(1.0), vb[1]), vb)
+    add_via(board, out_b, *vb)
+    cb = next(iter(contact_b.Pads())).GetPosition()
+    add_track(board, out_b, pcbnew.B_Cu, POWER_TRACK, vb, (vb[0], edge_y), (cb.x - mm(0.8), edge_y),
+              (cb.x, edge_y + mm(0.8)), (cb.x, cb.y))
 
 
-def copper_zones(board, gnd, vsys):
+def rel(x, y):
+    """Punkt relativ zur Platinenmitte (mm) als absolute Koordinate (nm)."""
+    return mm(ORIGIN[0] + x), mm(ORIGIN[1] + y)
+
+
+def preroute_vbus(board, fps):
+    """VBUS (bis 2 A) vorab:
+    - linkes VBUS-Padpaar (A4/B9): bandseitig oben mit 0,5 mm schräg zur Anode der Schottky D2
+    - die beiden VBUS-Padpaare untereinander über die Körperseite: je ein Via hinter dem Pad (außerhalb der
+      Bohrungen), unten verbunden. Das Band vor den Datenpads bleibt so unten frei für D-/D+ (ESD-Durchschleifung).
+    - ESD U5 Pin 5 (VBUS) oben waagerecht zwischen den D+/D--Vias hindurch an die Schrägbahn"""
+    usb = fps["J4"]
+    net = pad_of(usb, "A4").GetNet()
+    left, right = sorted((pad_of(usb, n) for n in ("A4", "B4")), key=lambda p: p.GetPosition().x)
+    ql, qr = left.GetPosition(), right.GetPosition()
+    half = left.GetBoundingBox().GetHeight() // 2
+    band, body = ql.y - half, ql.y + half          # Padenden: Band (-y) und Körper (+y)
+    # senkrecht nach -y bis unter die ESD, dann waagerecht in die Anode: oberhalb bleibt Platz für R14/R15
+    an = pad_of(fps["D2"], "2").GetPosition()
+    y_run = an.y - mm(0.25)
+    add_track(board, net, pcbnew.F_Cu, MAIN_TRACK, (ql.x, band), (ql.x, y_run), (an.x, y_run))
+    # Körperseite: Vias rechts unten neben den Pads (Bohrungen der Buchse bei x ±2,9 / y -0,2 freihalten)
+    vl = (ql.x + mm(0.55), body + mm(0.82))
+    vr = (qr.x - mm(0.55), body + mm(0.82))
+    add_track(board, net, pcbnew.F_Cu, 0.3, (ql.x, body), vl)
+    add_track(board, net, pcbnew.F_Cu, 0.3, (qr.x, body), vr)
+    add_via(board, net, *vl)
+    add_via(board, net, *vr)
+    add_track(board, net, pcbnew.B_Cu, MAIN_TRACK, vl, vr)
+    # ESD Pin 5 waagerecht an die senkrechte VBUS-Bahn
+    p5 = pad_of(fps["U5"], "5").GetPosition()
+    add_track(board, net, pcbnew.F_Cu, 0.3, (p5.x, p5.y), (ql.x, p5.y))
+    # VBUS-Teiler R14 (oben im Band): VBUS-Pad rechts an die senkrechte Bahn
+    r14 = pad_of(fps["R14"], "1").GetPosition()
+    add_track(board, net, pcbnew.F_Cu, 0.25, (r14.x, r14.y), (ql.x, r14.y))
+
+
+def preroute_vbus_branches(board, fps):
+    """VBUS zum Gate von Q1 (Kante +y, ohne Laststrom, 0,25 mm) und VBUS_DET aus dem Band nach Norden:
+    - VBUS: Via über der Anode der Schottky, unten nordwestlich (westlich am USB-Paar vorbei), Via zwischen
+      C9 und Q1, oben ans Gate
+    - VBUS_DET: R14–R15 direkt; den Weg zum Modul (Pad 9) routet Freerouting"""
+    net = pad_of(fps["J4"], "A4").GetNet()
+    an = pad_of(fps["D2"], "2")
+    a = rel(9.3, -3.6)
+    b = rel(5.5, 3.25)
+    q = an.GetPosition()
+    add_track(board, net, pcbnew.F_Cu, 0.25, (q.x, q.y), (a[0], q.y + mm(0.6)), a)
+    add_via(board, net, *a)
+    add_track(board, net, pcbnew.B_Cu, 0.25, a, rel(7.0, -1.3), rel(7.0, 2.5), rel(6.25, 3.25), b)
+    add_via(board, net, *b)
+    g = pad_of(fps["Q1"], "1").GetPosition()
+    add_track(board, net, pcbnew.F_Cu, 0.25, b, (g.x, g.y))
+    det = pad_of(fps["R14"], "2").GetNet()
+    r14, r15 = pad_of(fps["R14"], "2").GetPosition(), pad_of(fps["R15"], "1").GetPosition()
+    add_track(board, det, pcbnew.F_Cu, RULES["track"], (r14.x, r14.y), (r15.x, r15.y))
+
+
+def preroute_right_end(board, fps):
+    """Rechtes Ende: OUT_B von R4 per Via auf die OUT_B-Bahn unten, 3V3 von R4 nach C15."""
+    r4o, r4v, c15 = pad_of(fps["R4"], "1"), pad_of(fps["R4"], "2"), pad_of(fps["C15"], "1")
+    q = r4o.GetPosition()
+    v = (q.x, q.y - mm(0.62))
+    add_track(board, r4o.GetNet(), pcbnew.F_Cu, 0.25, (q.x, q.y), v)
+    add_via(board, r4o.GetNet(), *v)
+    a, b = r4v.GetPosition(), c15.GetPosition()
+    add_track(board, r4v.GetNet(), pcbnew.F_Cu, SUPPLY_TRACK, (a.x, a.y), (b.x, b.y))
+
+
+def preroute_vsys_r6(board, fps):
+    """VSYS zum Teiler R6 (Pad rechts): von C4 zwischen R1/R8 und C4/R3 hindurch (Gasse x ≈ +1,1)."""
+    c4, r6 = pad_of(fps["C4"], "1"), pad_of(fps["R6"], "1")
+    q, r = c4.GetPosition(), r6.GetPosition()
+    x = mm(ORIGIN[0] + 1.1)
+    add_track(board, c4.GetNet(), pcbnew.F_Cu, RULES["track"], (q.x, q.y), (x, q.y + mm(0.38)), (x, r.y - mm(0.25)),
+              (r.x, r.y))
+
+
+def preroute_cc(board, fps):
+    """CC1 (A5) über die Körperseite der Buchse zu R12 links neben J4 (das Band ist für D-/D+ belegt);
+    CC2 (B5) bandseitig zu R13."""
+    usb = fps["J4"]
+    a5, b5 = pad_of(usb, "A5"), pad_of(usb, "B5")
+    half = a5.GetBoundingBox().GetHeight() // 2
+    q = a5.GetPosition()
+    r12 = pad_of(fps["R12"], "1").GetPosition()
+    y = mm(ORIGIN[1] + 0.62)
+    add_track(board, a5.GetNet(), pcbnew.F_Cu, RULES["track"], (q.x, q.y + half), (q.x, y), (r12.x + mm(0.35), y),
+              (r12.x, r12.y))
+    q = b5.GetPosition()
+    r13 = pad_of(fps["R13"], "1").GetPosition()
+    add_track(board, b5.GetNet(), pcbnew.F_Cu, RULES["track"], (q.x, q.y - half), (q.x + mm(0.35), q.y - half - mm(0.4)),
+              (r13.x, r13.y))
+
+
+def preroute_bat_in(board, fps):
+    """BAT_IN (bis 2 A) vorab: Akku-Pad J5.1 unten zum Kabel-Pad J1.1 und zwischen den Laschen von J4
+    hindurch zu einem Via neben dem Drain von Q1."""
+    net = pad_of(fps["J5"], "1").GetNet()
+    j5, j1 = pad_of(fps["J5"], "1").GetPosition(), pad_of(fps["J1"], "1").GetPosition()
+    d = pad_of(fps["Q1"], "3").GetPosition()
+    add_track(board, net, pcbnew.B_Cu, MAIN_TRACK, (j5.x, j5.y), (j5.x - mm(0.8), j5.y + mm(1.75)),
+              (j1.x + mm(0.4), j1.y - mm(0.7)), (j1.x, j1.y))
+    left = pad_of(fps["J5"], "1").GetBoundingBox().GetLeft()
+    y = mm(ORIGIN[1] + 1.6)
+    v = (d.x + mm(1.05), mm(ORIGIN[1] + 2.2))
+    add_track(board, net, pcbnew.B_Cu, MAIN_TRACK, (j5.x, j5.y), (left + mm(0.3), y), (v[0] + mm(0.6), y), v)
+    add_via(board, net, *v)
+    add_track(board, net, pcbnew.F_Cu, MAIN_TRACK, v, (v[0], d.y), (d.x, d.y))
+
+
+def preroute_ties(board, fps):
+    """Kurze Verbindungen, an denen Freerouting scheitert:
+    - U4 (LIS2DH12): VDD Pin 9–10
+    - U3 (AP2112K): VIN – EN um den GND-Pin herum
+    - OUT_A zu den Erkennungswiderständen R3/R5: unten vom Ausgangs-Via nach oben, Via, dann R3.1 – R5.1
+    """
+    # LIS2DH12: 3V3 (2–9) und GND (3–8) unter dem Gehäuse verbunden; so gehen nur SCL, 3V3, SDA, INT nach außen
+    for ref, a, b in (("U4", "9", "10"), ("U4", "2", "9"), ("U4", "3", "8")):
+        pa, pb = pad_of(fps[ref], a), pad_of(fps[ref], b)
+        add_track(board, pa.GetNet(), pcbnew.F_Cu, 0.2, (pa.GetPosition().x, pa.GetPosition().y),
+                  (pb.GetPosition().x, pb.GetPosition().y))
+    # LDO: VIN (1) und EN (3) liegen auf derselben Seite, dazwischen GND (2) -> links außen herum
+    vin, en = pad_of(fps["U3"], "1"), pad_of(fps["U3"], "3")
+    x = vin.GetBoundingBox().GetLeft() - mm(0.35)
+    c8 = pad_of(fps["C8"], "1").GetPosition()
+    add_track(board, vin.GetNet(), pcbnew.F_Cu, 0.3, (c8.x, c8.y), (c8.x, vin.GetPosition().y - mm(0.5)),
+              (vin.GetPosition().x, vin.GetPosition().y))
+    add_track(board, vin.GetNet(), pcbnew.F_Cu, 0.25, (vin.GetPosition().x, vin.GetPosition().y),
+              (x, vin.GetPosition().y), (x, en.GetPosition().y), (en.GetPosition().x, en.GetPosition().y))
+    out_a = pad_of(fps["U2"], "2")
+    va = (out_a.GetPosition().x + mm(1.15), out_a.GetPosition().y)
+    r3, r5 = pad_of(fps["R3"], "1").GetPosition(), pad_of(fps["R5"], "1").GetPosition()
+    v = (r3.x + mm(0.27), r3.y - mm(0.85))
+    add_track(board, out_a.GetNet(), pcbnew.B_Cu, STUB_TRACK, va, (v[0], va[1]), v)
+    add_via(board, out_a.GetNet(), *v)
+    add_track(board, out_a.GetNet(), pcbnew.F_Cu, 0.25, v, (r3.x, r3.y), (r5.x, r5.y))
+
+
+def preroute_usb(board, fps):
+    """USB D+/D- vorab, ESD U5 durchgeschleift (ST DS4260 Fig. 7 „optimized layout“, Fig. 18):
+    J4 → U5 Buchsenseite (rechts, Pin 1 D+ / Pin 3 D-) → unter dem Gehäuse gerade hinüber → U5 Modulseite
+    (links, Pin 6 / Pin 4) → Via → unten im Bereich der Buchse → Via → oben im Kanal zum Modul (Pads 18/17).
+    Kein Abzweig/Stich.
+
+    - D+ (A6–B6) über die bandseitigen Padenden verbunden, von B6 schräg auf Pin 1
+    - D- (B7–A7) über die körperseitigen Padenden verbunden; von B7 Via, unten unter U5 hindurch zu Pin 3
+    Erwartet U5 mit Drehung 180°.
+    """
+    usb, mod, esd = fps["J4"], fps["U1"], fps["U5"]
+    assert round(esd.GetOrientationDegrees()) % 360 == 180, "preroute_usb erwartet U5 mit 180°"
+
+    def p(fp, num):
+        q = pad_of(fp, num).GetPosition()
+        return q.x, q.y
+
+    a6, b6, a7, b7 = p(usb, "A6"), p(usb, "B6"), p(usb, "A7"), p(usb, "B7")
+    dp, dm = pad_of(usb, "A6").GetNet(), pad_of(usb, "A7").GetNet()
+    half = pad_of(usb, "A6").GetBoundingBox().GetHeight() // 2
+    y_band, y_body = a6[1] - half - mm(0.3), a6[1] + half + mm(0.3)
+    w = 0.2
+    e1, e3, e4, e6 = p(esd, "1"), p(esd, "3"), p(esd, "4"), p(esd, "6")
+    # Paarverbindungen an J4
+    add_track(board, dp, pcbnew.F_Cu, w, a6, (a6[0], y_band), (b6[0], y_band), b6)
+    add_track(board, dm, pcbnew.F_Cu, w, b7, (b7[0], y_body), (a7[0], y_body), a7)
+    # D+: B6 → Pin 1 → Pin 6 → Via
+    vp = (e6[0] - mm(1.51), e6[1] - mm(0.15))
+    add_track(board, dp, pcbnew.F_Cu, w, (b6[0], y_band), (e1[0] - mm(0.45), e1[1] + mm(0.45)), e1, e6, vp)
+    add_via(board, dp, *vp)
+    # D-: B7 → Via → unten → Via rechts neben Pin 3 → Pin 3 → Pin 4 → Via
+    v1 = (b7[0] - mm(0.1), b7[1] - half - mm(0.93))
+    v2 = (e3[0] + mm(1.06), e3[1] + mm(0.35))
+    vm = (e4[0] - mm(1.56), e4[1] + mm(0.35))
+    add_track(board, dm, pcbnew.F_Cu, w, b7, v1)
+    add_via(board, dm, *v1)
+    add_track(board, dm, pcbnew.B_Cu, w, v1, v2)
+    add_via(board, dm, *v2)
+    add_track(board, dm, pcbnew.F_Cu, w, v2, e3, e4, vm)
+    add_via(board, dm, *vm)
+    # unten: Paar schräg aus dem Band, waagerecht vor der Lötlasche S1 (Durchsteckpad) vorbei, links davon
+    # senkrecht nach oben, dann waagerecht bis vor C10/R7 und per Via nach oben in den Kanal zwischen
+    # C2/R5 und der Kondensatorreihe C8–C10 (y = +0,83 D+, +1,11 D-). Unten bleibt so nur der Bereich
+    # an der Buchse belegt; die Platinenmitte bleibt unten frei für Nord-Süd-Verbindungen.
+    m17, m18 = p(mod, "17"), p(mod, "18")
+    tab = min((q for q in usb.Pads() if q.GetNumber() == "S1"), key=lambda q: (q.GetPosition().x, q.GetPosition().y))
+    x_tab = tab.GetBoundingBox().GetLeft()
+    yp1, ym1 = tab.GetBoundingBox().GetTop() - mm(0.47), tab.GetBoundingBox().GetTop() - mm(0.97)
+    xp1, xm1 = x_tab - mm(0.33), x_tab - mm(0.83)
+    yp, ym = mm(ORIGIN[1] - 0.6), mm(ORIGIN[1] - 1.05)
+    up_p, up_m = rel(8.6, 0.4), rel(7.9, 1.4)      # Vias in den Kanal
+    add_track(board, dp, pcbnew.B_Cu, w, vp, (vp[0] - (yp1 - vp[1]), yp1), (xp1, yp1), (xp1, yp), (up_p[0], yp), up_p)
+    add_track(board, dm, pcbnew.B_Cu, w, vm, (vm[0] - (ym1 - vm[1]), ym1), (xm1, ym1), (xm1, ym), (up_m[0], ym), up_m)
+    add_via(board, dp, *up_p)
+    add_via(board, dm, *up_m)
+    wk = 0.15  # im Kanal schmaler, damit eine dritte Bahn Platz hat
+    cp, cm = mm(ORIGIN[1] + 0.83), mm(ORIGIN[1] + 1.11)
+    xc = mm(ORIGIN[0] - 1.1)  # Ende des Kanals vor der 0402-Reihe
+    add_track(board, dp, pcbnew.F_Cu, wk, up_p, (up_p[0] - (cp - up_p[1]), cp), (xc, cp),
+              (xc - (cp - m18[1]), m18[1]), m18)
+    add_track(board, dm, pcbnew.F_Cu, wk, up_m, (up_m[0] - (up_m[1] - cm), cm), (m17[0] + mm(0.6), cm),
+              (m17[0] + mm(0.3), m17[1]), m17)
+
+
+def copper_zones(board, gnd):
     """Kupferflächen: GND oben und unten über die ganze Platine.
 
     (Eine VSYS-Fläche unten wurde verworfen: Freerouting zerschneidet sie mit Signalen in Inseln.)
     """
     x0, x1 = ORIGIN[0] - BOARD_L / 2, ORIGIN[0] + BOARD_L / 2
     y0, y1 = ORIGIN[1] - BOARD_W / 2, ORIGIN[1] + BOARD_W / 2
-    split = ORIGIN[0] + VSYS_SPLIT_X
     for layer, net, name, xa, xb, prio in [
         (pcbnew.F_Cu, gnd, "GND oben", x0, x1, 0),
         (pcbnew.B_Cu, gnd, "GND unten", x0, x1, 0),
@@ -379,7 +545,8 @@ def copper_zones(board, gnd, vsys):
         zone.SetAssignedPriority(prio)
         zone.SetLocalClearance(mm(0.2))
         zone.SetMinThickness(mm(0.2))
-        zone.SetPadConnection(pcbnew.ZONE_CONNECTION_THERMAL)
+        # voll angebunden: die kleinen GND-Pads (0402, USB-C, LGA) bekämen sonst nur eine Speiche
+        zone.SetPadConnection(pcbnew.ZONE_CONNECTION_FULL)
         zone.SetThermalReliefGap(mm(0.2))
         zone.SetThermalReliefSpokeWidth(mm(0.3))
         zone.SetIslandRemovalMode(pcbnew.ISLAND_REMOVAL_MODE_ALWAYS)
@@ -434,16 +601,26 @@ def main(variant):
         footprints[ref] = fp
 
     keepout = antenna_keepout(board, footprints["U1"])
+    edge_keepout(board)
     thermal_vias(board, footprints["U2"], netinfo["/GND"])
-    preroute_outputs(board, footprints["U2"], footprints["BT1"], footprints["BT2"], footprints["R1"], footprints["R4"],
-                     footprints["R8"], footprints["R5"])
+    preroute_outputs(board, footprints["U2"], footprints["BT1"], footprints["BT2"])
     preroute_supply(board, footprints)
+    preroute_usb(board, footprints)
+    preroute_vbus(board, footprints)
+    preroute_cc(board, footprints)
+    preroute_vbus_branches(board, footprints)
+    preroute_vsys_r6(board, footprints)
+    preroute_right_end(board, footprints)
+    preroute_ties(board, footprints)
+    preroute_bat_in(board, footprints)
     module_ground_vias(board, footprints["U1"])
-    ground_via_at_pad(board, footprints["R1"], "2", 0.84, -0.35)   # Shunt: Motor-Rückstrom nach GND
-    ground_via_at_pad(board, footprints["C12"], "2", 0.0, -1.0, width=0.25)
-    ground_via_at_pad(board, footprints["C10"], "2", 0.0, -0.9, width=0.25)
-    ground_via_at_pad(board, footprints["C15"], "2", 0.0, 0.9, width=0.25)
-    copper_zones(board, netinfo["/GND"], netinfo["/VSYS"])
+    for ref, num, ep_num in EP_TIES:
+        pin, ep = pad_of(footprints[ref], num), pad_of(footprints[ref], ep_num)
+        q, e = pin.GetPosition(), ep.GetPosition()
+        add_track(board, pin.GetNet(), pcbnew.F_Cu, 0.25, (q.x, q.y), (e.x, q.y))
+    for ref, num, dx, dy in GROUND_VIAS:
+        ground_via_at_pad(board, footprints[ref], num, dx, dy, width=0.3)
+    copper_zones(board, netinfo["/GND"])
     pcbnew.SaveBoard(str(PCB), board)
     top = sum(1 for p in placement.values() if p[3] == "F")
     print(f"{PCB.relative_to(HARDWARE.parent)}: Variante '{variant}', {len(comps)} Bauteile "

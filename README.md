@@ -11,7 +11,7 @@ Spielmodi, eigenen Modi, Spielleiter- und Spielerrollen. Der Original-Hebel blei
 
 | Baugruppe | Beschreibung |
 |---|---|
-| **Hauptplatine** | Im Format einer AA-Zelle: ESP32-C3, H-Brücke DRV8833, Hebel-Erkennung |
+| **Hauptplatine** | Im Format einer AA-Zelle: ESP32-C6 (vorher C3, verworfen), H-Brücke DRV8833, Hebel-Erkennung |
 | **Ladeplatine** | Ebenfalls AA-Format: USB-C (Laden + Flashen), Laderegler, LiPo-Anschluss. Steckt hochkant im zweiten Fach (ersetzt dort die Brücke) oder wird in die Basis geklebt |
 | **Brücke** | AA-Dummy aus Kupfer für das zweite Fach, wenn die Ladeplatine in der Basis sitzt |
 | **C-Hülse** | 3D-Druck-Adapter, damit die Hauptplatine ins Baby-Fach des alten Louie passt |

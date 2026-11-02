@@ -53,7 +53,7 @@
 | Kleine Platine (eine Seite < 15 mm, Lieferung als Einzelplatine) | +0,05 USD/Stk. | [Q] |
 | HASL bleifrei | ca. +1–1,5 USD pro Auftrag | [Q]/[S] |
 | ENIG | ca. +16 USD bei Kleinmengen | [Q] (Forum) / [S] |
-| Regeln 0,15 mm / Via 0,3 mm | Standard, kein Aufpreis (Aufpreis erst bei Bohrung < 0,3 mm) | [Q] |
+| Regeln 0,13 mm / Via 0,3/0,6 mm | Standard, kein Aufpreis (JLC 2 Lagen 1 oz: 0,10/0,10 mm; Aufpreis bei Bohrung 0,1/0,15 mm bzw. 0,2/0,25 mm mit Ø < 0,45 mm), siehe hauptplatine-c6.md „Fertigungsregeln“ | [Q] |
 | 10 / 25 / 50 / 100 Stk. | ca. 5 / 8 / 12 / 18 USD inkl. Zuschläge | [S] |
 
 **HASL bleifrei vs. ENIG:** HASL ist billiger, aber leicht uneben. ENIG (Nickel/Gold) ist plan, lagerfähiger und besser für feine Pads (HTSSOP-16, LGA-Pads des ESP32-Moduls). Für maschinelle Bestückung mit Schablone funktioniert bleifreies HASL bei diesen Bauformen in der Praxis meist problemlos. Mehrkosten ENIG ca. 10–15 € pro Auftrag → bei 5–10 Stück spürbar, bei 100 Stück vernachlässigbar.
@@ -192,3 +192,137 @@ Abgerufen am 01.11.2026.
 | Aisler-Gebührenstruktur (Stand der Community-Seite, evtl. veraltet) | Alle Endsummen in den Tabellen |
 
 Nicht verifiziert werden konnten: JLC-Basic/Extended-Status der einzelnen LCSC-Nummern, aktuelle Lagerbestände, PCBWay-Bestückungspreise (nur manuelles Angebot), Eurocircuits-Preise (Rechner braucht Daten), aktuelle Aisler-Bestückungspreise (die Preisseite kann älter sein).
+
+---
+
+## 5. 2 vs. 4 Lagen (Hauptplatine, Stand 02.11.2026)
+
+**Frage:** Wie viel teurer wird die Hauptplatine (46 × 13,5 mm = 6,2 cm², FR4 0,8 mm, 1 oz außen, einseitig bestückt), wenn sie statt mit 2 mit 4 Lagen gefertigt wird?
+
+**Vorgehen:** Web-Recherche ohne Login und ohne eigenes Angebot. Der JLC-Online-Rechner (cart.jlcpcb.com/quote) liefert die Preise nur per JavaScript; er wurde nicht abgefragt. Die Leiterplattenpreise für 10–100 Stück sind deshalb Hochrechnungen aus veröffentlichten Grundpreisen und Forenberichten und als **(unsicher)** markiert. Belegte Einzelangaben sind mit **(geprüft)** markiert (Quelle am 02.11.2026 gelesen).
+
+### 5.1 Kurzantwort
+
+- **Leiterplatte:** 4 Lagen kosten bei JLCPCB für diese kleine Platine **ca. 3–20 USD mehr pro Auftrag** (5–100 Stück). Das sind **ca. 0,2–1 € pro Board** (unsicher).
+- **Bestückung:** **keine Änderung.** Economic PCBA ist für 2, 4 und 6 Lagen und 0,8–1,6 mm zugelassen (geprüft). Keine JLC-Bestückungsgebühr hängt von der Lagenzahl ab (geprüft).
+- **Lieferzeit:** Leiterplattenfertigung 2–5 Tage statt 1–2 Tage, also **ca. 1–3 Werktage länger** (geprüft für 1,6 mm/HASL; 0,8 mm unsicher).
+- **Gesamtpreis bestückt (JLC, Szenario A):** steigt bei 5 / 10 / 30 Stück um ca. **3 / 6 / 10 € pro Auftrag** bzw. **0,60 / 0,60 / 0,35 € pro Board** (unsicher).
+- **Nutzen:** 4 Lagen erlauben großzügigere Regeln (0,15/0,15 mm oder 0,2/0,2 mm statt 0,13 mm Abstand und 0,1 mm Bahn), eine durchgehende GND-Lage und lösen voraussichtlich die 17 offenen Verbindungen (hauptplatine-c6.md 8.5).
+
+### 5.2 Leiterplatte allein (JLCPCB)
+
+| Punkt | 2 Lagen | 4 Lagen | Status |
+|---|---|---|---|
+| Lockangebot 5 Stück | 2 USD bis 100 × 100 mm | 2 USD nur bis **50 × 50 mm** (unsere 46 × 13,5 mm passen) | geprüft (LCSC-Preisseite, Hack-Club-Leitfaden) |
+| Wo gilt der 2-USD-Preis? | seit 22.08.2026 **nur noch in der Desktop-App JLCONE**, nicht mehr auf der Website | gleich | geprüft (JLC-News 22.08.2026); ob die 4-Lagen-Variante mitzählt: unsicher |
+| Website-Preis 5 Stück | ca. 4 USD | „4 layers (10×10 cm) from 7 USD“; Forum März 2026: 100 × 100 mm, 5 Stk. = 5,92 € zzgl. Versand | geprüft (JLC-Werbeseite, mikrocontroller.net) |
+| Flächenpreis größere Mengen | – | 70,6 USD/m² Platinenanteil; Beispiel 100 Stk. 100 × 100 mm = 106,30 USD gesamt (≈ 36 USD Fixanteil) | geprüft (JLC-News 03/2024, Preis seit 08/2026 „Standard-Basisrate“) |
+| Ingenieurgebühr | ca. 3–4 USD | bei großen Boards (> 100 mm) bis 24 USD; bei kleinen Boards gering | Forum 02/2026, unsicher |
+| Dicke 0,8 mm | ohne Aufpreis | **zulässig** (0,4–2,0 mm für 4 Lagen); Aufpreis nicht belegt. Toleranz unter 1,0 mm: ±0,1 mm | Zulässigkeit geprüft; Preis **unsicher** – im Rechner prüfen |
+| 1 oz außen / innen | 1 oz Standard | 1 oz außen Standard, innen 0,5 oz Standard | geprüft |
+| Kleinplatinen-Zuschlag (eine Seite < 15 mm, Einzelplatine) | 0,05 USD/Stk. | gleich | geprüft |
+| Oberfläche HASL bleifrei | ca. +1–1,5 USD/Auftrag | ähnlich | unsicher |
+| ENIG | ca. +16 USD bei Kleinmengen | ähnlich (+13–20 USD); Zuschlag, wenn ENIG-Fläche > 30 % der Platine | Zuschlagsregel geprüft, Betrag unsicher |
+| Fertigungszeit (≤ 100 × 100 mm) | 5 Stk.: 24 h, < 50 Stk.: 1–2 Tage | 5–50 Stk.: **2–5 Tage** | geprüft (1,6 mm, HASL) |
+
+**Hochrechnung Leiterplattenpreis, Einzelplatinen, HASL bleifrei, inkl. Kleinplatinen-Zuschlag (USD, unsicher):**
+
+| Menge | Fläche gesamt | 2 Lagen | 4 Lagen | Δ 4 Lagen |
+|---:|---:|---:|---:|---:|
+| 5   | 31 cm²  | 2 (JLCONE) / ≈ 4 (Web) | 2 (JLCONE) / ≈ 5–7 (Web) | **+0–3** |
+| 10  | 62 cm²  | ≈ 5  | ≈ 8–15  | **+3–10** |
+| 30  | 186 cm² | ≈ 9  | ≈ 15–25 | **+6–16** |
+| 100 | 621 cm² | ≈ 18 | ≈ 30–45 | **+12–27** |
+
+2-Lagen-Werte aus Abschnitt 2.1 (dort ebenfalls geschätzt). 4-Lagen-Werte: Fixanteil (Ingenieurgebühr, Filme) plus 70,6 USD/m²; bei so kleiner Fläche dominiert der Fixanteil.
+
+**Spartipp Nutzen:** Ein 5er-Nutzen (ca. 46 × 72 mm, Mausbiss-Stege, ohne Randstreifen) liegt bei 4 Lagen im Preisband „bis 100 × 100 mm“. 5 Nutzen = 25 Boards kosten dann etwa so viel wie 5 Stück 100 × 100 mm (ca. 6–7 USD Web, unsicher). Economic PCBA nimmt Nutzen an (max. 50 Einheiten). Damit wird der Aufpreis für 25–30 Boards voraussichtlich kleiner als in der Tabelle.
+
+### 5.3 Bestückung (PCBA, einseitig)
+
+| Punkt | 2 Lagen | 4 Lagen | Status |
+|---|---|---|---|
+| Economic PCBA zulässig | ja | **ja** („2, 4, 6 layers“, 0,8–1,6 mm, 2–50 Stk., ab 10 × 10 mm) | geprüft |
+| Setup / Schablone | 8,18 / 1,53 USD | gleich | geprüft |
+| Extended-Teile, Lötstellen, Röntgen | – | gleich, keine Lagenabhängigkeit | geprüft |
+| Standard PCBA (nur bei beidseitig nötig) | 25,56 USD Setup einseitig | gleich | geprüft |
+
+**Gesamtpreis bestückt pro Board (JLC Economic, HASL bleifrei, inkl. Versand, 19 % USt, Zoll; Basis Tabelle Abschnitt 1, Stand C3-Bestückung; der C6-Stand kostet laut hauptplatine-c6.md 7 bei beiden Varianten ca. +1 €/Board mehr) (unsicher):**
+
+| Menge | 2 Lagen gesamt | 2 Lagen pro Board | 4 Lagen gesamt | 4 Lagen pro Board |
+|---:|---:|---:|---:|---:|
+| 5  | ≈ 67 €  | ≈ 13,40 € | ≈ 70 €  | ≈ 14,00 € |
+| 10 | ≈ 94 €  | ≈ 9,40 €  | ≈ 100 € | ≈ 10,00 € |
+| 30 | ≈ 160 € | ≈ 5,35 €  | ≈ 170 € | ≈ 5,70 € |
+
+30 Stück interpoliert zwischen 25 und 50 Stück aus Abschnitt 1. Umrechnung Mehrkosten: USD × 0,885 × 1,19 ≈ USD × 1,05 in Euro brutto.
+
+### 5.4 Fertigungsregeln bei JLCPCB (1 oz)
+
+| Regel | 1–2 Lagen | 4 Lagen (Mehrlagen) | Aktueller Entwurf | Status |
+|---|---|---|---|---|
+| Min. Bahn/Abstand | 0,10 / 0,10 mm | 0,09 / 0,09 mm | Bahn 0,1–0,15, Abstand 0,13 mm | geprüft |
+| Min. Via (Bohrung / Ring) | 0,15 / 0,25 mm | 0,15 / 0,25 mm; 0,1 / 0,2 mm nur bei ≤ 1 mm Dicke und ENIG/OSP | 0,3 / 0,6 mm | geprüft |
+| Aufpreis kleine Bohrung | unter 0,3 mm | unter 0,3 mm (laut Forum bei 4 Lagen evtl. erst unter 0,2 mm) | 0,3 mm → kein Aufpreis | geprüft / Ausnahme unsicher |
+| Via-in-Pad (POFV, gefüllt + verkupfert) | gegen Aufpreis | **gegen Aufpreis**; kostenlos erst ab 6 Lagen | nicht verwendet | geprüft (Kosten ca. 15–25 USD unsicher) |
+| Via zu Bahn | 0,2 mm | 0,2 mm | – | geprüft |
+| Abstand zum Fräsrand | ≥ 0,2 mm | ≥ 0,2 mm | – | geprüft |
+
+**Folgerung:** 4 Lagen brauchen keine feineren Regeln. Mit einer GND-Lage (L2) und einer Versorgungs-/Signallage (L3) kann der Entwurf auf **0,15/0,15 mm oder 0,2/0,2 mm** und Via 0,3/0,6 mm zurück. Via-in-Pad ist nicht nötig. Die Antennen-Sperrfläche muss auch auf L2/L3 gelten; `antenna_keepout()` setzt sie bereits „auf allen Lagen“ (hauptplatine-c6.md 4). Bei 0,8 mm und 4 Lagen sind die Prepregs dünn; für USB 2.0 Full-Speed ist das unkritisch. Ein JLC-Impedanzaufbau für 0,8 mm/4 Lagen ist auf der Impedanzseite nicht aufgeführt (unsicher), wird aber auch nicht gebraucht.
+
+### 5.5 PCBWay und Aisler (kurz)
+
+| Anbieter | 2 Lagen | 4 Lagen | Mehrkosten 4 Lagen | Status |
+|---|---|---|---|---|
+| **PCBWay** | ab 5 USD / 10 Stk. (bis 100 × 100 mm) | Forenberichte: 4-Lagen-Prototyp etwa doppelt so teuer wie JLC; 120 × 60 mm, 5 Stk. ca. 80 USD (2024) | für 46 × 13,5 mm ca. +20–40 USD/Auftrag | unsicher |
+| **Aisler** (DE, Preisformel Job + Fläche × Menge, min. 3 Stk.) | 2 Lagen HASL Budget: 12 € + 0,067 €/cm²; ENIG Budget: 12 € + 0,097 €/cm²; 0,8 mm bei 2 Lagen seit 11/2025 („Beautiful Boards+“) | **4 Lagen 0,8 mm ENIG Budget: 12 € + 0,156 €/cm²**, 125 µm Bahn/Abstand, Via 0,45 mm, 35 µm auf allen Lagen, Budget 10 Tage | siehe unten | Preisliste Stand 08/2023, evtl. veraltet; 0,8-mm-Angebot 10/2024 geprüft |
+
+Aisler-Leiterplattenpreis netto für 6,2 cm² (Hochrechnung, unsicher):
+
+| Menge | 2 Lagen ENIG | 4 Lagen 0,8 mm ENIG | Δ |
+|---:|---:|---:|---:|
+| 5   | ≈ 15 €  | ≈ 17 €  | +2 € |
+| 10  | ≈ 18 €  | ≈ 22 €  | +4 € |
+| 30  | ≈ 30 €  | ≈ 41 €  | +11 € |
+| 100 | ≈ 72 €  | ≈ 109 € | +37 € |
+
+Bei Aisler ist 4 Lagen 0,8 mm ein eigener Sammel-Pool und damit vergleichsweise günstig. Die Bestückung bei Aisler (75 € Setup + Positionsgebühr, Abschnitt 1) bleibt der große Kostenblock und hängt nicht von der Lagenzahl ab (unsicher).
+
+### 5.6 Mehrkosten 4 Lagen pro Auftrag und pro Board (JLCPCB, Economic PCBA, HASL bleifrei)
+
+| Menge | Δ netto USD | **Δ brutto € pro Auftrag** | **Δ € pro Board** | zusätzliche Lieferzeit |
+|---:|---:|---:|---:|---|
+| 5   | 0–5   | **≈ 3 €** (0–5)   | **≈ 0,60 €** (0–1,00) | +1–3 Werktage |
+| 10  | 3–10  | **≈ 6 €** (3–10)  | **≈ 0,60 €** (0,30–1,00) | +1–3 Werktage |
+| 30  | 6–16  | **≈ 10 €** (6–17) | **≈ 0,35 €** (0,20–0,55) | +1–3 Werktage |
+| 100 | 12–27 | **≈ 19 €** (13–28)| **≈ 0,20 €** (0,13–0,28) | +1–3 Werktage |
+
+Alle Werte unsicher (kein Live-Angebot). Mit ENIG bei beiden Varianten bleibt die Differenz etwa gleich. Mit dem 5er-Nutzen (5.2) wird sie bei 25–30 Stück eher kleiner. Gegenüber dem Gesamtpreis (Abschnitt 1) sind das **ca. 4–7 %** bei 5–30 Stück.
+
+### 5.7 Einschätzung
+
+- **Die Mehrkosten sind gering:** bei 5–30 Stück einstellige Euro-Beträge pro Auftrag, unter 1 € pro Board. Die Bestückung kostet gleich viel, Economic PCBA bleibt möglich. Teurer und deutlich spürbarer wäre der Wechsel auf beidseitige Bestückung (+60–70 USD, Abschnitt 1).
+- **Der Nutzen ist groß:** durchgehende GND-Lage unter Modul, DRV8213 und USB (bessere Masse für Funk und Motorströme), Routing mit großzügigeren Regeln, voraussichtlich 100 % geroutet statt 87 %. Weniger GUI-Nacharbeit und geringeres Fertigungsrisiko durch 0,13-mm-Abstände.
+- **Zu prüfen vor der Bestellung:** (1) Gerber beider Varianten in den JLC-Rechner (Website und JLCONE) laden und den echten Preis für 0,8 mm/4 Lagen ablesen, besonders ob 0,8 mm bei 4 Lagen einen Aufpreis oder längere Fertigung hat. (2) Antennen-Sperrfläche auf L2/L3 im DRC kontrollieren. (3) Bei Aisler ist 4 Lagen 0,8 mm ENIG ein Standardpool; falls EU-Fertigung gewünscht ist, ist der Aufpreis dort ebenfalls klein.
+- **Empfehlung:** Wenn das 2-Lagen-Routing nicht ohne viel Handarbeit auf 100 % kommt, lohnt sich 4 Lagen. Der Aufpreis von ca. 3–10 € pro Prototypenauftrag ist kleiner als eine zweite Platinenrunde wegen eines Layoutfehlers.
+
+### 5.8 Quellen (abgerufen 02.11.2026)
+
+- JLCPCB Fertigungsfähigkeiten (Dicken, Bahn/Abstand, Vias, POFV, Toleranzen): https://jlcpcb.com/capabilities/pcb-capabilities (geprüft)
+- JLCPCB Bestückungsfähigkeiten (Economic: 2/4/6 Lagen, 0,8–1,6 mm): https://jlcpcb.com/capabilities/pcb-assembly-capabilities (geprüft)
+- JLCPCB Bestückungspreise (keine Lagenabhängigkeit): https://jlcpcb.com/help/article/pcb-assembly-price (geprüft)
+- JLCPCB Fertigungszeiten 2 vs. 4 Lagen: https://jlcpcb.com/help/article/pcb-fabrication-services-and-production-time (geprüft)
+- JLCPCB Aufpreise (Kleinplatinen, ENIG > 30 %, Bohrungen < 0,3 mm): https://jlcpcb.com/help/article/In-what-cases-will-there-be-charged-extra (geprüft)
+- JLCPCB 4-Lagen-Flächenpreis 70,6 USD/m², Beispiele 100/500 Stk.: https://jlcpcb.com/blog/special-discount-on-quality-4-layers-pcbs, https://jlcpcb.com/news/discount-on-quality-4-layer-pcbs (geprüft, Stand 03/2024)
+- JLCPCB Preisanpassung FR4 1/2/4 Lagen, 03.08.2026: https://jlcpcb.com/news/jlcpcb-fr4-pcb-price-adjustment-august2026 (geprüft, keine konkreten Preise)
+- JLCONE Desktop, 2-USD-Angebot nur noch dort (22.08.2026): https://jlcpcb.com/news/jlcpcb-jlcone-desktop-app (geprüft)
+- „4 layers (10×10 cm) from 7 USD“, Coupon: https://jlcpcb.com/features/prototype-pcb-way (geprüft, Werbeseite)
+- 2 USD für 4 Lagen bis 50 × 50 mm: https://www.lcsc.com/pcba/price, https://highway.hackclub.com/guides/JLC-cost-optimizing (geprüft)
+- Freie Dicken 0,8/1,0/1,2/1,6 mm: https://techoverflow.net/2024/11/26/what-pcb-thickness-options-are-free-of-charge-on-jlcpcb/ (für 4 Lagen nicht ausdrücklich, unsicher)
+- Forum: JLC-Preise 2026 (4 Lagen 100 × 100 mm 5,92 €, Ingenieurgebühr bis 24 USD): https://www.mikrocontroller.net/topic/583828 (unsicher)
+- Forum: JLC 4 Lagen 100 × 100 mm 9,55 USD, PCBWay ca. 80 USD für 120 × 60 mm (2024): https://eevblog.com/forum/manufacture/a-good-pcb-manufacture-for-hobby-pcb/msg5569241 (unsicher)
+- Via-in-Pad kostenlos ab 6 Lagen: https://jlcpcb.com/blog/Free-Via-in-Pad-on-6-20-Layer-PCBs-with-POFV (geprüft)
+- PCBWay Online-Rechner: https://www.pcbway.com/orderonline.aspx (nicht abgefragt)
+- Aisler Preisformel und Tabelle: https://community.aisler.net/t/our-simple-pricing (Stand 08/2023, unsicher)
+- Aisler 4 Lagen 0,8 mm: https://community.aisler.net/t/aislers-new-0-8mm-4-layer-pcb-service/4399 (geprüft, 10/2024)
+- Aisler 0,8 mm bei 2 Lagen: https://community.aisler.net/t/option-to-order-0-8mm-boards-for-simple-projects/5162 (geprüft, 11/2025)

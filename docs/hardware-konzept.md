@@ -40,7 +40,7 @@ kein Kondensator, keine Diode. Kein Regler, kein Rückwärtslauf.
                │                                       │
    ┌───────────┴───────────────┐            (2× AA: über Fachbrücke
    │ Platine A  (AA-Format)    │             und Platine B = Brücke)
-   │  ESP32-C3 + Antenne       │                       │
+   │  ESP32-C6 + Antenne       │                       │
    │  H-Brücke DRV8833         │───────────────────────┘
    │  3,3-V-Regler             │
    │  Hebel-Erkennung          │
@@ -85,8 +85,9 @@ Bauteile sind so gewählt, dass alle drei Wege gehen: kleinste Bauform 0603, ICs
 (SOT-23, HTSSOP), gängige Teile mehrerer Hersteller (siehe `hardware/bom/teile.csv`).
 - **Die beiden Enden sind direkt die H-Brücken-Ausgänge** (OUT1 / OUT2). Deshalb ist die
   Einbaurichtung egal; „vorwärts“ wird einmalig in der Software kalibriert.
-- Inhalt: ESP32-C3-MINI-1, DRV8833, 3,3-V-LDO, Polymer-Puffer-Kondensator, Hebel-Erkennung,
-  Akkuspannungs-Teiler, Status-LED, Testpunkte, Lötpads oder Mini-Stecker (z. B. JST-SH) fürs Kabel.
+- Inhalt (Stand C6-Umbau, Bauteilliste in 5.5): ESP32-C6-MINI-1, DRV8213, 3,3-V-LDO, USB-C mit ESD und
+  Power-Path, 2 × 47 µF Puffer, Hebel-Erkennung, Spannungsteiler, Status-LED, LIS2DH12 (optional),
+  Lötpads für Kabel, Zelle, I²C und Service.
 - Layout: H-Brücke und Puffer am einen Ende, ESP-Modul mit Antenne am anderen, keine Massefläche
   unter der Antenne.
 
@@ -111,8 +112,9 @@ Ausgearbeitet in [ladeplatine.md](ladeplatine.md) (Schaltung, Layout, Halter, **
   Alternativ flach in einem Halter in der Basis, Buchse durch ein Loch in der Wand.
 - MCP73831 (500 mA) mit **Load-Sharing** (Schottky + P-MOSFET, Microchip AN1149): spielen beim Laden.
 - ESD-Schutz USBLC6-2SC6, Ladeanzeige-LED, JST-PH und Lötpads für den Akku.
-- USB D+/D− werden zur Platine A durchgereicht → **eine Buchse zum Laden und Flashen**.
-- Kabel zu A: 4 Adern (VSYS, D+, D−, GND), gleiche Reihenfolge wie J1.
+- ~~USB D+/D− werden zur Platine A durchgereicht~~ – entfällt mit der C6-Hauptplatine: Flashen nur über J4
+  auf A, die USB-Buchse der Ladeplatine dient nur zum Laden (hauptplatine-c6.md, Kapitel 8).
+- Kabel zu A: 2 Adern (VSYS → J1-1 BAT_IN, GND → J1-4); J1-2/3 sind ohne Netz.
 - Der Akku sitzt in der Basis.
 
 ## 5. Schaltungsdetails
@@ -175,29 +177,62 @@ mehrfaches Umlegen des Original-Hebels.
   vom Ladezustand konstant geregelt: `duty = U_soll / U_akku`.
 - Unterspannung: Spiel stoppen und im Web-UI warnen, bevor der Akkuschutz abschaltet.
 
-### 5.5 Mikrocontroller: ESP32-C3
+### 5.5 Mikrocontroller: ESP32-C3 → **Wechsel auf ESP32-C6** (Entscheidung 2026-11-02)
 
-- ESP32-C3-MINI-1: 13,2 × 16,6 × 2,4 mm, Antenne integriert, bei JLCPCB bestückbar.
-- **Native USB** (GPIO18/19): Flashen und Debug ohne USB-Seriell-Wandler.
+> **Der ESP32-C3 ist verworfen.** Neu ist das **ESP32-C6-MINI-1** (gleiche Größe 13,2 × 16,6 mm, integrierte
+> Antenne). Gründe: etwa doppelt so viel freier RAM mit WLAN + BLE (BTHome-Taster in V1), 22 statt 15 GPIOs
+> (8 frei statt keinem), ADC bis 3,3 V, Wecken aus LP-GPIOs, 802.15.4 (Zigbee/Thread) als Option für später;
+> der C3-MINI-1-N4 ist bei LCSC als NRND markiert. Mehrkosten ca. +1 USD pro Board. Details:
+> [analyse-funk-controller.md](analyse-funk-controller.md) (3b) und [hauptplatine-c6.md](hauptplatine-c6.md)
+> (Umbau, Pinbelegung, Flash, Motoransteuerung, Zigbee). Die Angaben unten beschreiben den Stand nach dem
+> C6-Umbau (Probeplatzierung, Routing noch nicht vollständig, siehe hauptplatine-c6.md Kapitel 8).
+
+- **ESP32-C6-MINI-1-H8** (8 MB Flash, C42403058), Rückfall **-N4** (4 MB, C5736265) ohne Layoutänderung:
+  13,2 × 16,6 × 2,4 mm, Antenne integriert. Footprint `lcsc:WIFIM-SMD_ESP32-C6-MINI-1` (Pads wie C3, 3D-Modell
+  des C6; der KiCad-Footprint `RF_Module:ESP32-C6-MINI-1` wird wegen seiner Antennen-Sperrzone nicht genutzt).
+- **Native USB** (IO12/IO13) über die **USB-C-Buchse J4 auf der Platine** (Variante E): Flashen, Debug und
+  5-V-Betrieb inkl. Motor. Power-Path: VBUS über Schottky D2 auf VSYS, Akku/Ladeplatine (BAT_IN) über P-FET Q1.
 - Updates später per WLAN (OTA).
-- Pinbelegung (Stand Schaltplan `hardware/main-board/louie-main.kicad_sch`):
+- Pinbelegung (Stand Schaltplan `hardware/main-board/louie-main.kicad_sch`, Umbau 2026-11-02, Details und
+  Begründungen in [hauptplatine-c6.md](hauptplatine-c6.md) 2.3):
 
-| GPIO | Netz | Funktion |
+| GPIO (Pad) | Netz | Funktion |
 |---|---|---|
-| IO0 | VBAT_ADC | ADC Akkuspannung (Teiler 470k/470k) |
-| IO1 | ISEN_ADC | ADC Motorstrom (Shunt über RC-Filter) |
-| IO2 | SCL | I²C-Takt (LIS2DH12, Pad J2), Strapping-Pin, 10k Pull-up |
-| IO3 | SENSE | Hebel-Erkennung, Deep-Sleep-Wake |
-| IO4 | MOT_IN1 | DRV8833 AIN1+BIN1 (PWM) |
-| IO5 | MOT_IN2 | DRV8833 AIN2+BIN2 (PWM) |
-| IO6 | MOT_nSLEEP | DRV8833 Sleep (low = aus) |
-| IO7 | MOT_nFAULT | DRV8833 Fehler (Open Drain, interner Pull-up) |
-| IO8 | SDA | I²C-Daten (LIS2DH12, Pad J2), Strapping-Pin, 10k Pull-up |
-| IO9 | BOOT | Pad J3, Taster gegen GND; beim Reset gedrückt = Download-Modus |
-| IO10 | LED | Status-LED über 1k |
-| IO18/IO19 | USB_D−/USB_D+ | Native USB über das Kabel zur Ladeplatine |
-| RXD0 | RXD | INT1 des LIS2DH12, Pad J2 |
-| TXD0 | TXD | Pad J3 (serielle Konsole, Reserve; gibt beim Booten Daten aus) |
+| IO0 (12) | VBAT_ADC | ADC VSYS (Teiler 470k/470k, bis 5,5 V → 2,75 V) |
+| IO1 (13) | ISEN_ADC | ADC Motorstrom: IPROPI des DRV8213 über R1 1,24 k, RC 1 k/100 n (255 mV/A) |
+| IO2 (5) | INT | INT1 des LIS2DH12 (bestückungsoptional) und Pad J2; LP-GPIO, weckt aus Deep Sleep |
+| IO3 (6) | SENSE | Hebel-Erkennung, „Hebel zu“ = HIGH, Wecken mit `WAKEUP_ANY_HIGH` |
+| IO4 (9) | VBUS_DET | VBUS-Teiler 100k/100k (USB gesteckt), ADC + LP-Wecken |
+| IO5 (10) | IO5 | Reserve, Pad J3-5 (zweiter Taster) |
+| IO6 (15) | SDA | I²C-Daten (LIS2DH12, Pad J2), 10k Pull-up R16 |
+| IO7 (16) | SCL | I²C-Takt (LIS2DH12, Pad J2), 10k Pull-up R10 |
+| IO8 (22) | IO8 | Strapping-Pin, 10k Pull-up R11 (beim Download 1) |
+| IO9 (23) | BOOT | Pad J3-3, Taster gegen GND; beim Reset gedrückt = Download-Modus |
+| IO12 / IO13 (17/18) | USB_D− / USB_D+ | USB-C J4 (ESD U5); J1-2/3 bleiben frei |
+| IO14 (19) | LED | Status-LED über 1k |
+| IO18 (24) | MOT_IN1 | DRV8213 IN1 (PWM) |
+| IO19 (25) | MOT_IN2 | DRV8213 IN2 (PWM) |
+| TXD0 / IO16 (31) | TXD | Pad J3-2 (serielle Konsole, ROM-Log) |
+| IO15, IO17, IO20–IO23 | – | frei (IO20 = nSLEEP nur beim Rückfall DRV8833) |
+
+Bauteile von Platine A (Stand Umbau, Quelle der Wahrheit: `hardware/bom/teile.csv`):
+
+| Ref | Bauteil | Aufgabe |
+|---|---|---|
+| U1 | ESP32-C6-MINI-1-H8 (Rückfall -N4) | MCU, WLAN/BLE/802.15.4 |
+| U2 | DRV8213DSGR (WSON-8 2 × 2) | H-Brücke mit IPROPI-Strommessung, Strombegrenzung 2 A (R1 1,24 k), Autosleep |
+| U3 | AP2112K-3.3 | LDO 3,3 V |
+| U4 + C15 | LIS2DH12 + 100 n | Beschleunigungssensor, **bestückungsoptional** (DNP möglich) |
+| U5 | USBLC6-2SC6 | ESD USB |
+| J4 | HRO TYPE-C-31-M-12 | USB-C an der Längskante +y, Öffnung 0,7 mm zurückgesetzt |
+| D2, Q1 | SS34F (SMAF), AO3401A | Power-Path VBUS → VSYS bzw. BAT_IN → VSYS (Verpolschutz) |
+| R12/R13, R14/R15 | 5,1 k, 100 k/100 k | CC-Senke, VBUS_DET-Teiler (zugleich Gate-Pull-down Q1) |
+| C1, C2 | 47 µF 1206 | Puffer VSYS (C3 entfällt) |
+| C4, C8–C14 | 0402/0603 | Abblock, EN-RC, ADC-Filter |
+| R1–R11, R16 | 0402 | IPROPI, EN, Hebel-Erkennung (R3 OUT_A → GND, R4 OUT_B → 3V3, R5), Teiler, LED, Pull-ups |
+| D1 | LED grün 0402 | Status |
+| J1, J2, J3, J5 | Lötpads unten | Kabel Ladeplatine (BAT_IN, –, –, GND), I²C/INT, Service (EN, TXD, BOOT, GND, IO5), Zelle |
+| BT1, BT2 | Pads unten | Endkontakte OUT_A / OUT_B |
 
 ## 6. Mechanik und Adapter
 

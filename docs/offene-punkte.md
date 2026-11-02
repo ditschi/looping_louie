@@ -72,12 +72,12 @@ Bilder: `just plot`, `just render`, Kupferlagen: siehe Befehle in `docs/entwickl
 | A6 | **Shunt 0,1 Ω**: Strombegrenzung 2 A und Strommessung über ADC (max. 200 mV) reichen für Hebel-Erkennung während der Fahrt. | ADC-Auflösung bei kleinen Strömen. | 0,2 Ω (1 A Grenze, doppelte Messspannung) |
 | A7 | **WLAN-Reichweite** reicht trotz Motor und Metallkontakten in der Nähe. | Siehe F1. | ESP32-C3-MINI-1U |
 | A8 | **USB (Full Speed) über das 4-adrige Kabel** und den JST-Stecker funktioniert. | Kurzes, ungeschirmtes Kabel – meist unkritisch. | Nur OTA + einmaliges Flashen über Testpads (2-adriges Kabel) |
-| A9 | **Designregeln** 0,15 mm Bahn/Abstand, Via 0,3/0,6 mm fertigt jeder Hersteller zum Standardpreis. | Herstellerabhängig. | 0,2 mm Regeln (mehr Platzbedarf) |
+| A9 | **Designregeln** (C6-Stand) 0,13 mm Abstand/Mindestbahn, 0,15 mm Standardbahn, Via 0,3/0,6 mm: JLCPCB-Standardpreis (2 Lagen, 1 oz: 0,10/0,10 mm) mit 30 % Reserve, siehe hauptplatine-c6.md „Fertigungsregeln“. | Andere Hersteller (Aisler, PCBWay) vor Bestellung gegenprüfen. | 0,15/0,2 mm Regeln (mehr Platzbedarf, nicht vollständig routbar) |
 | A10 | **Vias im Thermal-Pad** des DRV8833 (ungefüllt) sind für die Maschinenbestückung ok. | Lot kann in die Vias abfließen. | gefüllte/abgedeckte Vias (Aufpreis), Vias neben dem Pad |
 | A11 | **LCSC-Footprint des ESP32-C3-MINI-1** stimmt mit dem Datenblatt überein. | Von easyeda2kicad konvertiert, nicht gegen das Datenblatt geprüft. | eigenen Footprint nach Datenblatt zeichnen – **vor Bestellung prüfen!** |
 | A12 | **Loopin' Chewie** hat 2 × AA. | Nicht gesehen. | wird sonst nicht unterstützt (deine Vorgabe) |
 | A13 | Die **Unterseiten-Bauteile** (max. ca. 0,9 mm hoch) stören in der AA-Hülle nicht. | Abhängig von F4. | – |
-| A15 | **Mindest-Bahnbreite 0,12 mm** (Freerouting verjüngt an Pads). | Aisler & Co. verlangen teils 0,125–0,15 mm. | Engstellen im GUI auf 0,15 mm verbreitern |
+| A15 | **Mindest-Bahnbreite 0,13 mm**: Verjüngung in Freerouting abgeschaltet, `route.py` hebt schmalere Bahnen auf 0,13 mm an. | Aisler & Co. verlangen teils 0,125–0,15 mm. | Engstellen auf 0,15 mm verbreitern |
 | A16 | **Leistungsbahnen 0,4 mm**, OUT_A/OUT_B je über **ein** Via 0,3 mm pro Lagenwechsel. | Ein 0,3-mm-Via trägt grob 1 A; reicht bei < 1 A Motorstrom. | zweites Via parallel, breitere Bahnen |
 | A18 | **LIS2DH12-INT1 an RXD (GPIO20)**: INT ist nach dem Einschalten Push-Pull aktiv-high; an RXD stört das den Boot nicht. Wecken nur aus Light Sleep (GPIO20 kann nicht aus Deep Sleep wecken). | Laut Recherche, Datenblatt noch prüfen. | BMA400 (INT aktiv-low) an IO2 für Deep-Sleep-Wecken |
 | A19 | **Ob ein Schlag auf die Spielertaste sich vom laufenden Motor abhebt**, ist ungeklärt. | Nicht gemessen. | Messen am Steckbrett-Prototyp mit Breakout-Modul |

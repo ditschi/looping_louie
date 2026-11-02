@@ -29,8 +29,8 @@ schematic: symbols
 outline:
     @{{kicad_python}} {{hw}}/scripts/board_outline.py 2>&1 | grep -v "swig/python detected a memory leak"
 
-# Schaltplan auf die Platine übertragen und platzieren (überschreibt Layout!), Variante: zweiseitig | einseitig
-pcb variant="zweiseitig":
+# Schaltplan auf die Platine übertragen und platzieren (überschreibt Layout!), Variante: einseitig (C6-Stand) | zweiseitig (veraltet, C3)
+pcb variant="einseitig":
     @{{kicad_python}} {{hw}}/scripts/gen_main_pcb.py {{variant}} 2>&1 | grep -v "swig/python detected a memory leak"
     @just plot
 

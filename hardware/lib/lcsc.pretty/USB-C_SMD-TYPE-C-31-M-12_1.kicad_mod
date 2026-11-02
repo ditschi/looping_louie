@@ -68,10 +68,10 @@
 	(fp_circle (center 4.47 -2.76) (end 4.50 -2.76) (layer F.SilkS) (width 0.06))
 	(fp_circle (center 2.90 -1.21) (end 3.02 -1.21) (layer Cmts.User) (width 0.25))
 	(fp_circle (center -2.90 -1.21) (end -2.77 -1.21) (layer Cmts.User) (width 0.25))
-	(fp_line (start -4.47 5.09) (end -4.47 -2.26) (layer F.CrtYd) (width 0.05))
-	(fp_line (start -4.47 -2.26) (end 4.47 -2.26) (layer F.CrtYd) (width 0.05))
-	(fp_line (start 4.47 -2.26) (end 4.47 5.09) (layer F.CrtYd) (width 0.05))
+	(fp_line (start -4.47 -3.37) (end 4.47 -3.37) (layer F.CrtYd) (width 0.05))
+	(fp_line (start 4.47 -3.37) (end 4.47 5.09) (layer F.CrtYd) (width 0.05))
 	(fp_line (start 4.47 5.09) (end -4.47 5.09) (layer F.CrtYd) (width 0.05))
+	(fp_line (start -4.47 5.09) (end -4.47 -3.37) (layer F.CrtYd) (width 0.05))
 	(model "${KIPRJMOD}/../lib/lcsc.3dshapes/USB-C_SMD-TYPE-C-31-M-12_1.wrl"
 		(offset (xyz 0.000 0.000 0.000))
 		(scale (xyz 1 1 1))

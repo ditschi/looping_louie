@@ -14,7 +14,7 @@
 
 /* [Auswahl] */
 // baugruppe = Ansicht mit Platinen-Dummy; druck_* = Teile in Druckausrichtung
-teil = "baugruppe"; // [baugruppe, baugruppe_c, explosion, druck_aa_schale, druck_kappe_plus, druck_kappe_minus, druck_c_huelse, druck_alle]
+teil = "baugruppe"; // [baugruppe, baugruppe_c, explosion, kollision, druck_aa_schale, druck_kappe_plus, druck_kappe_minus, druck_c_huelse, druck_alle]
 
 /* [Zelle] */
 aa_d = 14.5;        // Durchmesser AA (IEC max.)
@@ -43,9 +43,9 @@ duebel_z = -4.6;
 duebel_tiefe = 4.0;     // Lochtiefe in der Schale
 band_b = 4.0;           // Nickelband für die Endkontakte (4 × 0,15 mm)
 band_schlitz_t = 0.45;
-kabel_x = 18.5;         // Mitte der Kabel-Lötpads J1 (Unterseite)
-kabel_l = 7.0;          // Länge des Kabelfensters
-kabel_seite = -1;       // Kabelfenster auf -y (1 = +y)
+kabel_x = 14.5;         // Mitte der Kabel-Lötpads J1 und der Akku-Pads J5 (Unterseite, unter der USB-C-Buchse)
+kabel_l = 9.0;          // Länge des Kabelfensters (J1: x = 10,7 … 18,3)
+kabel_seite = 1;        // Kabelfenster auf +y (Seite der USB-C-Öffnung; -1 = -y)
 c_schlitz = 3.0;        // Längsschlitz der C-Hülse (Kabel, Klemmwirkung)
 
 $fn = 96;
@@ -129,6 +129,10 @@ module c_huelse() {
 }
 
 // ---------- Platinen-Dummy (nur Ansicht/Kollisionsprüfung) ----------
+// Stand C6 (docs/hauptplatine-c6.md). Genauer: teil = "kollision" mit dem 3D-Export der Platine
+// (just modell -> build/main-board/3d/louie-main.stl).
+platine_stl = "../../build/main-board/3d/louie-main.stl";
+kollision_stl = false;
 
 module bauteil(x0, x1, y0, y1, h) {
     translate([x0, y0, pcb_top]) cube([x1 - x0, y1 - y0, h]);
@@ -136,15 +140,18 @@ module bauteil(x0, x1, y0, y1, h) {
 
 module platine_dummy() {
     color("darkgreen") translate([-pcb_l / 2, -pcb_w / 2, pcb_bot]) cube([pcb_l, pcb_w, pcb_t]);
-    color("silver") bauteil(-19.9, -3.3, -6.6, 6.6, 2.55);        // ESP32-C3-MINI-1
+    color("silver") bauteil(-19.9, -3.3, -6.6, 6.6, 2.55);        // ESP32-C6-MINI-1
     color("dimgray") {
-        bauteil(2.1, 7.1, -3.2, 1.2, 1.2);                        // DRV8833
-        bauteil(9.8, 12.2, -5.2, -2.0, 1.8);                      // C1
-        bauteil(12.4, 14.8, -5.2, -2.0, 1.8);                     // C2
-        bauteil(11.6, 14.8, 3.5, 5.1, 1.8);                       // C3
-        bauteil(15.6, 18.4, -4.1, -2.5, 1.2);                     // AP2112K
-        bauteil(19.9, 21.9, -5.6, -3.6, 1.0);                     // LIS2DH12
+        bauteil(-0.3, 1.7, -5.6, -3.6, 0.8);                      // DRV8213 (WSON-8)
+        bauteil(3.85, 7.05, -3.5, -1.9, 1.8);                     // C1 (1206)
+        bauteil(3.85, 7.05, -1.1, 0.5, 1.8);                      // C2 (1206)
+        bauteil(5.15, 8.65, -6.55, -3.95, 1.1);                   // D2 (SMAF)
+        bauteil(0.9, 3.8, 4.0, 5.6, 1.45);                        // AP2112K
+        bauteil(6.15, 9.05, 4.2, 5.5, 1.1);                       // AO3401A
+        bauteil(14.35, 17.25, -5.65, -4.05, 1.45);                // USBLC6-2SC6
+        bauteil(19.75, 21.75, -6.3, -4.3, 1.0);                   // LIS2DH12 (optional)
     }
+    color("lightgray") bauteil(10.83, 19.77, -1.3, 6.1, 3.26);    // USB-C HRO TYPE-C-31-M-12
     // Kontaktbänder und Kabel unten
     color("gold") for (s = [-1, 1])
         translate([s > 0 ? 19.9 : -aa_l / 2, -band_b / 2, pcb_bot - 0.15]) cube([aa_l / 2 - 19.9, band_b, 0.15]);
@@ -179,6 +186,15 @@ if (teil == "baugruppe") {
     color("red") for (x = [-1, 1], s = [-1, 1])
         translate([x * (kappe_innen + a / 2), s * duebel_y, duebel_z])
             rotate([0, 90, 0]) cylinder(d = duebel_d, h = duebel_tiefe + 2, center = true, $fn = 24);
+} else if (teil == "kollision") {
+    // Was aus der AA-Hüllkurve ragt (leeres Ergebnis = keine Kollision). Mit kollision_stl = true wird statt
+    // des Dummys der 3D-Export der Platine geprüft (braucht OpenSCAD >= 2023 mit Manifold; CGAL in 2021.01
+    // scheitert an der KiCad-STL). Rechnerische Prüfung: docs/hauptplatine-c6.md, Ergebnis Umbau.
+    difference() {
+        if (kollision_stl) translate([0, 0, pcb_bot]) mirror([0, 1, 0]) translate([-100, 75, 0]) import(platine_stl);
+        else platine_dummy();
+        rotate([0, 90, 0]) cylinder(r = r, h = aa_l + 2, center = true);
+    }
 } else if (teil == "druck_aa_schale") druck_schale();
 else if (teil == "druck_kappe_plus") druck_kappe(plus_nippel);
 else if (teil == "druck_kappe_minus") druck_kappe(false);

@@ -2,10 +2,16 @@
 
 Stand: 2026-11-01 · Status: Schaltplan und Layout erzeugt (ERC/DRC ohne Fehler), noch nicht bestellt
 
-Die Ladeplatine sitzt zwischen USB-C, Akku und Hauptplatine: Sie lädt den 1S-LiPo, versorgt
-beim Laden direkt das Spiel und reicht USB D+/D− zum ESP32-C3 durch (**eine Buchse zum Laden und
-Flashen**). Sie hat das Format der Hauptplatine, damit sie **in ein AA-Fach passt**. Alternativ wird
+Die Ladeplatine sitzt zwischen USB-C, Akku und Hauptplatine: Sie lädt den 1S-LiPo und versorgt
+beim Laden direkt das Spiel. Sie hat das Format der Hauptplatine, damit sie **in ein AA-Fach passt**. Alternativ wird
 sie **in die Basis des Spiels geklebt**.
+
+> **Hinweis (Stand 2026-11-02, Hauptplatine mit ESP32-C6 und eigener USB-C-Buchse J4):** Geflasht wird
+> **nur noch über J4 auf der Hauptplatine** (Entscheidung des Auftraggebers). J1 der Hauptplatine führt nur
+> noch **BAT_IN (Pad 1) und GND (Pad 4)**, die Pads 2/3 sind ohne Netz. **D+/D− der Ladeplatine werden nicht
+> mehr gebraucht**, ihre USB-Buchse dient nur zum Laden. Zwischen J103 und J1 genügen 2 Adern (J103-1 → J1-1,
+> J103-4 → J1-4); J103-2/3 bleiben frei. In einer v0.2 der Ladeplatine können U102 auf VBUS-Schutz reduziert
+> und die D+/D−-Bahnen entfallen. Die folgenden Abschnitte beschreiben den Stand v0.1 (mit Datenleitungen).
 
 ![Verdrahtung](bilder/verdrahtung.png)
 
@@ -122,9 +128,9 @@ Siehe Bild oben ([SVG](bilder/verdrahtung.svg)).
 
 | Ladeplatine | Ader | Hauptplatine / Akku | Querschnitt |
 |---|---|---|---|
-| J103-1 VSYS („V“) | rot | J1-1 VSYS | ≥ 0,25 mm² (Motorstrom bis 2 A) |
-| J103-2 D+ | grün | J1-2 D+ | dünn, mit D− verdrillt |
-| J103-3 D− | weiß | J1-3 D− | dünn |
+| J103-1 VSYS („V“) | rot | J1-1 BAT_IN | ≥ 0,25 mm² (Motorstrom bis 2 A) |
+| J103-2 D+ | – | – (J1-2 ohne Netz) | entfällt, Flashen über J4 der Hauptplatine |
+| J103-3 D− | – | – (J1-3 ohne Netz) | entfällt |
 | J103-4 GND („G“) | schwarz | J1-4 GND | ≥ 0,25 mm² |
 | J102 Pin 1 / Pad „+“ | rot | Akku + | Akkukabel |
 | J102 Pin 2 / Pad „−“ | schwarz | Akku − | Akkukabel |
@@ -142,7 +148,7 @@ oder an die Lötpads löten.
 | L3 | Polarität der verwendeten Akkus (JST-PH) | beim Kauf prüfen, ggf. Akku mit passender Belegung wählen |
 | L4 | Kontaktdruck der Nickelbänder an den Fachkontakten (Brücke führt Motorstrom) | wie Hauptplatine (offene Punkte F3) |
 | L5 | Wandstärke der Basis und Lage des Lochs | am Spiel messen, Halter ggf. anpassen (`boden`, Parameter in der SCAD-Datei) |
-| L6 | USB-Datenübertragung über das 4-adrige Kabel | wie A8 in den offenen Punkten; kurz halten |
+| L6 | ~~USB-Datenübertragung über das 4-adrige Kabel~~ | entfällt: Flashen nur noch über J4 der Hauptplatine |
 
 ## 7. Befehle
 

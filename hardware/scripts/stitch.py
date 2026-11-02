@@ -37,6 +37,22 @@ def _collides(board, items, shape, layer, net):
     return False
 
 
+HOLE_CLEARANCE = 0.3  # Lochabstand (DRC 0,25 mm) mit Reserve
+
+
+def _near_hole(board, pos):
+    """Liegt das Via zu nah an einer Bohrung (auch NPTH ohne Kupfer, z. B. Stifte der USB-Buchse)?"""
+    for pad in board.GetPads():
+        drill = pad.GetDrillSize()
+        if drill.x <= 0:
+            continue
+        c = pad.GetPosition()
+        r = max(drill.x, drill.y) / 2 + mm(VIA_D / 2 + HOLE_CLEARANCE)
+        if (c.x - pos.x) ** 2 + (c.y - pos.y) ** 2 < r ** 2:
+            return True
+    return False
+
+
 def _inside_board(board, pos):
     box = board.GetBoardEdgesBoundingBox()
     m = mm(EDGE_MARGIN)
@@ -69,7 +85,7 @@ def stitch_pad(board, pad, items):
         for k in range(24):
             a = 2 * math.pi * k / 24
             pos = pcbnew.VECTOR2I(int(c.x + mm(r * math.cos(a))), int(c.y + mm(r * math.sin(a))))
-            if not _inside_board(board, pos) or _in_rule_area(board, pos):
+            if not _inside_board(board, pos) or _in_rule_area(board, pos) or _near_hole(board, pos):
                 continue
             if not _in_zone(board, pos, other, net):
                 continue
@@ -161,7 +177,7 @@ def stitch_grid(board_file, net_name="/GND", pitch=1.6):
             pos = pcbnew.VECTOR2I(int(x), int(y))
             on_both = all(any(z.IsOnLayer(L) and z.HitTestFilledArea(L, pos, mm(VIA_D / 2 + 0.05)) for z in zones)
                           for L in (pcbnew.F_Cu, pcbnew.B_Cu))
-            if on_both and _inside_board(board, pos) and not _in_rule_area(board, pos):
+            if on_both and _inside_board(board, pos) and not _in_rule_area(board, pos) and not _near_hole(board, pos):
                 via = pcbnew.PCB_VIA(board)
                 via.SetPosition(pos)
                 via.SetWidth(mm(VIA_D))
@@ -205,6 +221,7 @@ def _stitch_islands(board, zones, net, items):
                     while x < box.GetRight() and not placed:
                         pos = pcbnew.VECTOR2I(int(x), int(y))
                         if (outline.PointInside(pos) and _inside_board(board, pos) and not _in_rule_area(board, pos)
+                                and not _near_hole(board, pos)
                                 and zone.HitTestFilledArea(layer, pos, mm(VIA_D / 2))
                                 and any(z.IsOnLayer(other) and z.HitTestFilledArea(other, pos, mm(VIA_D / 2))
                                         for z in zones)):

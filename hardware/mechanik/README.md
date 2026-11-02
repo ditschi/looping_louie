@@ -38,8 +38,8 @@ fast massiv). Die schlanke Schale (14,5 × 44 mm) eventuell mit Brim drucken.
 | **Dübellöcher Ø 1,95 mm** | je 2 in jeder Stirnseite der Schale und in jeder Kappe | Verbindung Schale ↔ Kappe. Dort hinein steckt ein Stück **1,75-mm-Filament** als Dübel. 4 Dübel à ca. 6 mm. |
 | **Platinenschlitz** | Innenseite jeder Kappe, 13,9 × 1,2 mm, 0,8 mm tief | Nimmt das Platinenende auf. Hält die Platine nach oben, zur Seite und in der Länge. |
 | **Bandschlitz** | Kappe, unter dem Platinenschlitz, durchgehend | Führt das Nickelband (Endkontakt) von der Platinenunterseite nach außen. |
-| **Tasche** | Schale, unter der Platine über die ganze Länge | Platz für die Lötpads unten (J1, J2, J3, BT1, BT2), Lötzinn und Kabel. Die Platine liegt nur auf den beiden Randstegen auf. |
-| **Kabelfenster** | Schale, seitlich auf Höhe von J1 | Hier geht das 4-adrige Kabel zur Ladeplatine hinaus. |
+| **Tasche** | Schale, unter der Platine über die ganze Länge | Platz für die Lötpads unten (J1, J2, J3, J5, BT1, BT2), Lötzinn und Kabel. Die Platine liegt nur auf den beiden Randstegen auf. |
+| **Kabelfenster** | Schale, seitlich auf +y unter der USB-C-Buchse (J1 und J5) | Hier gehen das Kabel zur Ladeplatine bzw. die Zellen-Litzen hinaus (C6-Stand: J1/J5 liegen unter J4 an der Kante +y). |
 | **Längsschlitz** | C-Hülse | Kabelführung; außerdem federt die Hülse dadurch etwas und klemmt den Einsatz. |
 
 Es gibt keine Schrauben. Zusammengehalten wird der Einsatz durch die Dübel und im Fach
@@ -76,5 +76,9 @@ optional ein Tropfen Sekundenkleber.
 - **Kabelfenster:** Die Seite stellt man mit `kabel_seite` ein. Ob das Kabel am Deckel des
   neuen Modells vorbeipasst, ist noch offen (offene Punkte, F2).
 - **Reservefall** (Platine A + B gemeinsam in der C-Hülse): nicht modelliert.
-- Die Bauteilhöhen im Platinen-Dummy sind Näherungen nach Datenblatt. Sie dienen nur zur
-  Kollisionsprüfung in der Ansicht `teil = "baugruppe"`.
+- Die Bauteilhöhen im Platinen-Dummy sind Näherungen nach Datenblatt (Stand C6 mit USB-C J4). Sie dienen nur zur
+  Kollisionsprüfung in den Ansichten `teil = "baugruppe"` und `teil = "kollision"` (zeigt, was aus der
+  AA-Hüllkurve ragt; das Modul-Dummy ist mit 2,55 mm etwas zu hoch angesetzt und ragt an den Kanten knapp
+  heraus). Rechnerische Prüfung mit dem 3D-Export: docs/hauptplatine-c6.md 8.4.
+- **USB-C (C6-Stand):** Die Buchse sitzt oben an der Kante +y; die Schale liegt darunter, die Buchse ist frei
+  zugänglich. Unter J4 fehlt wegen des Kabelfensters der Randsteg als Auflage (offen).
