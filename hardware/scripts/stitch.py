@@ -3,6 +3,9 @@
 Für jedes betroffene Pad wird ringförmig um das Pad die nächstgelegene Via-Position gesucht, an
 der Via und Zuleitung keinen anderen Netzen zu nahe kommen, die nicht in einer Sperrfläche liegt
 und (auf der Gegenlage) innerhalb einer Fläche desselben Netzes.
+
+4 Lagen: Gegenlage ist immer die durchgehende GND-Lage In1; Vias werden auf allen vier Lagen auf Abstand
+geprüft.
 """
 import json
 import math
@@ -18,6 +21,21 @@ EDGE_MARGIN = 0.6
 
 def mm(v):
     return pcbnew.FromMM(v)
+
+
+def cu_layers(board):
+    """Kupferlagen der Platine (2: F/B, 4: F/In1/In2/B)."""
+    if board.GetCopperLayerCount() >= 4:
+        return [pcbnew.F_Cu, pcbnew.In1_Cu, pcbnew.In2_Cu, pcbnew.B_Cu]
+    return [pcbnew.F_Cu, pcbnew.B_Cu]
+
+
+def plane_layer(board, layer):
+    """Lage, auf der ein Via von `layer` aus die Fläche erreichen soll: bei 4 Lagen die GND-Lage In1,
+    sonst die Gegenlage."""
+    if board.GetCopperLayerCount() >= 4:
+        return pcbnew.In1_Cu
+    return pcbnew.B_Cu if layer == pcbnew.F_Cu else pcbnew.F_Cu
 
 
 def _copper_items(board):
@@ -77,7 +95,7 @@ def stitch_pad(board, pad, items):
     """Setzt ein Via mit Zuleitung neben das Pad. Gibt True zurück, wenn eine Position gefunden wurde."""
     net = pad.GetNet()
     pad_layer = pcbnew.F_Cu if pad.IsOnLayer(pcbnew.F_Cu) else pcbnew.B_Cu
-    other = pcbnew.B_Cu if pad_layer == pcbnew.F_Cu else pcbnew.F_Cu
+    other = plane_layer(board, pad_layer)
     c = pad.GetPosition()
     r0 = max(pad.GetSize().x, pad.GetSize().y) / 2 / 1e6 + VIA_D / 2 + 0.25
     for step in range(10):
@@ -100,7 +118,7 @@ def stitch_pad(board, pad, items):
             track.SetLayer(pad_layer)
             track.SetWidth(mm(TRACK_W))
             track.SetNet(net)
-            if any(_collides(board, items, via.GetEffectiveShape(L), L, net) for L in (pcbnew.F_Cu, pcbnew.B_Cu)):
+            if any(_collides(board, items, via.GetEffectiveShape(L), L, net) for L in cu_layers(board)):
                 continue
             if _collides(board, items, track.GetEffectiveShape(pad_layer), pad_layer, net):
                 continue
@@ -175,15 +193,16 @@ def stitch_grid(board_file, net_name="/GND", pitch=1.6):
         x = box.GetLeft() + mm(1.0)
         while x < box.GetRight() - mm(0.9):
             pos = pcbnew.VECTOR2I(int(x), int(y))
+            need = (pcbnew.F_Cu, pcbnew.B_Cu) + ((pcbnew.In1_Cu,) if len(cu_layers(board)) == 4 else ())
             on_both = all(any(z.IsOnLayer(L) and z.HitTestFilledArea(L, pos, mm(VIA_D / 2 + 0.05)) for z in zones)
-                          for L in (pcbnew.F_Cu, pcbnew.B_Cu))
+                          for L in need)
             if on_both and _inside_board(board, pos) and not _in_rule_area(board, pos) and not _near_hole(board, pos):
                 via = pcbnew.PCB_VIA(board)
                 via.SetPosition(pos)
                 via.SetWidth(mm(VIA_D))
                 via.SetDrill(mm(VIA_DRILL))
                 via.SetNet(net)
-                if not any(_collides(board, items, via.GetEffectiveShape(L), L, net) for L in (pcbnew.F_Cu, pcbnew.B_Cu)):
+                if not any(_collides(board, items, via.GetEffectiveShape(L), L, net) for L in cu_layers(board)):
                     via.SetLocked(True)
                     board.Add(via)
                     items.append(via)
@@ -202,10 +221,10 @@ def _stitch_islands(board, zones, net, items):
     vias = [t for t in board.GetTracks() if t.GetClass() == "PCB_VIA" and t.GetNetCode() == net.GetNetCode()]
     added = 0
     for zone in zones:
-        for layer in (pcbnew.F_Cu, pcbnew.B_Cu):
-            if not zone.IsOnLayer(layer):
+        for layer in cu_layers(board):
+            if not zone.IsOnLayer(layer) or (layer == pcbnew.In1_Cu and len(cu_layers(board)) == 4):
                 continue
-            other = pcbnew.B_Cu if layer == pcbnew.F_Cu else pcbnew.F_Cu
+            other = plane_layer(board, layer)
             polys = zone.GetFilledPolysList(layer)
             for i in range(polys.OutlineCount()):
                 outline = polys.Outline(i)
@@ -231,7 +250,7 @@ def _stitch_islands(board, zones, net, items):
                             via.SetDrill(mm(VIA_DRILL))
                             via.SetNet(net)
                             if not any(_collides(board, items, via.GetEffectiveShape(L), L, net)
-                                       for L in (pcbnew.F_Cu, pcbnew.B_Cu)):
+                                       for L in cu_layers(board)):
                                 via.SetLocked(True)
                                 board.Add(via)
                                 items.append(via)

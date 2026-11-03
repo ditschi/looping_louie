@@ -29,18 +29,36 @@ schematic: symbols
 outline:
     @{{kicad_python}} {{hw}}/scripts/board_outline.py 2>&1 | grep -v "swig/python detected a memory leak"
 
-# Schaltplan auf die Platine übertragen und platzieren (überschreibt Layout!), Variante: einseitig (C6-Stand) | zweiseitig (veraltet, C3)
-pcb variant="einseitig":
-    @{{kicad_python}} {{hw}}/scripts/gen_main_pcb.py {{variant}} 2>&1 | grep -v "swig/python detected a memory leak"
+# Hauptplatine (4 Lagen, placement.py) aus dem Schaltplan anlegen und platzieren (überschreibt Layout, alter Stand → build/main-board/keep/)
+pcb:
+    @{{kicad_python}} {{hw}}/scripts/gen_main_pcb.py 2>&1 | grep -v "swig/python detected a memory leak"
     @just plot
+
+# Hauptplatine komplett: anlegen, routen (Gate: nur Verbesserungen), ERC, DRC; Optionen wie just route
+main-board *args:
+    @just pcb
+    @just route main-board {{args}}
+    @just erc
+    @just drc
+
+# alte Namen (bis 2026-11-03 eigene 4-Lagen-Variante hardware/main-board-4l/)
+alias four-layer := main-board
+alias vierlagig := main-board
 
 # Platzierung mit Luftlinien als Bild (build/main-board/placement.png)
 plot:
     @{{kicad_python}} {{hw}}/scripts/plot_layout.py 2>&1 | grep -v "swig/python detected a memory leak"
 
-# Automatisch routen (Freerouting) und Masseflächen füllen, board: main-board | charger-board
-route board="main-board":
-    @{{kicad_python}} {{hw}}/scripts/route.py {{board}} 2>&1 | grep -v "swig/python detected a memory leak\|Debug: Adding duplicate image handler"
+# Hauptplatine: eigener Router route_fix.py (ROUTER=own, Standard), ROUTER=freerouting für Freerouting + Nachrouten;
+# Ladeplatine: Freerouting. Optionen: runs=N (Versuche, Standard 6), force=1 (Gate übergehen).
+# Übernommen wird nur ein besseres Ergebnis (hardware/<board>/routing.json)
+# Automatisch routen und Masseflächen füllen, board: main-board | charger-board
+route board="main-board" *args:
+    @{{kicad_python}} {{hw}}/scripts/route.py {{board}} {{args}} 2>&1 | grep -v "swig/python detected a memory leak\|Debug: Adding duplicate image handler"
+
+# Routing-Ergebnis neu erfassen: hardware/<board>/routing.json aus der offiziellen Platine (Kennzahlen per DRC)
+route-baseline board="main-board":
+    @{{kicad_python}} {{hw}}/scripts/route_gate.py init {{board}} 2>&1 | grep -v "swig/python detected a memory leak\|Debug: Adding duplicate image handler"
 
 # Schaltplan der Ladeplatine aus gen_charger_schematic.py erzeugen (überschreibt!)
 charger-schematic:
@@ -126,7 +144,8 @@ modell board="main-board": (_out board + "/3d")
     kicad-cli pcb export stl  --force --subst-models -o $out/{{"louie-" + replace(board, "-board", "")}}.stl $pcb >/dev/null
     ls -la $out
 
-# Alle Bilder einer Platine neu erzeugen (docs/bilder/: 3D, Kupferlagen, Schaltplan; Ladeplatine mit Präfix lade-)
+# Hauptplatine zusätzlich Innenlagen (copper-l2-gnd, copper-l3-signal) und Platzierung, Ladeplatine mit Präfix lade-
+# Alle Bilder einer Platine neu erzeugen (docs/bilder/: 3D, Kupferlagen, Schaltplan)
 images board="main-board":
     #!/usr/bin/env bash
     set -euo pipefail
@@ -149,6 +168,12 @@ images board="main-board":
     kicad-cli sch export pdf -o $tmp/sch.pdf $sch >/dev/null
     inkscape $tmp/sch.pdf -o $out/${pre}schaltplan.png -d 110 2>/dev/null
     if [ {{board}} = main-board ]; then
+        for spec in "In1.Cu:copper-l2-gnd" "In2.Cu:copper-l3-signal"; do
+            layers=${spec%%:*}; name=${spec##*:}
+            kicad-cli pcb export svg --mode-single --layers $layers,Edge.Cuts --fit-page-to-board \
+                --exclude-drawing-sheet -o $tmp/$name.svg $pcb >/dev/null
+            inkscape $tmp/$name.svg -w 1800 -b white -o $out/$name.png 2>/dev/null
+        done
         {{kicad_python}} {{hw}}/scripts/plot_layout.py 2>&1 | grep -v "swig/python detected a memory leak" >/dev/null || true
         cp build/{{board}}/placement.png $out/platzierung.png
     fi

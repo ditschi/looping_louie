@@ -17,8 +17,9 @@ import matplotlib.pyplot as plt  # noqa: E402
 import pcbnew  # noqa: E402
 
 HARDWARE = Path(__file__).resolve().parent.parent
-PCB = HARDWARE / "main-board" / "louie-main.kicad_pcb"
-OUT = HARDWARE.parent / "build" / "main-board" / "placement.png"
+BOARD = sys.argv[1] if len(sys.argv) > 1 else "main-board"
+PCB = HARDWARE / BOARD / ("louie-" + BOARD.replace("-board", "") + ".kicad_pcb")
+OUT = HARDWARE.parent / "build" / BOARD / "placement.png"
 ORIGIN = (100.0, 75.0)
 NET_COLORS = {"GND": "#555555", "VSYS": "#d62728", "+3V3": "#ff7f0e", "MOT_A": "#9467bd", "MOT_B": "#8c564b"}
 
@@ -63,7 +64,7 @@ def main():
         ax.set_ylim(7.5, -7.5)
         ax.add_patch(plt.Rectangle((-23, -6.75), 46, 13.5, fill=False, lw=1.5, color="black"))
         for zone in board.Zones():
-            if zone.GetIsRuleArea():
+            if zone.GetIsRuleArea() and zone.GetZoneName() != "GND-Lage":  # In1 ganzflächig
                 x0, y0, x1, y1 = box(zone.GetBoundingBox())
                 ax.add_patch(plt.Rectangle((x0, y0), x1 - x0, y1 - y0, color="#ffd9d9", zorder=0))
                 ax.text(x0 + 0.3, y1 - 0.3, zone.GetZoneName(), fontsize=7, color="#c00")

@@ -5,6 +5,8 @@
 
 **Platine:** 46 × 13,5 mm (6,2 cm²), 2 Lagen, FR4 0,8 mm, 0,15/0,15 mm, Via 0,3/0,6 mm, grüne Maske, ca. 38 Bestückpositionen / 15 Teiletypen, ca. 135 Lötstellen pro Platine.
 
+> **Entscheidung 2026-11-03: Die Hauptplatine wird mit 4 Lagen gefertigt** (JLC04081H-3313, 0,8 mm, Regeln 0,15/0,15 mm, Via 0,3/0,5 mm; [hauptplatine-c6.md](hauptplatine-c6.md) Kapitel 11). Die Rechnungen in Abschnitt 1–3 gehen noch von 2 Lagen aus; die Mehrkosten für 4 Lagen stehen in Abschnitt 5 (ca. +3 / +6 / +10 € pro Auftrag bei 5 / 10 / 30 Stück, unsicher).
+
 > **Legende:** **[Q]** = aus einer Quelle (siehe Abschnitt 4) belegt · **[S]** = eigene Schätzung / Hochrechnung, nicht verifiziert.
 > Alle Endpreise sind **[S]**, weil sie aus belegten Einzelgebühren plus geschätzten Werten (Platinenpreis bei Menge, Versand, Ausschuss) zusammengesetzt sind. Ein echtes Angebot (JLCPCB-Rechner mit Gerber + BOM + CPL) ersetzt diese Rechnung.
 
@@ -196,6 +198,8 @@ Nicht verifiziert werden konnten: JLC-Basic/Extended-Status der einzelnen LCSC-N
 ---
 
 ## 5. 2 vs. 4 Lagen (Hauptplatine, Stand 02.11.2026)
+
+**Gewählt: 4 Lagen** (Entscheidung des Auftraggebers 2026-11-03; die 2-Lagen-Variante blieb bei 13 offenen Verbindungen).
 
 **Frage:** Wie viel teurer wird die Hauptplatine (46 × 13,5 mm = 6,2 cm², FR4 0,8 mm, 1 oz außen, einseitig bestückt), wenn sie statt mit 2 mit 4 Lagen gefertigt wird?
 

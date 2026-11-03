@@ -288,7 +288,32 @@ Knopf halten. Die Bereitschaft verfällt nach 60 s. Endet der Test bei Hebel an,
 - Admin-Timeout 5 min statt 30 min. „Gast“ heißt jetzt „Zuschauer“.
 - Neue Einstellung **Hebel-Modus** (Modus ohne Handy), unabhängig vom zuletzt gewählten Modus.
 
-## 9. Offene Punkte
+## 9. Sprachen (Internationalisierung)
+
+Entscheidung 2026-11-03: Der Entwurf (`web/poc`) bleibt deutsch. **Die finale Fassung muss mehrsprachig sein.**
+
+- **Automatische Erkennung** über die Browser-Einstellung (`navigator.languages`, beim ersten Aufruf auch der
+  `Accept-Language`-Kopf), Rückfall Englisch. **Umschalten** jederzeit über Mehr → Sprache; die Wahl wird pro
+  Handy gespeichert (Sitzungs-Token bzw. `localStorage`).
+- **Sprachumfang (Vorschlag, noch zu bestätigen):**
+  - Hauptsprachen der EU: Englisch, Deutsch, Französisch, Spanisch, Italienisch, Polnisch, Niederländisch,
+    Rumänisch, **Portugiesisch in der brasilianischen Variante (pt-BR)**, die auch in Portugal verstanden wird.
+  - Weltweit viel gesprochen: Chinesisch (vereinfacht), Hindi, Arabisch, Japanisch, Türkisch, Indonesisch,
+    ggf. Russisch und Ukrainisch.
+- **Technik:**
+  - Alle Texte liegen in einer Datei pro Sprache (JSON, Schlüssel → Text, mit Platzhaltern und Pluralformen
+    über `Intl.PluralRules`). Zahlen und Zeiten über `Intl.NumberFormat`.
+  - Die Dateien werden gzip-komprimiert im Flash abgelegt und erst bei Bedarf geladen. Grob 5–8 KB pro Sprache.
+  - **Keine eingebetteten Schriften.** Chinesisch, Arabisch, Hindi und Japanisch nutzen die Systemschriften der Handys.
+  - **Arabisch ist rechts-nach-links:** Das Layout von Anfang an mit CSS-Logik-Eigenschaften (`margin-inline-start`
+    usw.) und `dir="rtl"` bauen. Symbole wie ⏪/⏩ bleiben dabei richtungstreu.
+  - Kinder ohne Lesen: Symbole und Farben tragen die Bedeutung, Text ist Zusatz. Das hilft auch bei langen
+    Übersetzungen (Deutsch, Französisch).
+  - Namenswürfel: eigene Wortlisten pro Sprache.
+- **Übersetzung:** Englisch ist die Quellsprache. Alle anderen Sprachen werden aus Englisch übersetzt und vor einem
+  Release von Muttersprachlern gegengelesen.
+
+## 10. Offene Punkte
 
 - [ ] Spürt man 0,3-s-Ruckler? (Prototyp)
 - [ ] Hebel-Geste 3× umlegen: in der Praxis zuverlässig erkennbar? Status-LED soll das Fenster zusätzlich anzeigen.

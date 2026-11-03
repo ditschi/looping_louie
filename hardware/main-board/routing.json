@@ -1,0 +1,27 @@
+{
+  "board": "main-board",
+  "fingerprint": "db30afd4278b4f76f88f94623653449a2b455069d447e53ace6d37f2d6c70af7",
+  "board_hash": "78d6c2a26ed63f84e9d3df89f36c77a59ddd58c34c9bfec1b9aee114d1002ce1",
+  "metrics": {
+    "drc_violations": 0,
+    "unconnected": 0,
+    "gnd_islands": 2,
+    "via_count": 116,
+    "track_length_mm": 640.16
+  },
+  "ranking": [
+    "drc_violations",
+    "unconnected",
+    "gnd_islands",
+    "via_count",
+    "track_length_mm"
+  ],
+  "router": "own",
+  "variant": "Versuch 3: eigener Router, Via-Kosten 40, F 1.3, B 1.15",
+  "note": "aus der offiziellen Platine angelegt (route_gate.py init)",
+  "timestamp": "2026-11-03T22:34:49+01:00",
+  "tools": {
+    "kicad": "9.0.8",
+    "repo": "v1-legacy-11-gc45c6de-dirty"
+  }
+}

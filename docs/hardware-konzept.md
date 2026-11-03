@@ -61,7 +61,11 @@ kein Kondensator, keine Diode. Kein Regler, kein Rückwärtslauf.
 **Vorgabe ist allein die Größe einer AA-Zelle** (Ø 14,5 × 50,5 mm). Dass das ins Fach passt, ist
 bekannt; der *Salto Sammy* zeigt, dass Elektronik in diese Form passt.
 
-- Platine **46 × 13,5 mm, 0,8 mm dick** (Startwerte in `hardware/scripts/board_outline.py`).
+- Platine **46 × 13,5 mm, 0,8 mm dick, 4 Lagen** (Entscheidung 2026-11-03): Lagenaufbau JLC-Standard
+  **JLC04081H-3313** (0,8 mm, außen 1 oz, innen 0,5 oz); L1 Bauteile/Signale, L2 (In1) durchgehende GND-Lage,
+  L3 (In2) Signale, L4 Lötpads/Signale; Regeln 0,15/0,15 mm, Via 0,3/0,5 mm. Vollständig geroutet (0 offen);
+  die 2-Lagen-Variante blieb bei 13 offenen Verbindungen und ist verworfen (Details:
+  [hauptplatine-c6.md](hauptplatine-c6.md) Kapitel 11). Maße in `hardware/scripts/board_outline.py`.
   Die Breite gibt das ESP32-C3-MINI-1 vor (13,2 mm). An den Enden bleiben je ca. 2 mm für die
   Kontakte (Mechanik offen).
 - **Bauhöhe bei einseitiger Bestückung**: Die Platine liegt leicht unter der Mitte der AA-Hülle
@@ -78,7 +82,7 @@ bekannt; der *Salto Sammy* zeigt, dass Elektronik in diese Form passt.
 3. **Beidseitig bestückt**: letzter Ausweg (teurer, nicht bei jedem Hersteller günstig).
 
 **Ergebnis (2026-11-01):** Mit 0603 passt Weg 1 nicht, Weg 2 passt. Aus Kostengründen gewählt:
-**Weg 1b – einseitig mit 0402-Passiven und Lötpads statt Stecker** (passt, zu ca. 95 % geroutet).
+**Weg 1b – einseitig mit 0402-Passiven und Lötpads statt Stecker** (passt; auf 4 Lagen vollständig geroutet).
 Platine B bleibt eine reine Brücke. Details und Zahlen: [offene-punkte.md](offene-punkte.md).
 
 Bauteile sind so gewählt, dass alle drei Wege gehen: kleinste Bauform 0603, ICs mit Beinchen
@@ -88,8 +92,8 @@ Bauteile sind so gewählt, dass alle drei Wege gehen: kleinste Bauform 0603, ICs
 - Inhalt (Stand C6-Umbau, Bauteilliste in 5.5): ESP32-C6-MINI-1, DRV8213, 3,3-V-LDO, USB-C mit ESD und
   Power-Path, 2 × 47 µF Puffer, Hebel-Erkennung, Spannungsteiler, Status-LED, LIS2DH12 (optional),
   Lötpads für Kabel, Zelle, I²C und Service.
-- Layout: H-Brücke und Puffer am einen Ende, ESP-Modul mit Antenne am anderen, keine Massefläche
-  unter der Antenne.
+- Layout: H-Brücke und Puffer am einen Ende, ESP-Modul mit Antenne am anderen, auf keiner der vier Lagen
+  Kupfer unter der Antenne.
 
 ### 4.2 Platine B: Brücke (nur bei 2× AA)
 

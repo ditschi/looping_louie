@@ -11,7 +11,7 @@ Unten nur Kupferflächen (Testpads, Kabel-Lötpads, Endkontakte). Platine B blei
 |---|---|
 | 1 (einseitig, 0603) | passt nicht (12 Teile bleiben selbst dicht gepackt übrig) |
 | **1b (einseitig, 0402, Lötpads statt JST)** | **passt und ist zu ca. 95 % geroutet** (siehe unten) |
-| 2 (oben Maschine, unten Hand, 0603) | passt; als Rückfallebene in `placement_zweiseitig.py` erhalten |
+| 2 (oben Maschine, unten Hand, 0603) | passt; Rückfallebene `placement_zweiseitig.py` am 2026-11-03 entfernt (C3-Stand, nur noch in Git) |
 
 Erreicht (`just pcb` + `just route`):
 - alle 40 Bauteile platziert, kein Überlapp, Schaltplan-Abgleich fehlerfrei
@@ -72,7 +72,7 @@ Bilder: `just plot`, `just render`, Kupferlagen: siehe Befehle in `docs/entwickl
 | A6 | **Shunt 0,1 Ω**: Strombegrenzung 2 A und Strommessung über ADC (max. 200 mV) reichen für Hebel-Erkennung während der Fahrt. | ADC-Auflösung bei kleinen Strömen. | 0,2 Ω (1 A Grenze, doppelte Messspannung) |
 | A7 | **WLAN-Reichweite** reicht trotz Motor und Metallkontakten in der Nähe. | Siehe F1. | ESP32-C3-MINI-1U |
 | A8 | **USB (Full Speed) über das 4-adrige Kabel** und den JST-Stecker funktioniert. | Kurzes, ungeschirmtes Kabel – meist unkritisch. | Nur OTA + einmaliges Flashen über Testpads (2-adriges Kabel) |
-| A9 | **Designregeln** (C6-Stand) 0,13 mm Abstand/Mindestbahn, 0,15 mm Standardbahn, Via 0,3/0,6 mm: JLCPCB-Standardpreis (2 Lagen, 1 oz: 0,10/0,10 mm) mit 30 % Reserve, siehe hauptplatine-c6.md „Fertigungsregeln“. | Andere Hersteller (Aisler, PCBWay) vor Bestellung gegenprüfen. | 0,15/0,2 mm Regeln (mehr Platzbedarf, nicht vollständig routbar) |
+| A9 | **Designregeln** (4 Lagen, seit 2026-11-03) 0,15 mm Abstand/Mindestbahn, 0,2 mm Standardbahn, Via 0,3/0,5 mm: JLCPCB-Mehrlagen (0,09/0,09 mm) mit 67 % Reserve, siehe hauptplatine-c6.md 11.2. Vorher (2 Lagen, verworfen): 0,13/0,15 mm, Via 0,3/0,6 mm. | Andere Hersteller (Aisler, PCBWay) vor Bestellung gegenprüfen. | 0,15/0,2 mm Regeln (mehr Platzbedarf, nicht vollständig routbar) |
 | A10 | **Vias im Thermal-Pad** des DRV8833 (ungefüllt) sind für die Maschinenbestückung ok. | Lot kann in die Vias abfließen. | gefüllte/abgedeckte Vias (Aufpreis), Vias neben dem Pad |
 | A11 | **LCSC-Footprint des ESP32-C3-MINI-1** stimmt mit dem Datenblatt überein. | Von easyeda2kicad konvertiert, nicht gegen das Datenblatt geprüft. | eigenen Footprint nach Datenblatt zeichnen – **vor Bestellung prüfen!** |
 | A12 | **Loopin' Chewie** hat 2 × AA. | Nicht gesehen. | wird sonst nicht unterstützt (deine Vorgabe) |

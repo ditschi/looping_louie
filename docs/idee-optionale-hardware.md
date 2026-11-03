@@ -1,7 +1,224 @@
 # Idee: optionale Zusatz-Hardware auf der Unterseite
 
-Stand: 2026-11-01 · Status: Recherche, nichts beschlossen. Ergänzt [hardware-konzept.md](hardware-konzept.md)
-und [ideen.md](ideen.md).
+Stand: 2026-11-03 · Status: Recherche, nichts beschlossen. Ergänzt [hardware-konzept.md](hardware-konzept.md),
+[hauptplatine-c6.md](hauptplatine-c6.md) und [ideen.md](ideen.md).
+
+**Abschnitt 0 ist der aktuelle Stand (ESP32-C6, 4 Lagen).** Die Abschnitte 1–6 darunter beschreiben den alten
+**C3-Stand** vom 2026-11-01 und bleiben als Herleitung stehen. Wo sie Abschnitt 0 widersprechen, gilt Abschnitt 0.
+
+---
+
+## 0. Neubewertung für ESP32-C6 und 4 Lagen (Stand 2026-11-03)
+
+Grundlage: [hauptplatine-c6.md](hauptplatine-c6.md) 2.3 und 11, [analyse-funk-controller.md](analyse-funk-controller.md)
+3b, [idee-powerbank.md](idee-powerbank.md), [idee-funk-taster.md](idee-funk-taster.md), `hardware/mechanik/huelle.scad`.
+Gemessen mit pcbnew an der 2-Lagen-Platine (verworfen, Commit c45c6de) und der 4-Lagen-Platine (0 offen; damals
+`hardware/main-board-4l/louie-main-4l.kicad_pcb`, seit 2026-11-03 der Standard `hardware/main-board/louie-main.kicad_pcb`). Koordinaten: Platinenmitte = (0; 0),
+Antenne bei −x, USB-C bei +x, +y = Seite der USB-C-Öffnung.
+
+**Grundsatz des Auftraggebers:** Alles Essentielle liegt **oben** und wird komplett maschinell bestückt (einseitige
+Economic PCBA bei JLC). Die Platine läuft **ohne jede Handarbeit** (Versorgung über USB-C; Akku-Kabel an J1/J5 sind
+Einbau, nicht Bestückung). Die **Unterseite ist ausschließlich optional:** Pads, Footprints zum Handlöten,
+Testpunkte. Nichts, was für den Grundbetrieb nötig ist, kommt nach unten. Bauteile unten werden **nie** bestückt,
+sonst wird die PCBA zweiseitig und teurer.
+
+### Kurzfassung
+
+- **Ja, 4 Lagen bieten mehr Optionen, aber nicht wegen der Fläche.** Unten ist bei beiden Varianten gleich viel
+  Platz frei (ca. 380 mm² ohne Courtyards). Neu ist: Bei 4 Lagen ist die Unterseite **keine Massefläche mehr**
+  (GND liegt durchgehend auf In1), und für Stichleitungen gibt es In2. Ein zusätzliches Pad kostet ein Via und eine
+  kurze Bahn, ohne eine Massefläche zu zerschneiden. Bei 2 Lagen zerschneidet jede neue Leitung unten die GND-Fläche,
+  und es sind schon 13 Verbindungen offen.
+- **Oben ist kein Platz mehr** (99 mm² frei, zerstückelt, kein 3 × 3 mm großes Stück). Neue Bauteile oben: keine.
+- **Es lohnen sich wenige, gezielte Pads, nicht „alle Pins raus“.** Für realistische Erweiterungen reichen
+  4 zusätzliche GPIOs (IO17 = RXD, IO20, IO21, IO23) plus IO22 für einen optionalen Lastpuls. **IO8 und IO15
+  nicht herausführen** (Strapping, kein Bedarf).
+- **Empfehlung unten (4 Lagen):** J6 „GPIO“ (3V3, RXD, IO20, IO21, GND), J7 „LED-Kette“ (VSYS über offene
+  Lötbrücke, IO23, GND), Footprint Lastpuls an VBUS (DNP), DNP-Vorbeschaltung an IO5, 4 Testpunkte. Zusammen ca.
+  110 mm² der freien 380 mm². **J2 muss 1 mm nach innen**, sonst liegen seine Pads halb außerhalb der Tasche der Hülle.
+- **Bei 2 Lagen:** keine zusätzlichen Pads, solange die 13 offenen Verbindungen nicht geschlossen sind.
+
+### 0.1 Bestandsaufnahme
+
+#### Freie C6-GPIOs und ihre Eigenschaften
+
+Belegt und schon an Pads: **IO2** INT (J2-5, LP-GPIO, Deep-Sleep-Wecken), **IO6/IO7** SDA/SCL (J2-3/4, LP-I²C),
+**IO9** BOOT (J3-3), **IO16** TXD (J3-2), **EN** (J3-1), **IO5** (J3-5). IO0/1/3/4 (VBAT_ADC, ISEN_ADC, SENSE,
+VBUS_DET) haben keine Pads und brauchen keine.
+
+| GPIO (Modulpad, Lage) | ADC | Deep-Sleep-Wecken | Strapping / Boot | heute | Bewertung |
+|---|---|---|---|---|---|
+| **IO5** (10, Kante +y, x = −5,6) | ADC1_CH5 | **ja** (LP_GPIO5) | nur SDIO-Flanke, Pegel egal; JTAG MTDI (JTAG läuft über USB) | **J3-5** | einziger freier Pin mit ADC und Deep-Sleep-Wecken |
+| IO8 (22, rechts, y = −3,2) | – | nein | **ja**: muss im Download-Modus (IO9 = 0) high sein; steuert mit eFuse das ROM-Log (unsicher) | R11 10 k nach 3V3, kein Pad | nicht herausführen |
+| IO15 (20, rechts, y = −1,6) | – | nein | JTAG-Quelle, nur mit gebrannter eFuse wirksam | offen | frei nutzbar, aber kein Bedarf |
+| **IO17** = RXD (30, Kante −y, x = −8,8) | – | nein | UART0-RX des ROM (Eingang beim Boot) | offen | **RXD zur Konsole** (TXD liegt schon auf J3) |
+| **IO20** (26, Kante −y, x = −5,6) | – | nein | – | offen | frei |
+| **IO21** (27, Kante −y, x = −6,4) | – | nein | – | offen | frei |
+| **IO22** (28, Kante −y, x = −7,2) | – | nein | – | offen | frei |
+| **IO23** (29, Kante −y, x = −8,0) | – | nein | – | offen | frei |
+
+(Modulpads gelesen aus der 4-Lagen-Platine, geprüft; ADC/LP/Strapping aus analyse-funk-controller.md 3b.1, geprüft.)
+
+- **Wecken:** Aus Deep Sleep wecken nur LP-GPIO0–7. Frei ist davon nur IO5. Alle anderen freien Pins wecken nur
+  aus Light Sleep (180 µA beim C6). Für Spieltasten reicht das, weil das Spiel dann ohnehin läuft.
+- **Boot-Glitches:** Das C6-Datenblatt nennt Pins mit kurzen Pegelspitzen beim Einschalten. Welche das genau sind,
+  ist hier **nicht nachgelesen (unsicher)**. Darum gilt für alles, was schaltet: Gate mit Pull-down, Ausgang erst
+  nach dem Boot aktiv. Ein Glitch von wenigen µs ist für Lastpuls, LED-Kette und Taster harmlos.
+- **TXD (IO16)** gibt beim Booten das ROM-Log aus, bleibt also Konsole.
+
+#### Vorhandene Pads (beide Varianten gleich, Unterseite)
+
+| Pad | Lage (Mitte) | Pads | Netze |
+|---|---|---|---|
+| J1 | x = +14,5, y = +5,65 (Kante +y, unter USB-C) | 4 × 1,4 × 1,6 mm, Raster 2,0 | BAT_IN, –, –, GND |
+| J2 | x = +3,4, y = +5,3 (Kante +y, unter LDO/Q1) | 5 × 1,4 mm, Raster 2,54 | 3V3, GND, SDA, SCL, INT |
+| J3 | x = −8,55, y = −3,25 (unter dem Modul) | 5 × 1,4 mm, Raster 2,54 | EN, TXD, BOOT, GND, IO5 |
+| J5 | x = +15,15, y = +2,55 (unter USB-C) | 2 × 2,5 × 3,5 mm | BAT_IN, GND |
+| BT1/BT2 | x = −21,4 / +21,4 | je 2 × 2 mm | OUT_A / OUT_B (Endkontakte) |
+
+Testpunkte TP1–TP8 aus dem C3-Stand gibt es nicht mehr.
+
+#### Freie Fläche (gemessen, pcbnew-Raster 0,05 mm)
+
+Nutzbar = Platine ohne Antennenbereich (x < −14,6), ohne Randstreifen 0,32 mm und ohne Bereich unter den
+Endkappen (|x| > 22,2): **475 mm²**.
+
+| | 2 Lagen | 4 Lagen |
+|---|---|---|
+| **Oben** frei von Courtyards | 99 mm² | 99 mm² (Platzierung gleich) |
+| davon so groß, dass 2 × 2 mm passt / 3 × 3 mm passt | 20 / **0** mm² | 20 / **0** mm² |
+| oben frei auch von Bahnen und Pads (+0,2 mm) | 35 mm² | 29 mm² |
+| **Unten** frei von Courtyards | **382 mm²** (in der Tasche \|y\| ≤ 5,2: 312) | **382 mm²** (Tasche: 312) |
+| unten frei auch von Bahnen und Pads (+0,2 mm) | 208 mm² | 185 mm² |
+| davon 3 × 3 mm am Stück | 34 mm² | 9 mm² |
+| Rolle der Unterseite | **GND-Fläche** (246 mm² in 2 Teilen), 13 Verbindungen offen | Signale + GND-Füllung; GND durchgehend auf In1 |
+
+Größte kupferfreie Stücke unten bei 4 Lagen: x +12,8 … +19,2, y −4,2 … −0,5 (unter USB-C, neben J5, ca. 19 mm²)
+und x +3,2 … +6,3, y −5,8 … −2,0 (unter C1/C2, ca. 11 mm²). Bei 4 Lagen lassen sich Bahnen unten auf In2 verlegen
+(Router-Lauf nötig). Die nutzbare Fläche liegt also zwischen 185 und 380 mm². **Fläche ist unten nicht der Engpass.**
+
+#### Bauhöhe unten
+
+- Die Platinenunterseite liegt 0,3 mm unter der Zellachse. Die AA-Schale (`huelle.scad`) hat unter der Platine
+  eine **Tasche 10,4 mm breit (|y| ≤ 5,2) und 2,0 mm tief**, außerhalb davon liegt die Platine auf.
+- **Heute:** Bauteile unten bis ca. **1,5 mm** hoch (0,5 mm Luft für Lötzinn und Toleranz), nur in |y| ≤ 4,5.
+  Litzen an den Pads ebenfalls nur in der Tasche oder im Kabelfenster (x = 10 … 19, +y).
+- **Mit tieferer Tasche:** Rechnerisch mit 0,8 mm Restwand (Radius 6,45 mm) wären bei |y| ≤ 3 bis ca. 5,4 mm und
+  bei |y| ≤ 4,5 bis ca. 4,3 mm Höhe möglich. Das ist nur eine Hüllkurvenrechnung (unsicher, Druckprobe).
+  Die Angabe „1,0–1,2 mm“ in Abschnitt 1 stammt aus der Zeit vor der Tasche.
+- **Befund J2:** Die J2-Pads reichen bis y = +6,0, die Tasche nur bis +5,2. Eine angelötete Litze drückt dort auf
+  die Schale. **J2 um ca. 1 mm nach −y (Mitte y ≤ +4,3) verschieben** oder die Tasche dort verbreitern. Bei
+  4 Lagen ist das Verschieben unkritisch.
+
+### 0.2 Sinnbewertung: Welche zusätzlichen Pads lohnen sich?
+
+| Kriterium | Befund |
+|---|---|
+| **Nutzen** | Realistische Erweiterungen: Kabel-Spieltasten (Notlösung bzw. Test für die Taster-Mitspieler aus idee-funk-taster.md 4.5, jetzt ohne Port-Expander), zweiter Taster mit Deep-Sleep-Wecken, externe LED-Kette, Lastpuls für Powerbanks, UART-RX zur Fehlersuche. Dafür reichen **IO5 (vorhanden) + IO17, IO20, IO21, IO22, IO23**. Für IO8 und IO15 gibt es keine Anwendung, die die anderen Pins nicht besser abdecken. |
+| **Testbarkeit** | Heute messbar: 3V3, I²C, INT, EN, TXD, BOOT, IO5, BAT_IN, OUT_A/OUT_B. **Es fehlen VSYS, VBUS, ISEN (IPROPI) und SENSE**, gerade die Größen, die man bei der Inbetriebnahme von Motor, Strombegrenzung und Hebel braucht. Dazu fehlt **RXD**: Mit TXD allein ist die serielle Konsole einseitig. Sie ist der Notweg, wenn USB-CDC hängt oder USB-C gerade zum Messen an der Powerbank steckt. |
+| **Risiko Antenne** | Alle Vorschläge liegen bei x ≥ −13,6 (wie J3). Die Sperrflächen bei x < −14,6 bleiben auf allen Lagen unberührt. |
+| **Risiko Strapping** | IO8/IO15 nicht herausführen. RXD (IO17) ist im ROM nur Eingang; ein Taster nach GND beim Einschalten stört den Flash-Boot nicht (unsicher, am Muster testen). |
+| **Risiko ESD** | Die Pads liegen im geschlossenen Batteriefach und werden im Spiel nicht berührt. Kritisch wird es erst bei Litzen nach außen (Taster, LED-Kette): **220–470 Ω in Reihe in der Leitung** (am Kabelende, Schrumpfschlauch) und Litze mit GND verdrillt. Auf der Platine keine TVS-Dioden (Platz, Aufwand) (unsicher, ob die Pin-ESD des C6 bei langen Leitungen reicht). |
+| **Risiko Kurzschluss im Fach** | VSYS ist ungesichert (LiPo nur über seinen Schutz-IC, USB über D2). **VSYS deshalb nur über eine Lötbrücke, Standard offen**, und nicht neben GND. Keine dauerhaft spannungsführenden Pads außer 3V3 (LDO-Strombegrenzung). |
+| **Aufwand 4 Lagen** | Je Pad ein Via und eine kurze Bahn auf In2; die Modulpads 26–30 liegen nebeneinander an der Kante −y, direkt über J3 und J6. Der Router muss neu laufen (20–60 min); dass alles ohne neue offene Verbindungen aufgeht, ist **unsicher**. Die Stitching-Vias unter dem Modul müssen J6 ausweichen (In1 bleibt GND, also unkritisch). |
+| **Aufwand 2 Lagen** | Hoch: jede Leitung unten zerschneidet die GND-Fläche weiter, 13 Verbindungen sind schon offen. |
+
+**Ein universeller Pad-Block?** Ja, aber verteilt nach Ort. Ein einziger Block mit 3V3, GND, VSYS, SDA, SCL und
+4 GPIO wäre 10 Pads lang (25 mm bei 2,54 mm). Er müsste quer über die Platine laufen, zu Pins von beiden Modulkanten.
+Sinnvoller ist: **I²C bleibt auf J2** (Kante +y, wo SDA/SCL/INT austreten), **die neuen GPIOs kommen auf J6** unter
+dem Modul (Kante −y, wo IO17/20/21 austreten), **VSYS und LED-Daten auf J7** nahe dem VSYS-Band. Alle Blöcke im
+Raster 2,54 mm mit 1,4-mm-Pads: geeignet für Litze und für Pogo-Pins (z. B. P75/P100). Testpunkte als runde Pads
+Ø 1,0 mm.
+
+### 0.3 Handlöt-Kandidaten neu bewertet (C6 + 4 Lagen)
+
+„Oben“ = maschinell bestückt (essentiell oder sehr günstig mitzunehmen). „Unten“ = optional, Handlöten oder nur Pads.
+
+| # | Bauteil | Nutzen fürs Spiel | Gehäuse handlötbar | Pins | Platz / Höhe | Empfehlung |
+|---|---|---|---|---|---|---|
+| K1 | LIS2DH12 | Klopfen, Anheben, Schütteln; INT auf IO2 → **jetzt Deep-Sleep-Wecken** | ★ LGA | I²C + IO2 | liegt **oben** (U4 + C15) | **oben lassen** (Entscheidung steht). Eigentlich optional: Grundbetrieb geht ohne |
+| K2 | LIS2DW12 | wie K1, flacher, sparsamer | ★ | wie K1 | – | nur als Stücklisten-Alternative für U4 (Pin-Kompatibilität unsicher) |
+| K3 | BMA400 | wie K1 | ★ | – | – | **entfällt**: Grund war IO2-Strapping, beim C6 kein Thema mehr |
+| K4 | SC7A20 | wie K1 | ★ | – | – | höchstens Zweitquelle für U4 (Registerkompatibilität unsicher) |
+| K5 | MMA8452Q | wie K1 | ★★ | – | – | nein (auslaufend) |
+| K6 | I²C-Pads | jedes Breakout | ★★★ | 5 | J2 vorhanden | **unten, bleibt**; 1 mm nach innen schieben (0.1) |
+| K7 | TMAG5273 | Magnet-Spielereien; Drehzahl gibt es schon über ISEN/PCNT | ★★★ SOT-23-6 | I²C | 1,45 mm passt jetzt in die Tasche | kein Footprint; bei Bedarf als Breakout an J2 |
+| K8 | DRV5032 | Hall-Schalter | ★★★ | 1 GPIO (jetzt frei) | – | kein Footprint; extern an J6 (3V3/GND/GPIO) möglich |
+| K9 | WS2812 auf der Platine | im Fach unsichtbar | ★★ | 1 | – | nein; stattdessen **J7 für eine externe Kette** |
+| K10 | I²S-Mikrofon | Klatschen | ★ LGA | 3 | Schallloch | nein (3 Pins, Schallloch, geschlossenes Fach; MicroPython-I²S nur Standard-Modus) |
+| K11 | Piezo-Summer | Töne | ★★★ | 1 | 1,9 mm: nur mit tieferer Tasche | nein; Töne über den Motor, externer Piezo an J6 möglich |
+| K12 | MAX17048 | Akku-% | ★★ (Exposed Pad) | I²C | 2 × 2 mm | nein: VBAT_ADC misst mit dem C6-ADC bis 3,3 V; die Zelle sitzt ohnehin an der Ladeplatine |
+| K13 | SHT40 | – | ★★ | I²C | – | nein |
+| K14 | Lichtsensor | im Fach dunkel | ★★ | I²C | – | nein |
+| K15 | Taster | zweiter Knopf, Kabel-Spieltasten | ★★★ | IO5 + 3 GPIO | Pads | **unten**: IO5 auf J3 (Deep-Sleep-Wecken), dazu IO17/20/21 auf J6 (Light Sleep) |
+| K16 | Piezo-Scheibe an ADC | Klopfen | ★★★ extern | IO5 | Pads | nur über die DNP-Vorbeschaltung an IO5 (N4); doppelt zu K1 |
+| **N1** | **Lastpuls Powerbank** (AO3400A + 47 Ω/1 W 2512 + 100 k Gate-Pull-down) | Powerbank bleibt im Standby an (idee-powerbank.md, Lösung C) | ★★★ SOT-23, 2512 | IO22 | ca. 9 × 4 mm, ≤ 1,25 mm hoch | **unten, DNP**: nur wenn der Firmware-Puls (Lösung D) nicht reicht |
+| **N2** | Externe LED-Kette (WS2812/SK6812) | Status/Effekte außen am Spiel | Pads | IO23 + VSYS | 3 Pads | **unten, J7** |
+| **N3** | UART-RX | Fehlersuche ohne USB | Pad | IO17 | 1 Pad | **unten, J6-2** |
+| **N4** | DNP-Vorbeschaltung IO5 (R nach 3V3, R und C nach GND, 0402) | NTC, Widerstandsleiter (mehrere Tasten an einem ADC), Poti, Piezo-Ableitwiderstand | ★★★ 0402 | IO5 | ca. 8 mm² | **unten, DNP** |
+| **N5** | Testpunkte VSYS, VBUS_J4, ISEN, SENSE | Inbetriebnahme, Prüfadapter | Pad Ø 1,0 | – | 4 × ca. 2 mm² | **unten** |
+| N6 | Hall-Sensor für Hebel/Turm | Hebel und Drehung erkennt die Platine schon über SENSE und ISEN | ★★★ | 1 GPIO oder I²C | – | nein: die Platine liegt im Batteriefach, fern von Hebel und Turm |
+| N7 | Zellspannung/Temperatur | VBAT wird schon gemessen; Schutz macht der Zell-IC | – | IO5 (ADC) | – | kein eigener Footprint; NTC über N4 möglich |
+| N8 | Zweiter Motor/Vibration | – | – | – | – | nein (DRV8213 hat einen Kanal) |
+
+### 0.4 Empfehlung für die 4-Lagen-Platine
+
+**Oben:** keine neuen Bauteile. Es ist kein Platz frei, und für den Grundbetrieb fehlt nichts. Heute oben, aber
+eigentlich optional: **U4 LIS2DH12 + C15** (bestückungsoptional, bleibt oben) und D1/R9 (Status-LED, sinnvoll).
+Daran ändert sich nichts.
+
+**Unten (alles optional, nichts bestückt):**
+
+| Ref (Vorschlag) | Art | Belegung | Lage (grob) | Platz |
+|---|---|---|---|---|
+| **J6** „GPIO“ | nur Pads, 1 × 5, 2,54 mm, 1,4 mm | 1 3V3 · 2 RXD (IO17) · 3 IO20 · 4 IO21 · 5 GND | unter dem Modul parallel zu J3, y ≈ +0,6, x −13,6 … −3,5; Stiche von Modulpads 26/27/30 über In2 | ca. 12 × 2 mm = 24 mm² |
+| **J7** „LED-Kette“ | nur Pads, 1 × 3, 2,54 mm | 1 VSYS (über JP1) · 2 IO23 · 3 GND | unter C1/C2, x ≈ +1 … +7, y ≈ −3,5 (in der Tasche) | ca. 8 × 2 mm = 16 mm² |
+| **JP1** | Lötbrücke, **Standard offen** | VSYS → J7-1 | neben J7 | ca. 2 mm² |
+| **Q2, R17, R18** (Lastpuls) | Footprints **DNP**: Q2 AO3400A (SOT-23), R17 47 Ω 1 W (2512), R18 100 k (0402, Gate → GND) | Drain über R17 an **VBUS_J4**, Gate an **IO22** | unter USB-C, Seite −y (x ≈ +9 … +19, y ≈ −5 … −2), zwischen den Schirmlaschen | ca. 40 mm² |
+| **R19, R20, C16** (IO5-Vorbeschaltung) | Footprints **DNP**, 0402 | R19 IO5 → 3V3, R20 IO5 → GND, C16 IO5 → GND | direkt neben J3-5 | ca. 8 mm² |
+| **TP1–TP4** | Testpunkte Ø 1,0 mm | VSYS, VBUS_J4, ISEN (IPROPI-Seite), SENSE | nahe vorhandenen Vias der Netze | ca. 8 mm² |
+| J2 | verschieben | – | Mitte y ≤ +4,3 statt +5,3 | – |
+
+Summe ca. **110 mm²** von 382 mm² freier Unterseite. Alle Bauteile unten ≤ 1,25 mm hoch, alle in |y| ≤ 5.
+
+Hinweise zur Auslegung:
+- **Lastpuls an VBUS statt VSYS:** Er kann dann physikalisch nur ziehen, wenn USB-C steckt, und nie den LiPo
+  leeren. 47 Ω an 5 V ergeben ca. 105 mA und 0,53 W im Puls; bei 50 ms alle 9 s im Mittel ca. 3 mW. Der 2512
+  (1 W) übersteht auch einen Firmware-Fehler mit Dauer-Ein (unsicher, Erwärmung in der geschlossenen Tasche messen).
+  Passt der 2512 nicht zwischen die Schirmlaschen, als Rückfall 2 × 1206 100 Ω parallel oder Lage an VSYS
+  (x +1 … +9) mit Freigabe in der Firmware über VBUS_DET.
+- **J7/LED-Kette:** WS2812B braucht VDD ≥ 3,7 V; an VSYS mit LiPo unter 3,7 V außerhalb der Spezifikation. Bei
+  VDD 4,6–5 V ist 3,3 V am DIN knapp (VIH = 0,7 × VDD) (unsicher). SK6812 oder eine LED mit 3,3-V-Daten wählen.
+  Reihenwiderstand 330 Ω im Kabel.
+- **J6:** Taster gegen GND mit internem Pull-up, Wecken aus Light Sleep. RXD und TXD (J3-2) ergeben zusammen die
+  UART0-Konsole.
+- **Prüfen vor dem Layout:** Pegelspitzen der C6-Pins beim Einschalten (Datenblatt), Router-Lauf mit den neuen
+  Netzen (0 offen?), Hülle mit verschobenem J2.
+
+**Lohnt nicht:**
+
+| Was | Warum |
+|---|---|
+| alle 8 freien GPIOs herausführen | IO8 ist Strapping-Pin mit Pull-up, IO15 ohne Anwendung. Jedes Pad mehr heißt Doku, Router-Lauf und ein weiteres offenes Ende ohne Nutzen |
+| ein einziger Universalblock mit 10 Pads | 25 mm lang, müsste beide Modulkanten verbinden; verteilt auf J2/J6/J7 sind die Wege kurz |
+| Bauteile auf der Oberseite | kein 3 × 3 mm großes Stück frei; nichts davon ist essentiell |
+| Bestückte Teile unten | zweiseitige PCBA, Mehrkosten, widerspricht dem Grundsatz |
+| TVS-Dioden an den neuen Pads | Pads liegen im geschlossenen Fach; Reihenwiderstand im Kabel genügt (unsicher) |
+| Summer, Mikrofon, Licht-/Feuchtesensor, MAX17048, Hall-Sensor, BMA400, MMA8452Q | siehe Tabelle 0.3 |
+| Qwiic-Buchse | ca. 2,9 mm hoch (unsicher), Litze an J2 reicht |
+| VSYS dauerhaft auf einem Pad | ungesichert; nur über Lötbrücke |
+
+### 0.5 Bei 2 Lagen
+
+**Keine zusätzlichen Pads**, solange die 13 offenen Verbindungen nicht geschlossen sind. Die Unterseite ist dort die
+GND-Fläche, und jede neue Stichleitung zerteilt sie weiter. Machbar ohne neue Leitungen sind höchstens die
+Verschiebung von J2 und Testpunkte direkt an vorhandenen Vias (VSYS, ISEN, SENSE). Lastpuls und J6/J7 nur mit der
+4-Lagen-Platine.
+
+---
+
+**Ab hier alter Stand (ESP32-C3, 2026-11-01).** Die folgenden Abschnitte 1–6 gelten für den verworfenen ESP32-C3 mit kaum freien Pins (Pins, Strapping auf IO2,
+Bauhöhe vor der Hüllen-Tasche). Aktuell ist Abschnitt 0.
 
 Ziel: Auf der **Unterseite** der AA-Platine (46 × 13,5 mm, 0,8 mm) nur Kupfer-Pads vorsehen. Wer will,
 lötet die Bauteile selbst ein. Kein Bestückungsaufwand, keine Mehrkosten in der Fertigung.

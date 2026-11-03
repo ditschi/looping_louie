@@ -5,6 +5,13 @@ verworfen.** Dieses Dokument baut auf [analyse-funk-controller.md](analyse-funk-
 [idee-usb-c-hauptplatine.md](idee-usb-c-hauptplatine.md) (Variante E) und [hardware-konzept.md](hardware-konzept.md)
 auf und ist die Vorlage für den Umbau-Agenten. Der Umbau ist erfolgt, das Ergebnis steht in Kapitel 8.
 
+> **Aktueller Stand – Entscheidung des Auftraggebers 2026-11-03: Die Hauptplatine hat 4 Lagen, das ist der
+> Standard.** Die 2-Lagen-Variante ist **verworfen** (Grund: 13 offene Verbindungen, die sich auf 2 Lagen nicht
+> regelkonform schließen ließen; 4 Lagen: 0 offen, DRC 0). Der 2-Lagen-Stand liegt nur noch in Git (Commit
+> c45c6de). `hardware/main-board/` ist jetzt das 4-Lagen-Projekt, `just pcb`/`route`/`erc`/`drc`/`images`/`fab`
+> arbeiten damit. **Maßgeblich ist Kapitel 11.** Die Kapitel 8–10 beschreiben den Weg dorthin (2 Lagen) und bleiben
+> vorerst als Verlauf stehen.
+
 Markierungen: **(geprüft)** = Quelle gelesen oder an den Projektdateien nachgerechnet · **(unsicher)** = Sekundärquelle,
 Schätzung oder nicht im Datenblatt nachgelesen.
 
@@ -381,6 +388,8 @@ gleich; der DRV8213 hat wie der DRV8833 ein Exposed Pad.
 
 ## 8. Ergebnis Umbau (Probeplatzierung und Routing, 2026-11-02)
 
+> Verlauf: Dieses Kapitel beschreibt den verworfenen 2-Lagen-Stand (Commit c45c6de). Aktueller Stand: Kapitel 11.
+
 Alles wird aus den Skripten erzeugt (`just symbols schematic pcb route`), nichts ist im GUI nachgearbeitet.
 
 ### 8.1 Prüfergebnisse (Stand nach Überarbeitung 2026-11-02, Regeln aus Kapitel 9)
@@ -489,17 +498,20 @@ Abhilfe: Fenster kürzer und tiefer oder Stützsteg zwischen J1 und J5 (am Druck
 
 ### 8.5 Offene Punkte
 
-1. Die 13 offenen Verbindungen (8.1) sind auf 2 Lagen regelkonform nicht geschlossen → **4-Lagen-Analyse**.
+1. Die 13 offenen Verbindungen (8.1) sind auf 2 Lagen regelkonform nicht geschlossen → **4-Lagen-Analyse: Kapitel 11 (0 offen, Empfehlung 4 Lagen)**.
 2. ~~USBLC6-2SC6: interne Verbindung bestätigen~~ erledigt, durchgeschleift (Kapitel 10).
 3. Antennen-Randstreifen −y: im RSSI-Test (beide Einbaurichtungen) mitprüfen.
 4. Hülle: Auflage unter J4 (8.4), Druckprobe.
-5. `placement_zweiseitig.py` (Variante 2, Rückfall „Teile von Hand unten“) ist nicht auf den C6-Stand gebracht.
+5. ~~`placement_zweiseitig.py` (Variante 2, Rückfall „Teile von Hand unten“) ist nicht auf den C6-Stand gebracht.~~
+   Entfernt (2026-11-03, nur noch in Git); die einzige Platzierung ist `placement.py` (vorher `placement_einseitig.py`).
 6. Prüfpunkte 6.4 (XIAO-C6, DRV8213 am Motor, H8-Beschaffung) unverändert offen.
 7. Ladeplatine v0.2: D+/D−-Durchreichung entfällt (ladeplatine.md, Hinweis).
 
 ---
 
 ## 9. Fertigungsregeln (JLCPCB, 2 Lagen, 0,8 mm, 1 oz)
+
+> Verlauf: Regeln der verworfenen 2-Lagen-Variante. Aktuelle Regeln (4 Lagen): 11.2.
 
 Quelle: [JLCPCB PCB Capabilities](https://jlcpcb.com/capabilities/pcb-capabilities), abgerufen 2026-11-02 (geprüft).
 
@@ -541,6 +553,189 @@ U5 = ST USBLC6-2SC6 (LCSC C7519), Zweitquelle UMW (C2687116, gleiche Pinbelegung
 VBUS (Pin 5) liegt direkt an der VBUS-Bahn der Buchse, GND (Pin 2) an der Massefläche. Den von ST empfohlenen
 100-nF-Kondensator an VBUS (Fig. 18) gibt es nicht; die Schottky D2 und die 47-µF-Puffer liegen dahinter.
 
+## 11. 4 Lagen – aktueller Stand (Standard seit 2026-11-03)
+
+**Entscheidung des Auftraggebers 2026-11-03: 4 Lagen sind der Standard, die 2-Lagen-Variante ist verworfen.**
+Die Platine liegt in `hardware/main-board/louie-main.kicad_pcb` (Projekt `louie-main.kicad_pro`, Regeldatei
+`louie-main.kicad_dru`, Routing-Ergebnis `routing.json`); `just pcb`, `just route`, `just erc`, `just drc`,
+`just images`, `just modell`, `just render`, `just fab` arbeiten ohne Parameter mit ihr. Bis 2026-11-03 war sie als
+Probe-Variante ein eigenes Projekt `hardware/main-board-4l/` (Dateien `louie-main-4l.*`); die Platine wurde
+unverändert übernommen (bytegleich, gleicher Fingerabdruck im Routing-Gate). Der 2-Lagen-Stand steht nur noch in
+Git (Commit c45c6de); der Generator kann ihn nicht mehr erzeugen.
+
+Ursprünglicher Auftrag (Probe-Routing): Lagenaufbau festlegen, Generator auf wählbare Lagenzahl erweitern,
+großzügige Regeln, Probe-Routing mit ERC 0 / DRC 0 / 0 offen, Vergleich mit 2 Lagen, Empfehlung. Alles aus den
+Skripten erzeugt, nichts im GUI.
+
+### 11.1 Lagenaufbau
+
+**JLC-Standardaufbau JLC04081H-3313** (0,8 mm, 4 Lagen, außen 1 oz, innen 0,5 oz) **(unsicher)**: Werte aus
+einer Stackup-Datei, die aus der Vorlage des JLC-Impedanzrechners erzeugt wurde (Hive-RSI-Lab/hive-hwde
+PR 533, 2026-11-01); der JLC-Rechner selbst liefert die Werte nur per JavaScript und wurde nicht gelesen.
+Die Summe 0,7992 mm passt zur Nenndicke. Vor der Bestellung im JLC-Bestellformular („Layer stackup“)
+bestätigen.
+
+| Lage | Material | Dicke | εr | Verwendung (gewählte Variante A) |
+|---|---|---:|---:|---|
+| L1 F.Cu | Kupfer 1 oz (inkl. Galvanik) | 0,035 mm | – | Bauteile, kurze Signale, GND-Füllung |
+| Prepreg | 3313 (1 ×) | 0,0994 mm | 4,1 | |
+| L2 In1.Cu | Kupfer 0,5 oz | 0,0152 mm | – | **GND durchgehend**, keine Bahnen (Sperrfläche „GND-Lage“) |
+| Kern | FR4 | 0,5 mm | 4,48 | |
+| L3 In2.Cu | Kupfer 0,5 oz | 0,0152 mm | – | Signale (Querungen, Busse), GND-Füllung dazwischen |
+| Prepreg | 3313 (1 ×) | 0,0994 mm | 4,1 | |
+| L4 B.Cu | Kupfer 1 oz | 0,035 mm | – | Lötpads (J1/J2/J3/J5/BT), Motor-Ausgänge, Signale, GND-Füllung |
+
+Der Aufbau steht als `(stackup …)` in der `.kicad_pcb` (`STACKUP`, `write_stackup()` in `gen_main_pcb.py`).
+
+**Varianten (bewertet):**
+
+| Variante | L1 / L2 / L3 / L4 | Routbarkeit | HF-Masse Antenne | USB-Paar | Motorstrom |
+|---|---|---|---|---|---|
+| **A (gewählt)** | Sig / **GND** / Sig+GND / Sig+GND | 3 Signallagen | GND 0,1 mm unter L1 auf ganzer Fläche außer Antenne | auf L1 über GND im Abstand 0,1 mm, Stück auf L4 über GND-Füllung L3 | OUT_A/OUT_B vorgeroutet auf L4, Rückstrom über L2/L3 |
+| B | Sig / GND / **3V3-Fläche** / Sig | nur 2 Signallagen, L3 von Vias zerschnitten | wie A | wie A | wie A |
+| C | Sig / GND / GND / Sig | 2 Signallagen | doppelt GND, kaum Gewinn | wie A | wie A |
+| D | GND / Sig / Sig / GND | Bauteile sitzen auf L1 → nicht möglich | – | – | – |
+
+- **Routbarkeit:** Das Problem der 2-Lagen-Platine sind Querungen und lange Busse (8.1). Variante A gibt dafür
+  eine ganze Innenlage frei (L3) und L4 wird von der Rolle „Massefläche“ befreit. Eine 3V3-Fläche (B) hilft nur
+  3V3 (10 Pads) und nimmt die Lage, die für die Querungen gebraucht wird; im Probelauf mit Freerouting blieb B
+  nicht besser (11.4).
+- **HF-Masse:** L2 liegt 0,1 mm unter den Bauteilen; Modul, DRV8213 und USB haben eine geschlossene Bezugsfläche.
+  Unter der Antenne bleibt **auf allen vier Lagen** kein Kupfer: die Sperrflächen „Antenne“, „Antenne Rand“ und
+  „Antenne Ende“ aus `antenna_keepout()` gelten für `AllCuMask` und stehen in der Datei mit
+  `(layers "F.Cu" "B.Cu" "In1.Cu" "In2.Cu")` (geprüft); die GND-Flächen aller Lagen enden vor der Antenne.
+- **USB:** Full-Speed (12 Mbit/s) braucht keine Impedanzkontrolle. 0,15-mm-Bahnen über GND im Abstand 0,1 mm
+  ergeben grob 50 Ω einzeln (unsicher, Faustformel), das Paar bleibt wie vorgeroutet (ESD durchgeschleift, Kapitel 10).
+- **Motorstrom:** Die 0,4/0,5-mm-Hauptwege (OUT_A/OUT_B, VSYS, VBUS, BAT_IN) bleiben vorgeroutet wie bei 2 Lagen;
+  die Rückströme laufen über die durchgehende L2 statt über eine zerschnittene Unterseite.
+
+### 11.2 Designregeln (4 Lagen)
+
+Quelle: [JLCPCB PCB Capabilities](https://jlcpcb.com/capabilities/pcb-capabilities), abgerufen 2026-11-03 (geprüft),
+und kostenabschaetzung.md 5.4.
+
+| Größe | JLCPCB 4 Lagen | Projektregel (`RULES`, `louie-main.kicad_dru`) | Reserve |
+|---|---|---|---|
+| Bahn / Abstand | 0,09 / 0,09 mm (außen 1 oz, innen 0,5 oz) | **0,15 / 0,15 mm**, Standardbahn 0,2 mm | +67 % |
+| Via Bohrung / Ø | min. 0,15 / 0,25 mm; Aufpreis unter 0,3 mm Bohrung (bzw. 0,2/0,25 mit Ø < 0,45) | **0,3 / 0,5 mm**, Restring 0,1 mm | kein Aufpreis, Restring 2 × Minimum |
+| Via-in-Pad | nur mit Aufpreis (POFV), frei erst ab 6 Lagen | **nicht verwendet** (Router sperrt Vias in Pads) | – |
+| Via-Bohrung – Kupfer | 0,2 mm (innen) | 0,25 mm (Platinenregel) | +25 % |
+| Bauteilbohrung – Bahn | 0,28 mm (empf. 0,35) | 0,28 mm außen | = Minimum (wie 2 Lagen) |
+| Bauteilbohrung – Kupfer innen | 0,3 mm | 0,3 mm (eigene DRC-Regel) | = Minimum |
+| Lochabstand | 0,2 mm | 0,25 mm | +25 % |
+| Kupfer – Fräskante | 0,2 mm | 0,3 mm (+ Sperrstreifen „Rand“) | +50 % |
+| Leistungsbahnen | – | vorgeroutet 0,4/0,5 mm (wie 2 Lagen), 3V3 0,25 mm, VSYS-Abzweige 0,3 mm | – |
+
+**Via 0,3/0,5 statt 0,3/0,6 mm:** Mit 0,6 mm Durchmesser blieben im Probe-Routing deutlich mehr Verbindungen
+offen (Lauf 1: 13 statt 5); die Bohrung bleibt 0,3 mm, es gibt keinen Aufpreis, und 0,1 mm Restring ist das
+Doppelte des JLC-Minimums (0,05 mm bei 0,15/0,25). Die Vias der Vorrouten haben ebenfalls 0,5 mm.
+
+### 11.3 Umsetzung im Generator
+
+Stand nach der Entscheidung (2026-11-03): Die Lagenzahl ist nicht mehr wählbar. `gen_main_pcb.py` erzeugt nur noch
+4 Lagen direkt in `hardware/main-board/` (`RULES`, `DRU`, `STACKUP`, `PLACEMENT_OVERRIDES` für R15; 2-Lagen-Regeln und
+die Vorroute VSYS→R6 entfernt), die Platzierung heißt `placement.py` (vorher `placement_einseitig.py`),
+`placement_zweiseitig.py` (C3-Stand) ist entfernt. `route.py`/`route_gate.py` kennen nur noch `main-board`
+(4 Lagen, `ROUTER=own` Standard) und `charger-board` (2 Lagen, Freerouting). justfile: `pcb` ohne Parameter,
+`plot` ohne Parameter, `main-board` = anlegen + routen + ERC + DRC (alte Namen `four-layer`, `vierlagig` als Alias),
+`images` erzeugt zusätzlich die Innenlagen `copper-l2-gnd.png`/`copper-l3-signal.png`; `images-4l` entfällt.
+
+Änderungen bei der Einführung der Probe-Variante (Verlauf):
+
+| Datei | Änderung |
+|---|---|
+| `gen_main_pcb.py` | Parameter Lagenzahl (`just pcb einseitig 4`); bei 4 Lagen eigenes Projekt `hardware/main-board-4l/` (Bibliothekstabellen, Projektdatei, Schaltplan als Kopie für ERC/Parität), Umriss aus `board_outline.py`, `RULES_4L`, DRC-Regeldatei, Lagenaufbau, In1 = GND-Fläche + Sperrfläche „GND-Lage“ (keine Bahnen), In2 = GND-Füllung; USB-Kanal 0,02 mm verschoben (Abstand 0,15 zu R5); Vorroute VSYS→R6 entfällt (Gasse für 0,15/0,15 zu eng); **R15 um 180° gedreht** (nur 4 Lagen, `PLACEMENT_4L`), sonst ist sein GND-Pad zwischen VBUS-Bahnen und dem USB-Paar eingeschlossen |
+| `route_fix.py` (neu) | eigener Labyrinth-Router: A* über F.Cu/In2.Cu/B.Cu im 0,05-mm-Raster, Vias 0,3/0,5 nur wo sie auf allen Lagen passen, Fluchtgassen vor den Modulpads, Aufreißen und neu routen mit Verlaufskosten, danach GND-Inseln per Via an In1, Neustart mit Vorrang der offenen Netze; deterministisch |
+| `route.py` | Platine `main-board-4l`; `ROUTER=own` (Standard, 6 Kostenvarianten; alter Name `eigen` geht noch) oder `ROUTER=freerouting` (+ Nachrouten); DSN-Export behandelt In1 |
+| `stitch.py` | Stitching für 4 Lagen (Gegenlage = In1, Abstandsprüfung auf allen Lagen) |
+| `plot_layout.py` | Platine wählbar (`just plot main-board-4l`) |
+| `justfile` | `pcb variant layers`, `plot board`, `four-layer` (alter Name `vierlagig`), `images-4l` → `docs/bilder/four-layer/` (alle vier Kupferlagen) |
+
+Befehle: `just pcb && just route && just erc && just drc` oder kurz `just main-board`; Bilder `just images`,
+3D `just modell`. `just route` braucht je nach Variante 20–60 min (3 Varianten parallel, eigener Router in Python).
+
+### 11.4 Routing-Ergebnis
+
+**Stand `hardware/main-board/louie-main.kicad_pcb` (Versuch 3, Via-Kosten 40; geprüft erneut 2026-11-03 nach der Übernahme):**
+
+| Prüfung | Ergebnis |
+|---|---|
+| ERC (`just erc`) | **0 Fehler, 0 Warnungen** |
+| DRC (`just drc`) | **0 Verstöße, 0 offene Verbindungen**, Schaltplan-Parität 0 Abweichungen, 0 Footprint-Fehler |
+| Bahnen | F.Cu 225 mm, In2.Cu 186 mm, B.Cu 229 mm; **In1.Cu 0 mm** (GND-Lage frei von Bahnen) |
+| Vias | 116 (0,3/0,5 bzw. 0,3/0,6 mm aus `stitch.py`), davon 46 GND |
+| Antenne | Sperrflächen „Antenne“, „Antenne Rand“, „Antenne Ende“ auf F.Cu/In1/In2/B.Cu; darin **0 mm² Fläche auf allen vier Lagen**, keine Bahn und kein Via außer der erlaubten OUT_A-Bahn zu BT1 auf B.Cu im Randstreifen/Ende (wie 2 Lagen) (geprüft, pcbnew) |
+| Hüllkurve | größter Radius **6,94 mm** (J4, wie 2 Lagen 6,93; +0,01 mm durch die Kupferdicken des Lagenaufbaus im 3D-Export) < 7,25 mm; x > 22,2: nur Platine (z ≤ 0,73 mm) (`build/main-board/3d/louie-main.stl`, gleiche Rechnung wie 8.4) |
+| Platzierung | identisch zu 2 Lagen bis auf R15 (180° gedreht, 11.3) |
+
+**Warum ein eigener Router?** Freerouting 2.5.0 (wie bei 2 Lagen) blieb auf 4 Lagen bei **10–18 offenen
+Signalverbindungen** (mehrere Einstellungen: In1 als Ebene mit/ohne GND-Anbindung, In2 als 3V3-Ebene, Fanout an/aus).
+Dazu zwei Eigenheiten: Ohne Ebene behandelt Freerouting eine „power“-Lage als Signallage und legte Bahnen auf In1;
+eine Sperrfläche nur für Bahnen auf In1 (`wire_keepout`) verhindert in 2.5.0 auch alle Vias. Die vorhandenen
+Vorrouten (USB, VBUS, Motor) blieben unverändert; `route_fix.py` routet alle übrigen Signale, die GND-Anbindung
+und die Inseln. `ROUTER=freerouting just route` ist als Alternative erhalten (Freerouting + Nachrouten).
+
+**Streuung (gleiche Startplatine, verschiedene Kostenvarianten aus `ROUTER_VARIANTS`):**
+
+| Lauf | Variante (Via-Kosten / F / B) | offene Verbindungen (DRC, nach Stitching) | weitere DRC-Meldungen |
+|---|---|---:|---|
+| A-1 | 1 (30 / 1,3 / 1,15) | 1 (GND-Insel) | 1 lose Bahn (0,14 mm) |
+| A-2 | 2 (20 / 1,3 / 1,15) | 2 (GND-Inseln) | 1 Abstand VSYS–GND (U3), 1 lose Bahn |
+| **A-3** | **3 (40 / 1,3 / 1,15)** | **0** | **keine** → übernommen |
+| B-3 | 3 (Wiederholung) | 4 (GND-Inseln) | 1 lose Bahn |
+| B-4 | 4 (30 / 1,6 / 1,3) | **0** | **keine** (zweiter sauberer Stand, `build/main-board/keep/variant4-0-open.kicad_pcb`, nicht eingecheckt) |
+| B-5 | 5 (25 / 1,1 / 1,0) | 5 (GND-Inseln) | 1 lose Bahn |
+| B-6 | 6 (35 / 1,5 / 1,1) | 1 (GND-Insel) | 1 Lochabstand (zwei ISEN_ADC-Vias), 2 lose Bahnen |
+
+**Streuung über 7 Läufe: 0–5 offene Verbindungen (Median 1), 2 von 7 Läufen ganz sauber (DRC 0, 0 offen).**
+Alle offenen Verbindungen sind GND-Flächeninseln, kein Signal. Die übrigen Meldungen sind Restfehler des eigenen
+Routers (kurze lose Bahnstücke nach dem Aufreißen, je ein Abstands- bzw. Lochabstandsfehler); sie kommen nur in den
+nicht übernommenen Läufen vor. `route.py` wählt den besten Lauf eines Aufrufs; offiziell wird er nur, wenn er besser ist als der Stand in
+`hardware/main-board/routing.json` (Keep-best-Gate, `docs/entwicklung.md`).
+
+Gleiche Kosten ergeben nicht bitgenau dasselbe (A-3 gegen B-3): Die Reihenfolge der offenen Verbindungen kommt aus dem
+KiCad-DRC und hängt von den zufälligen UUIDs neu gebauter Bahnen ab. In allen Läufen sind **alle Signalverbindungen
+geroutet**; offen bleiben nur GND-Flächeninseln um 0402-Teile neben dem Modul (C13/C14 mit Modulpads 11/52, C4/R3, C12),
+für deren Via in der dichten Reihe kaum Platz ist. Laufzeit je Lauf 25–60 min (3–4 Läufe parallel).
+
+**Bekannte Schwächen (vor einer Bestellung im GUI ansehen):** Der Router legt Bahnen im 0,05-mm-Raster mit 45°-Knicken;
+manche Wege machen Umwege über Vias (116 statt 73 Vias bei 2 Lagen). Elektrisch unkritisch (keine schnellen Signale
+außer USB-FS, das vorgeroutet ist), optisch nicht „handgeroutet“.
+
+### 11.5 Vergleich 2 Lagen / 4 Lagen
+
+| Punkt | 2 Lagen (Kapitel 8, Commit c45c6de) | 4 Lagen (dieses Kapitel) |
+|---|---|---|
+| Offene Verbindungen | **13** (bester von 12 Freerouting-Läufen, Streuung 12–25; Kontrolllauf 2026-11-03: 16) | **0** (bester Versuch), Streuung siehe 11.4 |
+| DRC / ERC | 0 / 0 | 0 / 0 |
+| Regeln Bahn/Abstand | 0,13 / 0,13 mm (JLC 0,10 + 30 %) | **0,15 / 0,15 mm** (JLC 0,09 + 67 %) |
+| Via | 0,3 / 0,6 mm | 0,3 / 0,5 mm (kein Aufpreis) |
+| GND | Ober- und Unterseite als Fläche: F.Cu 260 mm² in 11 Teilen, B.Cu 246 mm² in 2 Teilen, Unterseite von Querungen zerschnitten | **In1 durchgehend 434 mm² in 1 Stück** (ganze Platine außer Antennenbereich), zusätzlich F.Cu 262 mm², In2 313 mm², B.Cu 256 mm² Füllung |
+| HF-Masse Antenne | Masse hinter der Antenne nur als zerschnittene Außenflächen | geschlossene Bezugsfläche 0,1 mm unter dem Modul; Antennenbereich auf allen Lagen frei |
+| USB | vorgeroutet, Rückstrom über zerschnittene Unterseite | gleich vorgeroutet, Bezug durchgehende GND-Lage |
+| Motorstrom | Rückweg über Flächen mit Schlitzen | Rückweg über In1 ohne Schlitze |
+| Hüllkurve | 6,93 mm | 6,94 mm (< 7,25) |
+| Platinenkosten JLC (kostenabschaetzung.md 5.6, unsicher) | Basis | **+3 / +6 / +10 € pro Auftrag** bei 5 / 10 / 30 Stück (≈ 0,60 / 0,60 / 0,35 € pro Board); Bestückung gleich, Economic PCBA zulässig |
+| Lieferzeit | Fertigung 1–2 Tage | **2–5 Tage, also +1–3 Werktage** (geprüft für 1,6 mm; 0,8 mm unsicher) |
+| Aufwand | 13 Verbindungen von Hand, jede weitere Bahn zerschneidet die Unterseite weiter | keine Handarbeit nötig, Sichtprüfung empfohlen |
+
+### 11.6 Empfehlung und Entscheidung
+
+**Entschieden (2026-11-03): 4 Lagen.** Ursprüngliche Empfehlung: **4 Lagen nehmen.** Für ca. 3–10 € mehr pro Prototypenauftrag und 1–3 Werktage längere Fertigung ist die Platine
+vollständig und regelkonform geroutet (mit großzügigeren Regeln als die 2-Lagen-Variante), die GND-Lage ist
+durchgehend, und die HF-Masse unter dem Modul ist deutlich besser. Die 2-Lagen-Variante bleibt bei 13 offenen
+Verbindungen, deren Handrouting die Unterseite weiter zerschneidet.
+
+Der Auftraggeber hat so entschieden: `hardware/main-board/` ist das 4-Lagen-Projekt, die Bilder in `docs/bilder/`
+(`platine-*.png`, `kupfer-oben.png` = L1, `copper-l2-gnd.png` = L2, `copper-l3-signal.png` = L3,
+`kupfer-unten.png` = L4, `platzierung.png`) zeigen die 4-Lagen-Platine (`just images`).
+
+Vor einer Bestellung:
+1. Gerber (`just fab`) in den JLC-Rechner (Website und JLCONE) laden,
+   Aufbau JLC04081H-3313 auswählen, Preis und Fertigungszeit für 0,8 mm ablesen (kostenabschaetzung.md 5.7).
+2. Layout im KiCad-GUI ansehen (Router-Umwege, Via-Anzahl), ggf. einzelne Bahnen glätten – danach gilt der GUI-Stand.
+3. RSSI-Test (8.5 Punkt 3) bleibt: die Antenne ist unverändert, nur die Masse dahinter ist besser.
+
 ---
 
 ## Quellen
@@ -549,7 +744,9 @@ VBUS (Pin 5) liegt direkt an der VBUS-Bahn der Buchse, GND (Pin 2) an der Massef
 - LCSC-Produkt-API und JLC-Teilesuche (Preise, Lager, 2026-11-02): [C5736265](https://www.lcsc.com/product-detail/C5736265.html), [C42403058](https://www.lcsc.com/product-detail/C42403058.html), [C22407186](https://jlcpcb.com/partdetail/C22407186), [C50506](https://www.lcsc.com/product-detail/C50506.html), [C42859755 NORA-W406](https://jlcpcb.com/partdetail/C42859755)
 - Mouser ESP32-C6-MINI-1-H8 (Suchtreffer, Lager/Preis unsicher): <https://www.mouser.de/c/?q=ESP32-C6-MINI-1-H8>
 - [ESP32-C6-MINI-1/1U Datenblatt](https://documentation.espressif.com/esp32-c6-mini-1_mini-1u_datasheet_en.html)
-- [JLCPCB PCB Capabilities](https://jlcpcb.com/capabilities/pcb-capabilities) (Fertigungsregeln, Kapitel 9)
+- [JLCPCB PCB Capabilities](https://jlcpcb.com/capabilities/pcb-capabilities) (Fertigungsregeln, Kapitel 9 und 11.2, abgerufen 2026-11-03)
+- Lagenaufbau JLC04081H-3313: [Hive-RSI-Lab/hive-hwde PR 533](https://github.com/Hive-RSI-Lab/hive-hwde/pull/533/files) (aus der Vorlage des JLC-Impedanzrechners, 2026-11-01, unsicher); [JLC Impedanzrechner/Stackups](https://jlcpcb.com/impedance) (Werte nur per JavaScript, nicht gelesen)
+- Freerouting 2.5.0 (`tools/freerouting.jar`, Build 2026-10-05): Log-Meldung „declared as a power layer but no plane is defined … treated as a signal layer“ (Kapitel 11.4)
 - [ST USBLC6-2 Datenblatt DS4260](https://www.st.com/resource/en/datasheet/usblc6-2.pdf) (Rev 5, Fig. 1/7/18, Kapitel 10)
 - [TI DRV8213 Datenblatt SLVSGV9](https://www.ti.com/lit/gpn/drv8213) (Pinbelegung DSG, IPROPI, VREF 510 mV, Autosleep, RθJA)
 - [ESP-IDF RF Coexistence ESP32-C6](https://docs.espressif.com/projects/esp-idf/en/stable/esp32c6/api-guides/coexist.html) (IDF v6.1)
