@@ -217,6 +217,346 @@ Verschiebung von J2 und Testpunkte direkt an vorhandenen Vias (VSYS, ISEN, SENSE
 
 ---
 
+## 0b. NeoPixel, vier Kabel-Taster, Piezo statt Beschleunigungssensor (Stand 2026-11-03)
+
+Fragen des Auftraggebers: (1) Taugt J7 für eine NeoPixel-Kette und flexibel auch für eine einzelne LED oder einen
+Taster? (2) Wie schließt man vier Kabel-Taster an (einer pro Arm)? (3) Piezo-Klopfsensor statt LIS2DH12, um das
+Drücken der Wippen zu erkennen? (4) Gesamtbelegung der freien GPIOs und Pads unten.
+Gilt für die 4-Lagen-Platine (wird Standard). **Grundsatz bleibt:** unten nur Pads und DNP-Footprints, nichts
+Essentielles. Abschnitt 0b ergänzt Abschnitt 0 und ändert dort einige Punkte (Liste in 0b.5).
+
+Datenblattwerte selbst gelesen (geprüft): ESP32-C6-Datenblatt v1.5 (Tabelle 2-2 Pin-Zustände, Tabelle 5-4
+DC-Kennwerte, Tabelle 5-5 ADC), WS2812B (Worldsemi, Adafruit-Kopie). Aus Suchergebnissen bzw.
+Datenblattauszügen (geprüft, nur Kennwert): WS2812B-V5, WS2812B-Mini, SK6812, 74AHCT1G125, SN74LV1T34, TPS22918.
+Netze an U4/J2/J3/R11 aus `hardware/main-board/louie-main.kicad_pcb` gelesen (Stand während des Umbaus, 4 Lagen).
+
+### Kurzfassung
+
+1. **J7 taugt, mit drei Änderungen:** (a) LED-Typen der V5-Generation mit V_IH = 0,63 · VDD (WS2812B-V5,
+   WS2812B-Mini-V3, WS2812B-2020) statt SK6812 bzw. alter WS2812B (0,7 · VDD); (b) **die Kette braucht einen
+   Schalter in der Versorgung**, weil adressierbare LEDs auch dunkel Ruhestrom ziehen und den Akku im Deep Sleep
+   leeren: optionaler Lastschalter U6 (TPS22918, SOT-23-6) mit Freigabe über **IO15**, JP1 bleibt als Überbrückung;
+   (c) kein Pegelwandler auf der Platine: 74AHCT1G125 passt nicht (VCC 4,5–5,5 V, VSYS am Akku nur 3,0–4,2 V).
+   J7 ist **flexibel ohne Zusatzteile auf der Platine**: NeoPixel-Kette, einzelne LED (mit Vorwiderstand im Kabel,
+   LEDC-PWM) oder Taster (interner Pull-up). Was angeschlossen ist, entscheidet die Firmware.
+2. **Vier Kabel-Taster: je ein eigener GPIO mit Pull-up** (Variante a). Belegung **S1 = IO5, S2 = IO20,
+   S3 = IO21, S4 = IO8** auf einem neuen Pad-Block J6 „Spieler“. Gleichzeitige Drücke, Interrupt, < 1 ms
+   Hardware-Latenz, zwei Adern je Arm. Widerstandsleiter (b) nur für Einzeldrücke zuverlässig, Portexpander (c) nur,
+   wenn mehr als vier Eingänge gebraucht werden.
+3. **LIS2DH12 oben behalten** (bestückungsoptional, wie entschieden), aber er erkennt nur „irgendwo wurde
+   geschlagen“, nicht welcher Arm. **Kein Piezo auf der Platine.** Zum Erkennen der Wippe pro Arm einen
+   **Kontakt unter der Wippe** (Reedkontakt + Magnet oder Mikroschalter) an den Kabel-Eingängen aus Punkt 2; ein
+   Piezo je Arm geht an denselben Pads (digital, 1 MΩ + 100 kΩ im Kabel), ist aber die zweite Wahl.
+   Nutzen ist mittel (Statistik, Treffer-Zuordnung, neue Modi), nicht für den Grundbetrieb.
+4. **Pins:** IO5/IO20/IO21/IO8 Spieler-Eingänge, IO15 LED-Versorgung ein, IO17 RXD (Service, neu auf J3-5),
+   IO22 Lastpuls, IO23 LED-Daten. Damit sind alle acht freien GPIOs verplant. Unten entstehen J6 (6 Pads), J7
+   (3 Pads) mit U6/JP1/C17/R22 und RC-Footprints für die Eingänge, zusammen ca. 150 mm² von 382 mm².
+
+### 0b.1 NeoPixel an J7
+
+#### Pegel und Versorgung
+
+| Größe | Wert | Quelle |
+|---|---|---|
+| C6 V_OH | ≥ 0,8 · VDD = **2,64 V** (bei hochohmiger Last, typ. nahe 3,3 V) | C6-DS Tab. 5-4 (geprüft) |
+| C6 V_IH / V_IL (Eingang) | 0,75 · VDD = 2,48 V / 0,25 · VDD = 0,83 V | C6-DS Tab. 5-4 (geprüft) |
+| C6 Pull-up/-down intern | 45 kΩ typ. | C6-DS Tab. 5-4 (geprüft) |
+| C6 Treiberstrom | 20 mA Standard, bis 40 mA (PAD_DRIVER = 3) | C6-DS Tab. 2-2/5-4 (geprüft) |
+| WS2812B (5050, alt) | VDD 3,5–5,3 V (abs.), Kennwerte bei 4,5–5,5 V; **V_IH 0,7 · VDD**; T0H 0,4 µs, T1H 0,8 µs, T0L 0,85 µs, T1L 0,45 µs je ±150 ns; Reset > 50 µs | WS2812B-DS (geprüft) |
+| WS2812B-V5 | VDD 3,7–5,3 V; **V_IH 0,63 · VDD**; Reset > 280 µs | Worldsemi V5 (geprüft, Auszug) |
+| WS2812B-Mini (3535) | VDD 3,7–5,3 V; V_IH 0,63 · VDD | WS2812B-Mini-DS (geprüft, Auszug) |
+| WS2812B-2020 V6 | VDD 3,7–5,3 V; Ruhestrom ≤ 1 µA | siehe K9 (aus C3-Stand) |
+| SK6812 / SK6805 | VDD 3,7–5,5 V; **V_IH 0,7 · VDD** | SK6812-DS (geprüft, Auszug) |
+
+Was am DIN ankommt (3,3 V aus dem C6) gegen die Schwelle:
+
+| Versorgung der LEDs | VDD | V_IH bei 0,7 · VDD | V_IH bei 0,63 · VDD | Bewertung |
+|---|---|---|---|---|
+| VSYS am Akku (über Q1) | 3,0–4,2 V | 2,1–2,94 V | 1,9–2,65 V | Pegel **ok**; **unter 3,7 V VDD außerhalb der Spezifikation** (Blau/Grün werden schwächer, Farbe kippt) |
+| VSYS über USB (J4 → D2 SS34) bzw. Ladeplatine | ca. 4,6 V | **3,22 V** (knapp, nur 80 mV Reserve) | 2,90 V (ok) | 0,63-Typen ok, 0,7-Typen Glückssache |
+| VBUS 5 V direkt | 5,0 V | **3,5 V** (außerhalb) | 3,15 V (knapp) | nicht vorsehen; außerdem nur mit USB |
+| 3V3 aus dem LDO | 3,3 V | – | – | nein: VDD unter Spezifikation, und WLAN-Spitzen (382 mA) plus LEDs überfordern den AP2112K (600 mA) |
+
+**Folgerung:** An VSYS mit **V5-Typen (0,63 · VDD)** ist der 3,3-V-Pegel im ganzen Bereich ausreichend, ohne
+Pegelwandler. In der Praxis laufen auch SK6812 und alte WS2812B meist (unsicher). Unter ca. 3,6 V Akkuspannung
+dimmt die Firmware die LEDs bzw. schaltet sie ab (VBAT_ADC wird ohnehin gemessen).
+
+**Pegelwandler / Opfer-LED, bewertet:**
+
+| Lösung | Bewertung |
+|---|---|
+| 74AHCT1G125 | **ungeeignet**: VCC 4,5–5,5 V (V_IH 2,0 V). Am Akku liegt VSYS bei 3,0–4,2 V, also außerhalb (geprüft, Nexperia-DS) |
+| SN74LV1T34 (TI, SOT-23-5) | **passend, falls nötig**: Einzelversorgung 1,65–5,5 V, abgesenkte Eingangsschwellen, 3,3-V-Eingang bei 5-V-VCC zulässig (geprüft, TI-Produktseite). Nicht auf der Platine vorsehen (der Datenpfad müsste aufgetrennt werden); bei Bedarf als Winzling am Kettenanfang im Kabel |
+| „Opfer-LED“ (erste LED über Diode mit VDD − 0,7 V versorgt, sie regeneriert den Pegel) | funktioniert an USB (4,6 V → 3,9 V), am Akku liegt die erste LED dann bei 2,3–3,5 V, also deutlich außerhalb. Nicht empfohlen |
+| V5-LEDs direkt | **empfohlen**, null Bauteile |
+
+#### Ruhestrom, Schalter in der Versorgung
+
+Adressierbare LEDs ziehen auch dunkel Strom, je nach Typ einige 100 µA bis ca. 1 mA pro LED (alte Typen) bzw.
+≤ 1 µA (WS2812B-2020 V6) (unsicher, typabhängig). Acht LEDs mit 0,6 mA = 5 mA; das ist das Hundertfache des
+Deep-Sleep-Budgets (LDO 55 µA). Ein 1000-mAh-Akku wäre in gut einer Woche leer. JP1 allein schaltet nicht.
+
+**Vorschlag U6 (DNP): Lastschalter TPS22918 (SOT-23-6)** zwischen VSYS und J7-1: VIN 1–5,5 V, 2 A, 52 mΩ,
+Ruhestrom 8,7 µA typ. (geprüft, TI); Freigabe ON an **IO15** mit **R22 100 kΩ nach GND** (DNP). IO15 hat nach
+dem Datenblatt beim Reset und danach keinen Pull-up (nur IE), schläft im Deep Sleep mit (kein LP-Pin) → R22 hält
+U6 dann sicher aus. **JP1 (offen) liegt parallel zu U6**: Wer keinen Schalter will, schließt JP1 (dann nur LEDs mit
+≤ 1 µA Ruhestrom oder Kette abziehen). ON-Schwelle für 3,3-V-Logik und Bauhöhe (DBV max. ca. 1,45 mm, Grenze
+1,5 mm) vor dem Layout im Datenblatt prüfen (unsicher). TPS22918 hat **keine Strombegrenzung**: VSYS bleibt
+ungesichert, darum im Kabel eine **PTC-Sicherung 0,5 A** (oder 0,75 A) vorsehen.
+
+#### Strom, Spannungsfall, Abblockung, Serienwiderstand
+
+- **Strom:** bis ca. 12 mA je Farbe, also ca. 36 mA je LED voll weiß (2020/3535); große 5050 bis ca. 50–60 mA
+  (unsicher). Für Louie sinnvoll: 4 LEDs (eine je Spielerfarbe an den Armwurzeln) bis 8 LEDs. **Firmware-Deckel
+  ca. 30 % Helligkeit** → 4 LEDs ≈ 40 mA, 8 LEDs ≈ 90 mA (unsicher). Der Motor zieht ohnehin 1–2 A aus VSYS.
+- **Spannungsfall:** 2 × 40 cm Litze 0,08 mm² (AWG 28, ca. 0,21 Ω/m) ≈ 0,17 Ω; bei 0,1 A 17 mV, bei 0,5 A 85 mV
+  (gerechnet). Unkritisch. Das Problem ist nicht der Abfall, sondern VSYS-Einbrüche beim Motoranlauf: Puffer an
+  der Kette.
+- **Abblockung:** pro LED 100 nF (in Streifen meist vorhanden), am Kettenanfang **10–47 µF**. Adafruit empfiehlt
+  500–1000 µF für große Streifen an großen Netzteilen; für 4–8 LEDs reicht weniger (unsicher). Auf der Platine
+  **C17 10 µF 0805 an J7-1 (DNP)** hinter U6.
+- **Serienwiderstand 330 Ω (300–500 Ω) am Kettenanfang, also am LED-Ende des Kabels**, nicht an der Platine
+  (Adafruit Best Practices, geprüft). Er dämpft Überschwinger und begrenzt den Strom, wenn DIN Spannung führt,
+  bevor VDD anliegt. Auf der Platine bleibt IO23 → J7-2 eine direkte Bahn.
+- **Kabel:** DIN mit GND verdrillt, bis ca. 1 m problemlos (Adafruit: „ein bis zwei Meter“). ESD: LEDs sitzen
+  im Gehäuse unter Kunststoff; Serienwiderstand plus C6-ESD (HBM ± 2 kV, C6-DS) genügt (unsicher).
+- **Einschaltverhalten:** IO23 hat beim Reset den internen Pull-up (C6-DS Tab. 2-2: IO18–IO23 = WPU beim Reset),
+  danach ist er offen. Bis die Firmware die Kette initialisiert, kann DIN schweben → zufällige Farben. Mit U6 aus
+  (R22) passiert nichts; bei geschlossenem JP1 früh im Boot `np.fill((0,0,0)); np.write()`.
+
+#### Timing mit MicroPython auf dem C6
+
+- `neopixel.NeoPixel(Pin(23), n)` nutzt `machine.bitstream` mit 800-kHz-Timing (400/850/800/450 ns). Auf dem
+  ESP32-Port läuft `bitstream` über das **RMT**, wenn `SOC_RMT_SUPPORTED` (C6: ja) und `esp32.RMT.bitstream_rmt()`
+  nicht abgeschaltet ist; sonst Bit-Banging (geprüft, `ports/esp32/machine_bitstream.c`). RMT-Takt 40 MHz →
+  25 ns Auflösung, deutlich innerhalb ±150 ns.
+- RMT erzeugt das Signal in Hardware; WLAN-Interrupts verschieben keine Bits. Bei langen Ketten muss der
+  RMT-Speicher per Interrupt nachgefüllt werden. Ob das bei aktivem WLAN Aussetzer gibt, ist offen (unsicher);
+  für 4–16 LEDs uninteressant. Der C6 hat 4 RMT-Kanäle (C6-DS), MicroPython vergibt sie dynamisch. Der Motor nutzt
+  LEDC, also kein Konflikt.
+- 8 LEDs × 24 bit × 1,25 µs = 0,24 ms pro Bild. Reset ≥ 280 µs (V5) ergibt sich in Python von selbst.
+- Bit-Banging (Rückfall) würde durch WLAN gestört; RMT nicht abschalten.
+
+#### J7 flexibel: Kette, einzelne LED oder Taster
+
+**Ja, ohne Bauteil im Datenpfad.** J7-2 ist IO23 direkt; alles Weitere sitzt im Kabel. Die Firmware erfährt per
+Einstellung („J7: LED-Kette n / LED / Taster / aus“), was angeschlossen ist.
+
+| Nutzung | Anschluss | Firmware | JP1/U6 |
+|---|---|---|---|
+| NeoPixel-Kette (auch 1 LED = „RGB-LED“) | J7-1 VLED, J7-2 über 330 Ω an DIN, J7-3 GND, 10–47 µF am Anfang | `neopixel` (RMT), IO15 = 1 zum Einschalten | U6 bestückt (oder JP1 zu) |
+| einzelne einfarbige LED | J7-2 → Vorwiderstand → LED → J7-3; z. B. 470 Ω–1 kΩ für 2–3 mA | `machine.PWM` (LEDC, 6 Kanäle, Motor belegt 2) | **offen lassen** |
+| Taster | J7-2 → Taster → J7-3, optional 1 kΩ in Reihe | `Pin.IN, Pin.PULL_UP`, IRQ, Wecken nur aus Light Sleep | offen lassen |
+| analoge RGB-LED (4 Beine) | geht an J7 **nicht** (3 PWM-Pins nötig); stattdessen eine einzelne WS2812/SK6812 nehmen | – | – |
+
+Ein DNP-Serienwiderstand auf der Platine (mit ritzbarer Brücke) bringt nichts, was der Widerstand im Kabel nicht
+auch leistet, und kostet einen Router-Lauf mehr. **Empfehlung:** J7 bleibt 1 × 3 (1 VLED · 2 IO23 · 3 GND, VLED
+nicht neben GND), dazu U6 + R22 + C17 + JP1 als DNP-Block.
+
+### 0b.2 Vier Kabel-Taster (ein Taster bzw. Kontakt pro Arm)
+
+#### Pin-Budget
+
+Freie GPIOs: IO5, IO8, IO15, IO17, IO20, IO21, IO22, IO23 (acht). Fest vergeben nach 0b.1 bzw. Abschnitt 0:
+IO22 Lastpuls, IO23 LED-Daten, IO15 LED-Versorgung, IO17 RXD. **Bleiben genau vier: IO5, IO8, IO20, IO21.**
+
+| GPIO | Pull im Betrieb | Reset-Zustand (C6-DS Tab. 2-2) | Deep-Sleep-Wecken | Besonderheit |
+|---|---|---|---|---|
+| IO5 | intern 45 k | IE (offen) | **ja** (LP-GPIO5) | einziger freier ADC-Pin; N4-Vorbeschaltung |
+| IO20 | intern 45 k | WPU | nein (Light Sleep ja) | – |
+| IO21 | intern 45 k | WPU | nein | – |
+| IO8 | **R11 10 k extern** (vorhanden) | IE + R11 | nein | Strapping: nur im Download-Modus (IO9 = 0) muss IO8 = 1 sein. Ein gedrückter Taster stört also nur, wenn gleichzeitig BOOT gedrückt wird. ROM-Log-Steuerung über IO8 nur mit gebrannter eFuse (unsicher). **Abschnitt 0 sagte „IO8 nicht herausführen“; als Taster-Eingang ist er aber geeignet, der Pull-up ist schon da** |
+| (IO17 RXD) | intern | IE + WPU | nein | Ersatz für S4, dann ohne UART-RX |
+
+#### Vergleich
+
+| Kriterium | (a) 4 GPIOs mit Pull-up | (b) Widerstandsleiter an IO5 (ADC) | (c) I²C-Portexpander an J2 |
+|---|---|---|---|
+| Gleichzeitige Drücke | **ja, alle 16 Kombinationen** | Einzeldrücke sicher; 16 Kombinationen nur knapp (s. u.) | ja (8 Eingänge) |
+| Latenz | Flanken-IRQ, Hardware µs, MicroPython-IRQ < 1–2 ms (unsicher bei WLAN-Last) | Polling: ADC-Abfrage in einer Python-Schleife, 1–5 ms Raster; kein Schwellwert-IRQ in MicroPython | INT → IRQ → I²C-Lesen (≈ 0,3 ms bei 100 kHz) ≈ 1–2 ms |
+| Entprellung | Software 5–20 ms; optional 10 nF auf der Platine (τ = 0,45 ms mit 45 k) | Mittelung über mehrere Messungen | Software |
+| Störfestigkeit / ESD, 40 cm Kabel | 45 k intern ist hochohmig neben 1–2 A Motor-PWM → optional 10 k extern (DNP), 1 kΩ in Reihe im Kabel, Ader mit GND verdrillt | Kontakt- und Steckerwiderstände verschieben die Pegel; ADC ±40 mV (C6-DS) | I²C nur kurz (Expander neben der Platine), Tasterleitungen wie (a) |
+| Deep-Sleep-Wecken | nur S1 an IO5 (`wake_on_ext1`/`wake_on_gpio`; Bug #17334 bei „ALL_LOW“ beachten, siehe hauptplatine-c6.md 2.5). Nicht nötig: Der Hebel weckt | praktisch nein: der „leichteste“ Taster zieht IO5 nur auf 2,9 V, unter V_IL 0,83 V kommt nichts | ja, wenn INT auf einem LP-Pin liegt (s. u.) |
+| Pads | 4 Signale + GND (+ 3V3) | 1 Signal + GND + 3V3 | keine neuen (J2), INT siehe unten |
+| Verkabelung | je Arm 2 Adern, sternförmig | **eine 2-Ader-Leitung durch alle Arme** möglich | wie (a) ab Expander |
+| Kosten | 0 € auf der Platine | 5 Widerstände | Expander-Breakout ca. 1–3 € |
+
+**Zur Widerstandsleiter (b), gerechnet:** Pull-up R0 = 10 k (R19 aus N4) nach 3V3, Taster k mit eigenem
+Widerstand nach GND, parallel. Beste E24-Werte (Suche über alle Kombinationen, 1 % Toleranz):
+**11 k, 18 k, 36 k, 68 k**. Einzeldrücke: 2,88 / 2,57 / 2,11 / 1,71 V (Abstände > 300 mV, sicher). Alle
+16 Kombinationen liegen zwischen 1,13 und 3,3 V, der **kleinste Abstand im ungünstigsten Fall ist nur 28 mV**,
+weniger als die absolute ADC-Ungenauigkeit (±40 mV). Mit Einlernen pro Gerät ginge es, mit Motorstörungen und
+Kontaktwiderstand nicht zuverlässig. Gleichzeitige Drücke sind beim Spiel aber der Normalfall.
+
+**Zum Expander (c):** PCF8574/TCA9534/MCP23008 (Typ offen). **Achtung INT:** J2-5 /INT ist auf der Platine mit
+LIS2DH12 INT1 (U4 Pad 12) verbunden, und der LIS2DH12 treibt Push-Pull (nur Polarität umschaltbar, unsicher). Ein
+Open-Drain-INT des Expanders darf dort nicht dazu. INT des Expanders also an **IO5** (S1-Pad), nicht an J2-5, oder U4
+weglassen. (c) lohnt sich nur, wenn mehr als vier Eingänge gebraucht werden (z. B. Joker-Taster **und**
+Wippen-Kontakt je Arm = 8).
+
+**Empfehlung: (a).** Pad-Belegung siehe 0b.4 (J6 „Spieler“).
+
+#### Stecker und Kabel
+
+- **Kein Stecker auf der Platine:** unten sind nur ca. 1,5 mm Höhe frei; JST-SH (ca. 2,9 mm, unsicher) und PH
+  passen nicht. Litze an J6 anlöten.
+- Von J6 eine **6-adrige Leitung** (z. B. Flachband 1,27 mm oder dünne Litze) durch das Kabelfenster in die Basis
+  zu einem kleinen **Verteiler** (Lochraster oder Klemmleiste). Dort je Arm eine **steckbare 2-polige Verbindung**
+  (JST-PH 2,0 mm oder XH 2,5 mm mit Crimpkontakten), weil die Arme für die Schachtel abgenommen werden. 40 cm je
+  Arm, Signal und GND verdrillt.
+- **1 kΩ in Reihe** je Signalader am Platinenende (Schrumpfschlauch). Zusammen mit dem optionalen 10-nF-Footprint
+  ergibt das ein RC-Glied (τ = 10 µs) gegen Einstreuung und ESD-Spitzen. Drückpegel mit 1 k: 0,07 V (45 k intern)
+  bzw. 0,30 V (IO8, R11 10 k), beides < V_IL 0,83 V.
+
+### 0b.3 Wippe erkennen: LIS2DH12, Piezo oder Kontakt
+
+#### Wofür „Wippe gedrückt“?
+
+| Nutzung | Wert | Bemerkung |
+|---|---|---|
+| **Statistik** (Schläge pro Spieler, Reaktionszeit nach 🎭 Fake-out bzw. ⏪) | mittel | nur mit „📊 Statistik & Ausscheiden“ sichtbar |
+| **Treffer-Zuordnung** | mittel bis hoch, experimentell | Stromspitze beim Treffer (ideen.md „Treffer-Ahnung“) + welche Wippe in den letzten ca. 300 ms gedrückt wurde → „Lena hat Louie getroffen“. Ohne Wippen-Sensor gibt es nur die Stromspitze ohne Namen |
+| **Neue Modi** („Munition“: n Schläge pro Runde; Wippen-Sperre als Strafe, angezeigt statt erzwungen) | mittel | Modus-Baukasten bräuchte ein neues Ereignis |
+| Fehlstart beim Countdown („Hände an die Wippen!“) | gering | eher Spaß-Anzeige |
+| **Joker auslösen** über die Wippe (z. B. Doppelschlag) | **nein** | Schlagen ist die Spielhandlung; Fehlauslösungen sind sicher. Joker gehören auf Handy, Funk-Taster oder Kabel-Taster |
+| Ausscheiden erkennen | nein | Hühner fallen unabhängig von der Wippe |
+
+Fazit: Nettes Zusatzwissen, kein Grundbetrieb. Also nur über die optionalen Eingänge, keine eigenen Bauteile oben.
+
+#### (a) LIS2DH12 auf der Platine (Batteriefach)
+
+- Ein Schlag auf eine Wippe geht über den Arm in die Basis und kommt als Stoß am Sensor an. **„Es wurde
+  geschlagen“ ist plausibel** (Tap-Erkennung mit Hochpass, Schwelle über dem Motorrauschen). Bis 1,344 kHz ODR
+  im Low-Power-Modus (ST, unsicher) reichen für Stöße.
+- **Welcher Arm?** Die Arme liegen 90° auseinander; die Richtung des Stoßes in X/Y und das Kippen der Basis
+  enthalten im Prinzip eine Richtung. Mit einem Sensor neben der Mitte, Kunststoff-Verbindungen, Spiel in den
+  Steckverbindungen und dem Motor obendrauf ist eine **zuverlässige Zuordnung nicht zu erwarten** (unsicher, messen).
+  Vier Spieler schlagen oft fast gleichzeitig.
+- **Motorvibration** liegt ständig an (Drehfrequenz plus Getriebe); sie überlagert besonders schwache Schläge.
+- Weitere Nutzen bleiben: Anheben/Umkippen → Motor aus (Sicherheit), Schütteln, Deep-Sleep-Wecken über IO2.
+- **Bewertung: oben behalten** (schon platziert, ca. 0,40 $, Bestückungsoption). Er ersetzt keinen Sensor pro Arm.
+
+#### (b) Piezo auf der Platine
+
+Nein. Die Platine steckt in der AA-Hülle im Batteriefach, mechanisch schlecht angekoppelt; sie würde dasselbe
+messen wie der LIS2DH12 (Gesamterschütterung), nur schlechter. Oben ist kein Platz, unten ist die Bauhöhe
+zu klein (Piezo-Summer ≥ 1,9 mm, K11).
+
+#### (c) Piezo-Scheibe je Arm per Kabel
+
+- **ADC-Pins:** Der C6 hat ADC1 an IO0–IO6 (C6-DS, 7 Kanäle). Belegt: IO0 VBAT, IO1 ISEN, IO3 SENSE, IO4
+  VBUS_DET, IO6 SDA. **Frei nur IO5**; IO2 nur, wenn U4 und J2-INT nicht genutzt werden. Vier analoge Piezos
+  gehen also nicht.
+- **Digital geht:** Ein kräftiger Schlag erzeugt an einer Piezo-Scheibe mit 1 MΩ Last mehrere Volt bis einige
+  10 V (unsicher, am Muster messen; Lastwiderstand bestimmt untere Grenzfrequenz und Amplitude, MSI-App-Note
+  „Interfacing Piezo Film to Electronics“). Der C6-Eingang schaltet bei 2,48 V (V_IH). So
+  wird der Eingang zum Komparator mit fester Schwelle, und leichtes Motorbrummen bleibt darunter.
+- **Beschaltung je Arm (alles im Kabel bzw. am Piezo):** 1 MΩ parallel zur Scheibe (Ableitwiderstand, Arduino
+  Knock-Beispiel), **100 kΩ in Reihe** zum Pin. Die internen Klemmdioden des C6 begrenzen dann auf 3,3 V + 0,5 V
+  mit < 0,3 mA bei 30 V Spitze (gerechnet). Wer mehr Reserve will: BAT54S (SOT-23) am Kabelende. Kein RC nötig:
+  Scheibe (20–27 mm, ca. 10–20 nF, unsicher) und 1 MΩ ergeben τ ≈ 10–20 ms, der Impuls wird ohnehin gestreckt.
+  Firmware: `Pin.IN` ohne Pull, `IRQ_RISING`, 50–100 ms Totzeit.
+- **Nicht an IO8** (R11 10 k zieht den Pegel hoch, der Impuls bricht über 100 k/10 k ein). Piezo-Kanäle: IO5,
+  IO20, IO21, ersatzweise IO17. Auf J6 den 10-k-Pull-up-Footprint (R23–R25) für Piezo-Kanäle leer lassen.
+- **Analog an IO5:** Nur ein Kanal, z. B. „Summe aller Arme“ mit einstellbarer Schwelle. MicroPython hat auf dem
+  C6 nur Einzelmessungen (`ADC.read_u16`/`read_uv`, einige 10 µs, praktisch 1–5 kHz Abtastung in einer Python-Schleife,
+  unsicher); die Hardware kann 100 kSPS, DMA und Schwellwert-Interrupt (C6-DS 4.2.2.1), das ist aber nur in C
+  (IDF `adc_continuous`) erreichbar.
+- **Übersprechen:** Ein Schlag auf Arm 1 erschüttert auch Arm 2. Mit fester digitaler Schwelle können Nachbararme
+  mit auslösen; Gegenmittel „erste Flanke gewinnt, 20 ms sperren“ (unsicher, messen).
+- **Kosten:** Scheibe 0,10–0,30 €, 2 Widerstände, Kabel (unsicher).
+
+#### (d) Kontakt unter der Wippe = Kabel-Taster aus 0b.2
+
+| Art | Montage | Vorteile | Nachteile |
+|---|---|---|---|
+| **Reedkontakt + Magnet** (ca. 0,20–0,50 € + 0,10 €, unsicher) | Reed im Arm unter dem Spielerende der Wippe, kleiner Magnet unter der Wippe | berührungslos, keine Kraft, verändert das Spielgefühl nicht, 2 Adern, kein Übersprechen | Glasröhrchen bruchempfindlich (einkleben), Schaltabstand einstellen |
+| **Mikroschalter** (0,20–1 €) | am Anschlag der Wippe | eindeutig, robust | Betätigungskraft kann das Schlaggefühl ändern; Befestigung je Modell |
+| Kupferfolien-Kontakt | zwei Folienstreifen an Wippe und Anschlag | fast gratis | Verschleiß, Wackelkontakt |
+| Hall-Schalter DRV5032 (K8) | wie Reed | prellfrei | braucht 3V3 = 3 Adern (J6-1) |
+| Piezo (c) | aufkleben | keine Mechanik | Übersprechen, Schwelle fest |
+
+Ein Kontakt liefert genau die gewünschte Information („Spieler 3 hat geschlagen“), ohne Signalverarbeitung, ohne
+Übersprechen, mit der Schaltung aus 0b.2. **Das ist die einfachste Lösung.** Ob Joker-Taster oder
+Wippen-Kontakt an einem Eingang hängt, ist reine Firmware-Einstellung (in geraete-anlernen.md ein weiterer
+„Eingang“: Gerät = Kabel, Taste = S1–S4). Beides gleichzeitig je Arm braucht 8 Eingänge → Joker über Handy
+bzw. Funk-Taster (V1), Wippe über J6; oder Expander (0b.2 c).
+
+**Empfehlung 0b.3:** LIS2DH12 **oben behalten**. **Kein Piezo** auf der Platine. Wippen-Erkennung pro Arm
+optional über **Reedkontakt (bzw. Mikroschalter) an J6**, Piezo je Arm nur als Plan B an denselben Pads.
+Vorher an einem Muster ausprobieren, ob ein Reed unter die Wippe passt (Mechanik je Modell, unsicher).
+
+### 0b.4 Gesamtbelegung der freien GPIOs
+
+| GPIO (Modulpad) | Funktion | Pad | Pull / Beschaltung unten (alles DNP) | Wecken |
+|---|---|---|---|---|
+| **IO5** (10) | **S1** Spieler 1 (Taster/Reed/Piezo); alternativ ADC (Leiter, NTC, Piezo-Summe) | **J6-2** | intern 45 k; R19/R20/C16 (N4) jetzt neben J6-2 | **Deep Sleep** (LP) |
+| **IO20** (26) | **S2** | J6-3 | intern; R23 10 k → 3V3, C18 10 nF → GND | Light Sleep |
+| **IO21** (27) | **S3** | J6-4 | intern; R24 10 k, C19 10 nF | Light Sleep |
+| **IO8** (22) | **S4** (nur Taster/Reed, kein Piezo) | J6-5 | **R11 10 k oben (vorhanden)**; C20 10 nF | Light Sleep |
+| **IO15** (20) | LED-Versorgung ein (U6 ON) | – | **R22 100 k → GND** | – |
+| **IO17** RXD (30) | UART0-RX (Konsole) | **J3-5 (neu)** | – | – |
+| **IO22** (28) | Lastpuls Powerbank (N1) | – | R18 Gate → GND: **4,7–10 k statt 100 k** (s. 0b.5) | – |
+| **IO23** (29) | LED-Daten / LED / Taster | **J7-2** | – | Light Sleep |
+
+Ersatz: Wer die UART-Konsole nicht braucht, kann S4 auf IO17 legen (dann piezo-tauglich). IO2 (INT) und IO6/IO7
+(I²C) bleiben auf J2.
+
+**Pads und Footprints unten (4 Lagen):**
+
+| Ref | Art | Belegung | Lage (grob) | Platz |
+|---|---|---|---|---|
+| **J6 „Spieler“** | Pads 1 × 6, 2,54 mm, 1,4 mm | 1 3V3 · 2 S1 IO5 · 3 S2 IO20 · 4 S3 IO21 · 5 S4 IO8 · 6 GND | unter dem Modul parallel zu J3 (y ≈ +0,6), x ca. −13,6 … −0,9; Stiche von Pads 10/22/26/27 über In2 | ca. 15 × 2 mm = 30 mm² |
+| R23, R24, C18–C20 | 0402 DNP | Pull-ups S2/S3, 10 nF S2–S4 | direkt an J6 | ca. 6 mm² |
+| R19, R20, C16 (N4) | 0402 DNP | IO5 → 3V3 / GND | an J6-2 statt an J3-5 | ca. 8 mm² |
+| **J3** (geändert) | wie bisher | 1 EN · 2 TXD · 3 BOOT · 4 GND · **5 RXD (IO17)** | wie bisher | – |
+| **J7 „LED“** | Pads 1 × 3, 2,54 mm | 1 VLED · 2 IO23 · 3 GND | unter C1/C2, x ≈ +1 … +7, y ≈ −3,5 (wie Abschnitt 0) | 16 mm² |
+| **U6** | TPS22918 SOT-23-6, DNP | IN = VSYS, OUT = VLED, ON = IO15, CT/QOD offen bzw. nach DS | neben J7, in der Tasche | ca. 12 mm² |
+| **JP1** | Lötbrücke, offen | VSYS → VLED (Umgehung von U6) | neben U6 | 2 mm² |
+| C17, R22 | 0805 10 µF / 0402 100 k, DNP | VLED → GND / IO15 → GND | an U6 | ca. 5 mm² |
+| Q2, R17, R18 (N1) | wie Abschnitt 0, R18 4,7–10 k | Lastpuls | unter USB-C | 40 mm² |
+| TP1–TP4 | wie Abschnitt 0 | VSYS, VBUS_J4, ISEN, SENSE | – | 8 mm² |
+
+Summe ca. **150 mm²** von 382 mm² freier Unterseite (Abschnitt 0: 110 mm²). Alle Teile ≤ 1,45 mm (U6 an der
+Grenze, prüfen), alle in |y| ≤ 4,5. **Nichts davon ist für den Grundbetrieb nötig**, die Platine läuft unbestückt
+unten wie bisher. Bei 2 Lagen gilt weiter 0.5 (keine neuen Pads).
+
+### 0b.5 Änderungen gegenüber Abschnitt 0
+
+| Punkt in Abschnitt 0 | neu (0b) | Grund |
+|---|---|---|
+| J6 = 3V3, RXD, IO20, IO21, GND | J6 = 3V3, IO5, IO20, IO21, IO8, GND | vier Spieler-Eingänge an einem Block |
+| J3-5 = IO5 | **J3-5 = RXD (IO17)** | J3 wird ein vollständiger Service-Anschluss (EN, TXD, RXD, BOOT, GND, z. B. für einen Pogo-Adapter); RXD-Pad 30 liegt an derselben Kante wie J3 |
+| IO8, IO15 nicht herausführen | IO8 = S4 (Pull-up vorhanden), IO15 = LED-Versorgung ein | alle vier freien Eingänge gebraucht; beide Pins sind dafür unkritisch |
+| J7 = VSYS über JP1 | VLED über **U6 (DNP) oder JP1** | Ruhestrom der LEDs im Deep Sleep |
+| N1: R18 100 k Gate → GND | **R18 4,7–10 k** | IO22 hat beim Reset den internen 45-k-Pull-up (C6-DS Tab. 2-2). Mit 100 k läge das Gate bei 3,3 V · 100/145 ≈ 2,3 V, AO3400A (V_th 0,65–1,45 V, unsicher) leitet während Reset und Boot. Mit 4,7 k: 0,31 V. Nur mit USB relevant und kurz, aber unnötig |
+| Boot-Glitches „nicht nachgelesen“ | Das C6-Datenblatt v1.5 hat **keine Glitch-Tabelle** (gesucht), nennt aber die Reset-Zustände: IO18–IO23 mit Pull-up beim Reset, IO5/IO8/IO15 nur Eingang | Folgen für IO22/IO23 oben berücksichtigt |
+
+Vor dem Layout prüfen: TPS22918 ON-Schwelle und Bauhöhe, LIS2DH12-INT (Push-Pull, CTRL_REG6), ob IO8 als Eingang
+mit gedrücktem Taster den normalen Boot wirklich nicht beeinflusst (am XIAO-C6 testen), Platz für J6 mit sechs Pads
+neben den Stitching-Vias unter dem Modul.
+
+### Quellen zu 0b
+
+- ESP32-C6 Series Datasheet v1.5 (Tab. 2-2 Pin-Zustände, 4.2.1.11 RMT, 4.2.2.1 SAR ADC, Tab. 5-4/5-5):
+  https://www.espressif.com/sites/default/files/documentation/esp32-c6_datasheet_en.pdf
+- WS2812B-Datenblatt (Worldsemi, Kopie Adafruit): https://cdn-shop.adafruit.com/datasheets/WS2812B.pdf
+- WS2812B-V5 (Worldsemi): https://learn.watterott.com/kb/ws281x/WS2812B-v5.pdf
+- WS2812B-Mini-V3: https://learn.watterott.com/kb/ws281x/WS2812B-Mini-v3.pdf
+- SK6812 (OPSCO, LCSC C5378720): https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2303300930_OPSCO-Optoelectronics-SK6812_C5378720.pdf
+- 74AHC1G125/74AHCT1G125 (Nexperia): https://pdf.elecfans.com/p/5172803.html
+- TI SN74LV1T34: https://www.ti.com/product/SN74LV1T34
+- TI TPS22918 (Datenblatt SLVSD76): https://www.ti.com/lit/pdf/SLVSD76, LCSC C2680345
+- Adafruit NeoPixel Überguide, Best Practices: https://learn.adafruit.com/adafruit-neopixel-uberguide/best-practices
+- MicroPython `machine_bitstream.c` (ESP32, RMT bzw. Bit-Banging):
+  https://github.com/micropython/micropython/blob/master/ports/esp32/machine_bitstream.c
+- MicroPython `esp32`-Modul (RMT.bitstream_rmt, Wecken): https://docs.micropython.org/en/latest/library/esp32.html
+- Arduino „Detect a Knock“ (Piezo mit 1 MΩ): https://docs.arduino.cc/built-in-examples/sensors/Knock
+- Measurement Specialties (heute TE), App-Note 01800004-000 „Interfacing Piezo Film to Electronics“, Rev B 2006
+  (Lastwiderstand, Puffer): https://pages.hmc.edu/spjut/NewE80/PDFs/PiezoElectronics.pdf
+
+---
+
 **Ab hier alter Stand (ESP32-C3, 2026-11-01).** Die folgenden Abschnitte 1–6 gelten für den verworfenen ESP32-C3 mit kaum freien Pins (Pins, Strapping auf IO2,
 Bauhöhe vor der Hüllen-Tasche). Aktuell ist Abschnitt 0.
 
