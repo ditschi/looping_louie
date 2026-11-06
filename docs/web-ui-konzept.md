@@ -1,230 +1,231 @@
-# Web-UI-Konzept: Rollen, Ansichten, Spielmodi, Werkstatt
+# Web UI concept: roles, views, game modes, workshop
 
-Stand: 2026-11-01 · Status: Vorschlag, ersetzt Abschnitt 4 und 6.2 von [software-konzept.md](software-konzept.md)
-in den genannten Punkten. Klickbarer Proof of Concept: [web/poc/index.html](../web/poc/index.html).
+Status: 2026-11-06 · proposal, replaces sections 4 and 6.2 of [software-konzept.md](software-konzept.md)
+in the points named. Clickable proof of concept: [web/poc/index.html](../web/poc/index.html).
 
-Erarbeitet von einem Agenten-Team: Kritik des alten Entwurfs (`web/prototype/`), Nutzungsszenarien,
-Rollenmodell, Spielmodus-Konzept. Danach zusammengeführt, gebaut und mit Persona-Tests geprüft.
+Developed by a team of agents: critique of the old draft (`web/prototype/`), usage scenarios,
+role model, game mode concept. Then merged, built and checked with persona tests.
 
-## 1. Bild vom Spiel
+## 1. Picture of the game
 
-**Louie ist der Pilot** im Flugzeug, das um den Turm kreist. Jeder Mitspieler hat eine **Wippe**
-und beschützt mit seiner Wippe **drei Hühner** (Chips). Wer alle Hühner verloren hat, ist raus.
-Das UI zeigt Louie immer als Flugzeug/Pilot ✈️, Hühner nur als Chips der Spieler 🐔.
+**Louie is the pilot** in the plane that circles the tower. Each player has a **paddle**
+and uses it to protect **three chickens** (chips). Whoever has lost all chickens is out.
+The UI always shows Louie as plane/pilot ✈️, chickens only as the players' chips 🐔.
 
-**Tempo-Skala**: 0 % = **Mindesttempo** (Louie dreht gerade zuverlässig), 100 % = **Fliehkraft-Grenze**
-(darüber sinkt Louie durch die Fliehkraft nicht mehr ab und erwischt keine Hühner mehr, unspielbar).
-Negative Werte = rückwärts. Beide Punkte werden pro Gerät kalibriert.
+**Speed scale**: 0 % = **minimum speed** (Louie just turns reliably), 100 % = **centrifugal limit**
+(above it Louie no longer drops because of the centrifugal force and stops hitting chickens; unplayable).
+Negative values = backwards. Both points are calibrated per device.
 
-**Es geht um den Spaß am Tisch.** Alle sehen live, wer dabei ist und wer rausfliegt. Hühner werden nicht
-gezählt, und niemand muss im Handy pflegen, dass er ausgeschieden ist. Dafür gibt es die optionale
-Einstellung **„📊 Statistik & Ausscheiden“** (Standard **aus**). Ist sie aus, zeigt das UI nichts davon:
-kein „Ich bin raus“, kein Sieger, keine Geister-Joker, kein Rundenende „letzter Spieler“. Ist sie an,
-meldet sich jeder mit „Ich bin raus“, der Spielleiter kann den Sieger antippen, und es gibt eine
-Abend-Statistik. Automatische Titel aus Joker-Ereignissen („Oberfiesling“) gibt es immer, weil sie
-keine Eingabe brauchen.
+**It is about the fun at the table.** Everyone sees live who is in and who drops out. Chickens are not
+counted, and nobody has to record in the phone that they are out. For that there is the optional
+setting **"📊 Statistics & elimination"** (PoC: „Statistik & Ausscheiden“, default **off**). When it is off,
+the UI shows none of it: no "I'm out" (PoC: „Ich bin raus“), no winner, no ghost jokers, no round end "last player".
+When it is on, everyone reports with "I'm out", the game master can tap the winner, and there is an
+evening statistic. Automatic titles from joker events ("Master Meanie", PoC: „Oberfiesling“) always exist, because they
+need no input.
 
-## 2. Was der alte Entwurf falsch macht (Kurzfassung)
+## 2. What the old draft gets wrong (summary)
 
-- Eine lange Scrollseite (Lobby ca. 1,5 Bildschirme, NOTAUS unterhalb des sichtbaren Bereichs).
-- Ohne Spielleiter darf jeder Modus und Fiesheit ändern → wildes Umschalten.
-- Spielleiter wird, wer zuerst tippt; was die Rolle darf und wie man sie abgibt, steht nirgends.
-- Kein Einrichtungs-Assistent, kein Testmodus, keine Modi-Seite, Louie als Huhn dargestellt.
-- Gut und übernommen: Phase bestimmt die Ansicht, QR + Farbe antippen, großer Halte-Knopf mit
-  Ring, „wer hat gespult“, Geister-Boost, ehrliche Verbindungs-/Akku-Hinweise, Hebel-Hinweise.
+- One long scrolling page (lobby about 1.5 screens, EMERGENCY STOP below the visible area).
+- Without a game master anyone may change mode and meanness → wild switching.
+- Whoever taps first becomes game master; what the role may do and how to hand it over is stated nowhere.
+- No setup wizard, no test mode, no modes page, Louie shown as a chicken.
+- Good and kept: phase determines the view, QR + tap a color, big hold button with
+  ring, "who rewound", ghost boost, honest connection/battery hints, lever hints.
 
-## 3. Nutzungsszenarien (Auswahl, nach Häufigkeit)
+## 3. Usage scenarios (selection, by frequency)
 
-| # | Szenario | Handys | Folgerung |
+| # | Scenario | Phones | Consequence |
 |---|---|---|---|
-| S2 | **Familienabend** (Primärfall) | 1 | Eine Seite reicht. Handy liegt flach auf dem Tisch, Hände an den Wippen |
-| S8 | Spielen ohne Handy | 0 | eigener **Hebel-Modus** (nicht „zuletzt gewählt“), damit bei der Oma kein Chaos läuft |
-| S3 | Kindergeburtstag, Steuernder spielt nicht mit | 1 | „Nur steuern“, Profil Kinder, schnell neu starten |
-| S4 | Party mit Gäste-Handys | 1 + 3–7 | Mitspieler-Handys explizit einschalten, QR, Onboarding < 30 s |
-| S5 | Gast kommt während der Runde | +1 | zuschauen, „nächste Runde bist du dabei“ |
-| S6 | Steuerhandy weg / Akku leer | – | Übergabe ohne Passwort, verwaiste Rolle übernehmen |
-| S7 | Modus anpassen am Tisch | 1 | „nur diese Runde“ vs. speichern, Probefahrt |
-| S1/S10 | Erstinbetriebnahme, Verschenken | 1 | Assistent mit Modell, Drehrichtung, Mindesttempo, Fliehkraft-Grenze, Passwort |
-| S11 | Neue Modi entwickeln | 1 (+PC) | **Werkstatt**: trocken mit Zeitraffer, echt mit Totmannknopf |
-| S9 | Fehlersuche | 1 | Diagnose hinter dem Schloss |
+| S2 | **Family evening** (primary case) | 1 | One page is enough. Phone lies flat on the table, hands on the paddles |
+| S8 | Playing without a phone | 0 | separate **lever mode** (not "last selected"), so Grandma does not get chaos |
+| S3 | Children's birthday party, controller does not play | 1 | "Control only", Kids profile, quick restart |
+| S4 | Party with guest phones | 1 + 3–7 | switch on player phones explicitly, QR, onboarding < 30 s |
+| S5 | Guest arrives during the round | +1 | watch, "you're in next round" |
+| S6 | Controller phone gone / battery empty | – | handover without password, take over orphaned role |
+| S7 | Adjust mode at the table | 1 | "this round only" vs. save, test drive |
+| S1/S10 | First setup, giving it as a gift | 1 | wizard with model, direction, minimum speed, centrifugal limit, password |
+| S11 | Developing new modes | 1 (+PC) | **workshop**: dry with time-lapse, real with dead-man button |
+| S9 | Troubleshooting | 1 | diagnostics behind the lock |
 
-Physische Randbedingungen: Während der Runde ist das Handy vor allem **Anzeige**, mit höchstens
-zwei riesigen Zielen. Lesbar aus 60–80 cm, keine Wischgesten, kein Querformat erzwingen. Ohne
-HTTPS gibt es keinen Wake Lock, also muss das Handy nach dem Aufwachen sofort den richtigen Zustand
-zeigen. Hebel und LED sind die Wahrheit. Für Kinder: Farben und Symbole statt Text.
+Physical constraints: during the round the phone is mainly a **display**, with at most
+two huge targets. Readable from 60–80 cm, no swipe gestures, no forced landscape. Without
+HTTPS there is no Wake Lock, so after waking up the phone must show the correct state immediately.
+Lever and LED are the truth. For children: colors and symbols instead of text.
 
-## 4. Rollen
+## 4. Roles
 
-Für Nutzer sichtbar sind nur drei Dinge: **Steuern**, **Mitspielen** und das **Schloss 🔒**.
+Users see only three things: **Control**, **Join game** and the **lock 🔒**.
 
-| Rolle | Wie | Darf |
+| Role | How | May |
 |---|---|---|
-| **Zuschauer** | Seite öffnen (Zustand „verbunden ohne Rolle“, keine wählbare Rolle) | Status sehen, „Mitspielen?“ bzw. „Steuerung anfragen“ |
-| **Mitspieler** | nur wenn Mitspieler-Handys an sind: „Mitspielen“ antippen (ein Tipp) | Joker laut Modus, „Ich bin raus“ (wenn erfasst), Stopp |
-| **Spielleiter** (genau einer) | automatisch das erste Handy, wenn die Steuerung frei ist; sonst Übergabe | Modus, Fiesheit, Mitspieler-Handys an/aus, Pause/Stopp, Spieler verwalten, Probefahrt, Modi anpassen |
-| **Besitzer** (Admin) | Passwort hinter dem Schloss, gilt bis „Abmelden“ oder 5 min Leerlauf (Kopfzeile zeigt „🔓 Besitzer“) | zusätzlich Werkstatt, Einrichtung, WLAN, Grenzen, Profile, Rechte, Update |
+| **Spectator** | open the page (state "connected without role", not a selectable role) | see status, "Join game?" or "Request control" |
+| **Player** | only when player phones are on: tap "Join game" (one tap) | jokers per mode, "I'm out" (if tracked), stop |
+| **Game master** (exactly one) | automatically the first phone when control is free; otherwise handover | mode, meanness, player phones on/off, pause/stop, manage players, test drive, adjust modes |
+| **Owner** (admin) | password behind the lock, valid until "Log out" or 5 min idle (header shows "🔓 Owner") | additionally workshop, setup, Wi-Fi, limits, profiles, permissions, update |
 
-**Spielleiter ≠ Besitzer.** Der Spielleiter braucht kein Passwort. Alles, was er auslöst, klemmt
-der Server auf die Besitzer-Grenzen. Ein Kind am Leiter-Handy kann also höchstens Modus und
-Fiesheit ändern, im Profil „Kinder“ auch nur innerhalb der freigegebenen Modi.
+**Game master ≠ owner.** The game master needs no password. Everything he triggers is clamped by
+the server to the owner limits. A child on the game master phone can therefore at most change mode and
+meanness, and in the "Kids" profile only within the released modes.
 
-### 4.1 Spielleiter werden und abgeben
+### 4.1 Becoming game master and handing over
 
-1. **Automatisch**: Ist die Steuerung frei, wird das erste Handy Spielleiter, ohne Klick.
-   Nach der Ersteinrichtung ist das Einrichtungs-Handy Spielleiter.
-2. **Anfrage**: Ein anderes Handy tippt „Steuerung anfragen“. Der Leiter bekommt ein Banner
-   „Lena möchte steuern – Abgeben / Ablehnen“.
-3. **Hebel-Bestätigung**: Nur wenn der Leiter **nicht antwortet** (15 s), darf der Anfragende den
-   Hebel **3× schnell umlegen** (an-aus dreimal binnen 4 s; 30-s-Fenster, nur in BEREIT/ENDE, Motor
-   bleibt aus). Physischer Zugriff schlägt Funk. Ein ausdrückliches **„Nein“ zählt**: Dann gibt es
-   keine Eskalation. Während einer Runde wartet die Anfrage. Solange das Fenster offen ist, zeigen
-   **alle** Handys „Hebel bestätigt gerade Max als Steuerer – nicht zum Starten benutzen“, und der Leiter
-   kann abbrechen. Beim Ablehnen gibt es zusätzlich „Für heute sperren“ (Steuer- und Mitspiel-Anfragen).
-4. **Verwaist**: Ist das Leiter-Handy 2 min getrennt (in einer Runde: bis Rundenende plus 2 min),
-   sehen alle „Steuerung übernehmen“.
-5. **Abgeben** im Leiter-Menü: an ein bestimmtes Handy oder „freigeben“ (mit Rückfrage).
-6. **Nach Schlaf/Neustart** hat das Handy des letzten Leiters 2 min Vorrang, damit nicht zufällig ein
-   Gast-Handy Leiter wird, das sich zuerst verbindet.
-7. Besitzer-Einstellung **„Wer darf steuern“**: jeder (Standard) / nur mit Hebel-Bestätigung (Standard im Profil Kinder) / nur Besitzer.
+1. **Automatic**: if control is free, the first phone becomes game master, without a click.
+   After first setup, the setup phone is game master.
+2. **Request**: another phone taps "Request control". The game master gets a banner
+   "Lena wants to control – Hand over / Decline".
+3. **Lever confirmation**: only if the game master **does not answer** (15 s) may the requester
+   **flip the lever 3× quickly** (on-off three times within 4 s; 30 s window, only in READY/END, motor
+   stays off). Physical access beats radio. An explicit **"No" counts**: then there is
+   no escalation. During a round the request waits. While the window is open, **all** phones show
+   "Lever is confirming Max as controller – do not use it to start", and the game master
+   can cancel. When declining there is also "Block for today" (control and join requests).
+4. **Orphaned**: if the game master phone is disconnected for 2 min (in a round: until round end plus 2 min),
+   everyone sees "Take over control".
+5. **Hand over** in the game master menu: to a specific phone or "release" (with confirmation).
+6. **After sleep/restart** the last game master's phone has priority for 2 min, so that a guest phone that
+   happens to connect first does not become game master.
+7. Owner setting **"Who may control"**: anyone (default) / only with lever confirmation (default in the Kids profile) / owner only.
 
-### 4.2 Mitspieler-Handys (Multiplayer)
+### 4.2 Player phones (multiplayer)
 
-- **Standard: aus.** Andere Handys sind Zuschauer und sehen Status plus „Mitspielen?“. Die Anfrage
-  geht als Banner an den Leiter, der sie mit einem Tipp annimmt. Damit sind auch die Mitspieler-Handys an.
-- Der Leiter schaltet auf der Spiel-Seite **„Mitspieler-Handys“** ein. Sein Handy zeigt einen QR-Code
-  (Vollbild zum Herzeigen). Wer beitritt, tippt **„Mitspielen“** und ist dabei: Der Name kommt vom
-  **Namenswürfel**, und man kann ihn jederzeit **von Hand ändern** (Textfeld).
-- **Farbe ist optional.** Standard ist ein **neutraler Hintergrund** ohne Farbe. Wer will, wählt eine
-  Farbe (Schnellwahl der Standardfarben Rot, Gelb, Grün, Blau, dazu Lila, Orange, Türkis, Pink). **Farben
-  dürfen mehrfach vorkommen** (z. B. zwei kombinierte Spiele mit je Rot). Spielleiter und Besitzer können
-  Mitspielern eine Farbe zuweisen oder wegnehmen.
-- **Spielerzahl** ist eine globale Besitzer-Einstellung (Standard 4, bis 8 für Umbauten und kombinierte
-  Spiele). Sie begrenzt die mitspielenden Handys. Wer danach kommt, sieht „Alle Plätze belegt“.
-- **Ein Spieler ist ein Platz mit Eingabegeräten.** Das virtuelle Spiel ist bewusst vom Tisch getrennt:
-  Wer kein Gerät hat, kommt in der App nicht vor und hat eben keine Joker. Einem Spieler lassen sich
-  **ein Handy, ein oder mehrere Funk-Taster, beides oder nichts** zuordnen (ohne Gerät nur sinnvoll mit
-  Statistik). Wer per Handy beitritt, wählt „Neuer Platz“ oder „Zu Platz *Rot (Taster)* dazu“; nichts muss
-  vorher entfernt werden. Anlernen und Tastenbelegung: siehe [geraete-anlernen.md](geraete-anlernen.md), Technik in [idee-funk-taster.md](idee-funk-taster.md).
-- **Feste Handys am Platz, wechselnde Personen** (Party): Ein Handy bleibt am Stuhl liegen, die Leute
-  rotieren. Deshalb ist der Zufallsname Standard, und es gibt **„🔄 Spielerwechsel“**: neuer Zufallsname,
-  Werte des Abends (Titel, Vorteil) zurückgesetzt, ohne neu beizutreten.
-- Der Leiter kann Mitspieler entfernen (zweiter Tipp zur Bestätigung). Entfernte Handys können erst
-  wieder beitreten, wenn der Leiter eine neue Anfrage annimmt.
-- Beitritt während der Runde ist möglich, man spielt aber erst ab der nächsten Runde mit.
-  **Kontingente hängen am Mitspieler** (Sitzungs-Token), nicht an der Farbe; Neuladen setzt nichts zurück.
-  Beim Countdown wird festgehalten, wer mitspielt. Ergebnis und Titel beziehen sich darauf.
-- **Zuschauer** (später): eigene, deutlich andere Optik als der neutrale Mitspieler-Hintergrund,
-  eventuell mit eigenen schwachen Zuschauer-Jokern.
-- Ausschalten ist nur in BEREIT/ENDE möglich. Mitspieler werden dann wieder Zuschauer.
+- **Default: off.** Other phones are spectators and see status plus "Join game?". The request
+  goes as a banner to the game master, who accepts it with one tap. This also switches player phones on.
+- The game master switches on **"Player phones"** on the game page. His phone shows a QR code
+  (full screen for showing around). Whoever joins taps **"Join game"** and is in: the name comes from the
+  **name dice**, and it can be **edited by hand** at any time (text field).
+- **Color is optional.** Default is a **neutral background** without color. Whoever wants picks a
+  color (quick pick of the standard colors red, yellow, green, blue, plus purple, orange, turquoise, pink). **Colors
+  may appear more than once** (e.g. two combined games with red each). Game master and owner can
+  assign or remove a player's color.
+- **Number of players** is a global owner setting (default 4, up to 8 for modifications and combined
+  games). It limits the participating phones. Whoever comes after that sees "All seats taken".
+- **A player is a seat with input devices.** The virtual game is deliberately separate from the table:
+  whoever has no device does not appear in the app and simply has no jokers. A player can be assigned
+  **a phone, one or more wireless buttons, both or nothing** (without a device only useful with
+  statistics). Whoever joins by phone chooses "New seat" or "Join seat *Red (button)*"; nothing has to
+  be removed first. Pairing and key assignment: see [geraete-anlernen.md](geraete-anlernen.md), technology in [idee-funk-taster.md](idee-funk-taster.md).
+- **Fixed phones at the seat, changing people** (party): a phone stays on the chair, the people
+  rotate. That is why the random name is the default, and there is **"🔄 Player change"**: new random name,
+  the evening's values (titles, advantage) reset, without rejoining.
+- The game master can remove players (second tap to confirm). Removed phones can only
+  rejoin when the game master accepts a new request.
+- Joining during the round is possible, but you only play from the next round.
+  **Allowances belong to the player** (session token), not to the color; reloading resets nothing.
+  At the countdown it is recorded who plays. Result and titles refer to that.
+- **Spectators** (later): own, clearly different look from the neutral player background,
+  possibly with their own weak spectator jokers.
+- Switching off is only possible in READY/END. Players then become spectators again.
 
-### 4.3 Nur steuern oder mitspielen (Leiter)
+### 4.3 Control only or also play (game master)
 
-Eine deutliche Wahl auf der Spiel-Seite: **🎛️ Nur steuern** (Standard) / **🎮 Steuern + mitspielen**.
-Beim Mitspielen (Farbe optional wie bei allen) bekommt der Leiter während der Runde **dasselbe Gamepad wie alle**
-(alle Joker des Modus, z. B. Vorwärts-Boost und Rückwärts-Stoß, gleiche Kontingente) plus eine schmale
-Leiterleiste (Pause, Stopp, Menü). Mitspielen ist nur mit eingeschalteten Mitspieler-Handys sinnvoll
-und schaltet sie mit ein.
+A clear choice on the game page: **🎛️ Control only** (default) / **🎮 Control + play**.
+When playing (color optional as for everyone), the game master gets **the same gamepad as everyone** during the round
+(all jokers of the mode, e.g. forward boost and rewind kick, same allowances) plus a narrow
+game master bar (pause, stop, menu). Playing along only makes sense with player phones switched on
+and switches them on too.
 
-### 4.4 Rechte
+### 4.4 Permissions
 
-| Aktion | Zuschauer | Mitspieler | Spielleiter | Besitzer |
+| Action | Spectator | Player | Game master | Owner |
 |---|---|---|---|---|
-| Status sehen | ✓ | ✓ | ✓ | ✓ |
-| Stopp / Notaus im UI | – | ✓ | ✓ | ✓ |
-| Joker (Boost, Rückwärts …), „Ich bin raus“ (für sich selbst) | – | ✓ | ✓ wenn er mitspielt | – |
-| Modus wählen, Fiesheit, „nur diese Runde“ anpassen | – | – | ✓ (Hebel aus) | ✓ |
-| Mitspieler-Handys an/aus, Spieler entfernen, Sieger antippen | – | – | ✓ | ✓ |
-| Pause, Runde freigeben | – | – | ✓ | ✓ |
-| Modus speichern | – | – | ✓ wenn erlaubt | ✓ |
-| Probefahrt (10 s, Hebel an) | – | – | ✓ | ✓ |
-| Profil Kinder/Familie/Party | – | – | – | ✓ |
-| Werkstatt, Kalibrierung, WLAN, Grenzen, Rechte, Update | – | – | – | ✓ |
+| See status | ✓ | ✓ | ✓ | ✓ |
+| Stop / emergency stop in the UI | – | ✓ | ✓ | ✓ |
+| Jokers (boost, rewind …), "I'm out" (for oneself) | – | ✓ | ✓ if playing | – |
+| Select mode, meanness, adjust "this round only" | – | – | ✓ (lever off) | ✓ |
+| Player phones on/off, remove players, tap winner | – | – | ✓ | ✓ |
+| Pause, release round | – | – | ✓ | ✓ |
+| Save mode | – | – | ✓ if allowed | ✓ |
+| Test drive (10 s, lever on) | – | – | ✓ | ✓ |
+| Profile Kids/Family/Party | – | – | – | ✓ |
+| Workshop, calibration, Wi-Fi, limits, permissions, update | – | – | – | ✓ |
 
-Den Stopp im UI sendet ein Handy mit Rolle, Zuschauer nicht (die kann jeder in Funkreichweite haben).
-Er wird nie gedrosselt und mit Namen angezeigt. **Der eigentliche Notaus ist der Hebel**, und das
-steht auch im UI.
+The UI stop is sent by a phone with a role, not by spectators (anyone within radio range can be one).
+It is never throttled and is shown with the name. **The real emergency stop is the lever**, and the
+UI says so.
 
-### 4.5 Grenzfälle
+### 4.5 Edge cases
 
-- Leiter-Akku leer oder Tab im Hintergrund: Die Runde läuft weiter, der Hebel stoppt immer.
-- Zwei Handys wollen gleichzeitig leiten: Der Server vergibt atomar, wer zuerst kommt.
-- Reload oder kurzer WLAN-Abbruch: Das Token stellt Rolle, Name und Farbe wieder her.
-- Schlaf oder Neustart: alle Rollen frei, Mitspieler-Handys aus.
+- Game master battery empty or tab in background: the round continues, the lever always stops.
+- Two phones want to lead at the same time: the server assigns atomically, first come first served.
+- Reload or short Wi-Fi dropout: the token restores role, name and color.
+- Sleep or restart: all roles free, player phones off.
 
-## 5. Ansichten
+## 5. Views
 
-Grundsatz: **Für eine normale Runde reicht eine Seite ohne Scrollen** (Ziel: alles Wichtige in
-375 × 640 px sichtbar). Die Spiel-Seite **ändert sich mit der Phase**. Einstellungen sind immer
-über die untere Leiste erreichbar, in der Runde über einen kleinen Menü-Knopf.
+Principle: **a normal round needs only one page without scrolling** (goal: everything important visible in
+375 × 640 px). The game page **changes with the phase**. Settings are always
+reachable via the bottom bar, during the round via a small menu button.
 
-### 5.1 Steuerhandy (Spielleiter)
+### 5.1 Controller phone (game master)
 
-Untere Leiste mit drei Reitern: **Spiel · Modi · Mehr**.
+Bottom bar with three tabs: **Game · Modes · More**.
 
-| Phase | Spiel-Seite zeigt |
+| Phase | Game page shows |
 |---|---|
-| **Bereit** | Große Statuszeile („Hebel umlegen zum Starten“), Hebel-Spiegel (nur Anzeige), **Modus-Karte** (antippen → Modi), **Fiesheit** als 5 Stufen, Zeile **Spieler** (Mitspieler mit Name/Farbe und Belegung „2/4“, Schalter „Mitspieler-Handys“, Wahl „Nur steuern / mitspielen“) |
-| **Countdown** | Vollbild 3-2-1 auf allen Handys |
-| **Läuft** | Vollbild ohne Leiste: Tempo groß, Modus, Restzeit falls vorhanden, Ticker der Ereignisse (wer hat welchen Joker gesetzt), 4 Farbkacheln mit Status (Handy, raus), unten zwei große Knöpfe **Pause** und **Stopp** (Stopp halten). Klein oben: ☰ Menü |
-| **Pause** | Weiter (halten, danach wieder Countdown „Hände an die Wippen!“) / Stopp |
-| **Ende** | optional Sieger antippen / Titel aus den Joker-Ereignissen („Oberfiesling“), Fiesheit direkt änderbar, „Nochmal = Hebel aus und wieder an“ (nur Hinweis, kein falscher Knopf), Modus ändern. Nach technischem Abbruch (blockiert, Akku) eine rote Statuskarte auf allen Handys und keine Titel |
-| Sieger | Nur mit „Statistik & Ausscheiden“: Ist nur noch ein Spieler übrig, Banner „🏆 Lena hat gewonnen – Hebel aus“ |
-| Hinweise | Hebel erst auf Aus · Louie schläft · Akku schwach · Blockiert · Verbindung weg |
+| **Ready** | Large status line ("Flip the lever to start"), lever mirror (display only), **mode card** (tap → Modes), **meanness** as 5 levels, **Players** row (players with name/color and occupancy "2/4", switch "Player phones", choice "Control only / play") |
+| **Countdown** | Full screen 3-2-1 on all phones |
+| **Running** | Full screen without bar: speed large, mode, remaining time if any, ticker of events (who used which joker), 4 color tiles with status (phone, out), at the bottom two large buttons **Pause** and **Stop** (hold to stop). Small at the top: ☰ menu |
+| **Pause** | Resume (hold, then countdown again "Hands on the paddles!") / Stop |
+| **End** | optionally tap winner / titles from joker events ("Master Meanie"), meanness directly changeable, "Again = lever off and on again" (hint only, no misleading button), change mode. After a technical abort (blocked, battery) a red status card on all phones and no titles |
+| Winner | Only with "Statistics & elimination": if only one player is left, banner "🏆 Lena has won – lever off" |
+| Hints | Lever to off first · Louie is asleep · Battery low · Blocked · Connection lost |
 
-**Modi**: Karten der Modi mit Symbol, Kurz-Satz, Handy-Bedarf (0 / 1 / alle) und Mini-Kurve.
-Antippen → Detail mit Vorschau-Kurve und **Fiesheit**. „Anpassen“ öffnet wenige Regler und
-„Für diese Runde“ oder „Als neuen Modus speichern“. „Probefahrt 10 s“ geht nur bei Hebel an.
+**Modes**: cards of the modes with icon, short sentence, phone requirement (0 / 1 / all) and mini curve.
+Tap → detail with preview curve and **meanness**. "Adjust" opens a few sliders and
+"For this round" or "Save as new mode". "Test drive 10 s" only works with lever on.
 
-**Mehr**: Spieler & Handys (QR, Liste, entfernen), Steuerung abgeben, Hebel-Modus (Modus ohne Handy),
-Hilfe/Spielregeln, 🔒 Besitzer-Bereich.
+**More**: Players & phones (QR, list, remove), hand over control, lever mode (mode without phone),
+help/game rules, 🔒 owner area.
 
-### 5.2 Andere Handys
+### 5.2 Other phones
 
-| Zustand | Ansicht |
+| State | View |
 |---|---|
-| Mitspieler-Handys aus | **Zuschauer**: Status, Modus, Tempo; „Mitspielen?“ und „Steuerung anfragen“ |
-| Mitspieler-Handys an, noch nicht dabei | **Mitspielen**: ein großer Knopf, darüber Name (🎲 / ✏️), „Plätze 2/4“ |
-| Bereit (dabei) | Eigener Name groß, neutraler Hintergrund oder eigene Farbe, „🎨 Farbe“ (optional), Modus, „Warte auf Hebel“, eigene Joker der nächsten Runde |
-| **Läuft** | **Gamepad**: ein bis zwei große Halte-Knöpfe (Joker laut Modus, Layout siehe [modus-baukasten.md](modus-baukasten.md)) mit Füllring, Kontingent-Punkten, Abklingring und globaler Sperre. Darunter klein: „Ich bin raus“ (nur wenn erfasst, Halten), Stopp |
-| Raus | **Geist**: Geister-Boost-Knopf, falls im Modus vorgesehen |
-| Ende | Ergebnis, Titel („Oberfiesling“), warten auf nächste Runde |
+| Player phones off | **Spectator**: status, mode, speed; "Join game?" and "Request control" |
+| Player phones on, not yet in | **Join game**: one large button, above it the name (🎲 / ✏️), "Seats 2/4" |
+| Ready (in) | Own name large, neutral background or own color, "🎨 Color" (optional), mode, "Waiting for lever", own jokers for the next round |
+| **Running** | **Gamepad**: one or two large hold buttons (jokers per mode, layout see [modus-baukasten.md](modus-baukasten.md)) with fill ring, allowance dots, cooldown ring and global lock. Below, small: "I'm out" (only if tracked, hold), stop |
+| Out | **Ghost**: ghost boost button, if the mode provides one |
+| End | Result, titles ("Master Meanie"), waiting for next round |
 
-Meldungen (Toasts) erscheinen **oben** und verdecken nie Bedienelemente. Knöpfe verschieben sich nicht
-unter dem Finger. Fachbegriffe (Interpreter, Totmann, Fake-out) stehen nur in der Werkstatt.
+Messages (toasts) appear at the **top** and never cover controls. Buttons do not move
+under the finger. Technical terms (interpreter, dead-man, fake-out) appear only in the workshop.
 
-### 5.3 Besitzer-Bereich (🔒)
+### 5.3 Owner area (🔒)
 
-Profil Kinder/Familie/Party · Tempo-Deckel · Rückwärts- und Party-Grenzen · Rechte („Wer darf
-steuern“, Modi speichern) · **Werkstatt** · WLAN · Gerät (Modell, Kalibrierung, Passwort,
-Sichern/Laden, Update, Reset) · Diagnose. Jeder Bereich ist eine eigene Unterseite, keine lange Liste.
+Profile Kids/Family/Party · speed cap · reverse and party limits · permissions ("Who may
+control", saving modes) · **workshop** · Wi-Fi · device (model, calibration, password,
+backup/restore, update, reset) · diagnostics. Each area is its own subpage, not a long list.
 
-### 5.4 Ersteinrichtung
+### 5.4 First setup
 
-Assistent mit 6 Schritten, jeder Schritt passt auf einen Bildschirm: Modell → Drehrichtung
-(„Hebel an. Fliegt Louie richtig herum?“) → Mindesttempo (Regler hoch, bis Louie zuverlässig dreht) → Fliehkraft-Grenze (weiter hoch, bis Louie nicht mehr absinkt) →
-Besitzer-Passwort plus Hebel-Bestätigung → Heim-WLAN (optional) → Fertig (QR-Aufkleber, louie.local).
+Wizard with 6 steps, each step fits on one screen: model → direction
+("Lever on. Is Louie flying the right way round?") → minimum speed (slider up until Louie turns reliably) → centrifugal limit (further up until Louie no longer drops) →
+owner password plus lever confirmation → home Wi-Fi (optional) → done (QR sticker, louie.local).
 
-## 6. Spielmodi
+## 6. Game modes
 
-### 6.1 Ein Modus besteht aus vier Schichten
+### 6.1 A mode consists of four layers
 
-| Schicht | Inhalt | Beispiel |
+| Layer | Content | Example |
 |---|---|---|
-| **A Flugprofil** | Folge von Abschnitten: `const`, `ramp`, `steps`, `random`, `wave` | Druckkochtopf: Rampe 40 → 100 % in 120 s |
-| **B Würze** | Ereignisse: Ruckler, Fake-out-Bremse, Pause, Schleichfahrt + Sprint, kurzer Rückwärtsstoß; Häufigkeit/min, Dauer, Vorwarnung | Turbulenzen |
-| **C Mitspieler-Aktionen** | Rückspuler, Boost, Bremse; `who` = alle / Verbleibende / Ausgeschiedene; Kontingent, Abklingzeit, globale Sperre | Rückspul-Duell |
-| **D Rundenende** | Hebel (immer), Zeit, letzter Spieler | Zeitrennen 90 s |
+| **A Flight profile** | sequence of segments: `const`, `ramp`, `steps`, `random`, `wave` | Pressure Cooker: ramp 40 → 100 % in 120 s |
+| **B Spice** | events: jolt, fake-out brake, pause, creep + sprint, short reverse kick; frequency/min, duration, warning | Turbulence |
+| **C Player actions** | rewind, boost, brake; `who` = all / remaining / eliminated; allowance, cooldown, global lock | Rewind Duel |
+| **D Round end** | lever (always), time, last player | Time Race 90 s |
 
-- **Jeder Modus muss ohne Schicht C spielbar sein.** Der Handy-Bedarf wird aus den Schichten abgeleitet.
-- **Fiesheit 1–5**: Der Modus legt Stufe 3 fest. Eine feste Tabelle skaliert Tempo, Ereignishäufigkeit
-  und Abklingzeiten. Stufe 1 hat nie Rückwärts und keine Fake-outs.
-- **Klemmkette** in fester Reihenfolge, jede Stufe kann nur verschärfen: Modus → Fiesheit →
-  „diese Runde“ → Tempo-Deckel des Profils → Besitzer-Grenzen → Motorschicht. Die Vorschau zeigt
-  die **geklemmte** Kurve. Der Server berechnet sie mit demselben Interpreter (`POST /api/modes/preview`).
+- **Every mode must be playable without layer C.** The phone requirement is derived from the layers.
+- **Meanness 1–5**: the mode defines level 3. A fixed table scales speed, event frequency
+  and cooldowns. Level 1 never has reverse and no fake-outs.
+- **Clamp chain** in fixed order, each stage can only tighten: mode → meanness →
+  "this round" → profile speed cap → owner limits → motor layer. The preview shows
+  the **clamped** curve. The browser computes it via WebAssembly from the same Rust core crate as the
+  firmware (fallback: server computation via `POST /api/modes/preview`).
 
 ```json
 {
-  "id": "turbulenz", "v": 1, "name": "Turbulenzen", "icon": "🌪️", "owner": "builtin",
+  "id": "turbulenz", "v": 1, "name": "Turbulence", "icon": "🌪️", "owner": "builtin",
   "profile": [{"type": "random", "min": 35, "max": 80, "every_s": [3, 6], "for_s": null}],
   "spice":   [{"kind": "jolt", "per_min": 4, "dur_s": 0.4, "warn_s": 0.5, "from_s": 10},
               {"kind": "fakeout", "per_min": 2, "dur_s": 1.0}],
@@ -233,89 +234,89 @@ Besitzer-Passwort plus Hebel-Bestätigung → Heim-WLAN (optional) → Fertig (Q
 }
 ```
 
-### 6.2 Eingebaute Modi
+### 6.2 Built-in modes
 
-| Modus | Idee | Handys |
+| Mode | Idea | Phones |
 |---|---|---|
-| ✈️ **Klassisch** | konstantes Tempo, sanfter Anlauf (auch Standard als Hebel-Modus) | 0 |
-| 🔥 **Druckkochtopf** | wird stetig schneller, Runden enden von selbst | 0 |
-| 🎲 **Würfelmotor** | zufälliges Tempo in zufälligen Abständen | 0 |
-| 🌪️ **Turbulenzen** | Würfelmotor plus Ruckler und Fake-out-Bremsen | 0 |
-| ⏪ **Rückspul-Duell** | Klassisch plus Rückspuler-Joker für alle | je Spieler |
-| 👻 **Letztes Huhn** | Druckkochtopf, Ausgeschiedene bekommen Geister-Boost (Geister-Joker nur mit „Statistik & Ausscheiden“) | je Spieler |
+| ✈️ **Classic** (PoC: „Klassisch“) | constant speed, gentle start (also the default lever mode) | 0 |
+| 🔥 **Pressure Cooker** (PoC: „Druckkochtopf“) | gets steadily faster, rounds end by themselves | 0 |
+| 🎲 **Dice Engine** (PoC: „Würfelmotor“) | random speed at random intervals | 0 |
+| 🌪️ **Turbulence** (PoC: „Turbulenzen“) | Dice Engine plus jolts and fake-out brakes | 0 |
+| ⏪ **Rewind Duel** (PoC: „Rückspul-Duell“) | Classic plus rewind joker for everyone | per player |
+| 👻 **Last Chicken** (PoC: „Letztes Huhn“) | Pressure Cooker, eliminated players get ghost boost (ghost jokers only with "Statistics & elimination") | per player |
 
-Modi, die Mitspieler-Handys brauchen, sind ohne Mitspieler-Handys wählbar, laufen dann aber ohne
-Schicht C. Die Karte zeigt das mit „Mitspieler-Aktionen aus – Handys einschalten?“.
+Modes that need player phones can be selected without player phones, but then run without
+layer C. The card shows this with "Player actions off – switch on phones?".
 
-### 6.3 Drei Tiefen der Bedienung
+### 6.3 Three depths of operation
 
-1. **Schnellwahl** (V1, Spielleiter): Karte antippen, Fiesheit wählen.
-2. **Anpassen** (V1, Spielleiter): 1–3 Regler je Schicht (Tempo, Joker, Zeitlimit),
-   „für diese Runde“. Speichern erst ab Stufe 2 und nur, wenn es erlaubt ist.
-3. **Modus-Baukasten** (Spielleiter, wenn „Modi erstellen“ erlaubt): eigene Modi aus Vorlagen und Bausteinen, siehe [modus-baukasten.md](modus-baukasten.md).
+1. **Quick pick** (V1, game master): tap the card, choose meanness.
+2. **Adjust** (V1, game master): 1–3 sliders per layer (speed, jokers, time limit),
+   "for this round". Saving only from level 2 and only if allowed.
+3. **Mode builder** (game master, if "Create modes" is allowed): custom modes from templates and building blocks, see [modus-baukasten.md](modus-baukasten.md).
 
-### 6.4 Lebenszyklus
+### 6.4 Life cycle
 
-Eingebaut (schreibgeschützt) → kopieren → anpassen → speichern (`owner`, `based_on`) → teilen
-als JSON-Datei oder QR-Link `http://louie.local/#m=<base64url>`. Beim Import zeigt eine Vorschau,
-wo geklemmt wird. Ein Import kann keine Grenzen aufweichen.
+Built-in (read-only) → copy → adjust → save (`owner`, `based_on`) → share
+as JSON file or QR link `http://louie.local/#m=<base64url>`. On import a preview shows
+where clamping happens. An import cannot loosen any limits.
 
-## 7. Werkstatt (Testmodus, nur Besitzer)
+## 7. Workshop (test mode, owner only)
 
-Die Werkstatt ist optisch deutlich markiert (gestreifter Rand), und auch hier gelten alle Grenzen.
+The workshop is clearly marked visually (striped border), and all limits apply here too.
 
-**Hebel im Testbetrieb**: Normalerweise startet Hebel an sofort eine Runde. Solange die Werkstatt
-offen ist oder eine Probefahrt vorbereitet wird, ist das Gerät im **Testbetrieb**: Hebel an gibt
-nur den Motor frei, es startet keine Runde. Ablauf der Probefahrt: „Probefahrt“ tippen → Hebel an →
-Knopf halten. Die Bereitschaft verfällt nach 60 s. Endet der Test bei Hebel an, folgt
-„Hebel erst auf Aus“ (kein Überraschungsstart).
+**Lever in test operation**: normally lever on starts a round immediately. While the workshop
+is open or a test drive is being prepared, the device is in **test operation**: lever on only
+enables the motor, no round starts. Test drive sequence: tap "Test drive" → lever on →
+hold button. Readiness expires after 60 s. If the test ends with lever on, it is followed by
+"Lever to off first" (no surprise start).
 
-- **Trocken** (Motor fest auf 0, auch bei Hebel aus): Modus abspielen mit 0,5× / 1× / 4× / 16×,
-  festem Zufalls-Seed, Kurve „Soll“ und „geklemmt“, simulierten Mitspielern (Spam / klug / nie)
-  und Kennzahlen (Rückwärtsanteil, geschätzte Rundendauer, Ereignisse pro Minute).
-- **Echt** (Hebel an, keine Runde, Akku ok): **Totmannknopf**. Der Motor läuft nur, solange der
-  Knopf gehalten wird (Herzschlag 200 ms, Stopp nach 500 ms ohne Herzschlag). Nur 0,5× oder 1×,
-  höchstens 60 s. Ereignisse lassen sich von Hand auslösen („Ruckler jetzt“, „Rückspuler jetzt“).
-  Abgelehnte Auslöser nennen den Grund („Rückwärts-Sperre noch 4 s“).
-- **Kalibrierung**: Drehrichtung, Mindesttempo (= 0 %), Fliehkraft-Grenze (= 100 %), Spürbarkeit der Ruckler,
-  Leerlaufstrom (Basis der Blockier-Erkennung).
+- **Dry** (motor fixed at 0, also with lever off): play the mode at 0.5× / 1× / 4× / 16×,
+  fixed random seed, curve "target" and "clamped", simulated players (spam / smart / never)
+  and metrics (reverse share, estimated round duration, events per minute).
+- **Real** (lever on, no round, battery ok): **dead-man button**. The motor only runs while the
+  button is held (heartbeat 200 ms, stop after 500 ms without heartbeat). Only 0.5× or 1×,
+  at most 60 s. Events can be triggered by hand ("Jolt now", "Rewind now").
+  Rejected triggers state the reason ("Reverse lock 4 s left").
+- **Calibration**: direction, minimum speed (= 0 %), centrifugal limit (= 100 %), perceptibility of jolts,
+  idle current (basis of the block detection).
 
-## 8. Folgen für Protokoll und Konzept
+## 8. Consequences for protocol and concept
 
-- WebSocket zusätzlich: `request_lead`, `handover`, `release_lead`, `request_join`, `allow_players`,
-  `kick`, `leader_plays`, `chick_lost`, `estop`; Zustand: `multiplayer`, `leader_plays`, `lead_policy`.
-- Rechte zusätzlich: `modes.select`, `modes.tweak`, `workshop.dry`, `workshop.motor`.
-- Admin-Timeout 5 min statt 30 min. „Gast“ heißt jetzt „Zuschauer“.
-- Neue Einstellung **Hebel-Modus** (Modus ohne Handy), unabhängig vom zuletzt gewählten Modus.
+- WebSocket additionally: `request_lead`, `handover`, `release_lead`, `request_join`, `allow_players`,
+  `kick`, `leader_plays`, `chick_lost`, `estop`; state: `multiplayer`, `leader_plays`, `lead_policy`.
+- Additional permissions: `modes.select`, `modes.tweak`, `workshop.dry`, `workshop.motor`.
+- Admin timeout 5 min instead of 30 min. "Guest" is now called "Spectator".
+- New setting **lever mode** (mode without phone), independent of the last selected mode.
 
-## 9. Sprachen (Internationalisierung)
+## 9. Languages (internationalization)
 
-Entscheidung 2026-11-03: Der Entwurf (`web/poc`) bleibt deutsch. **Die finale Fassung muss mehrsprachig sein.**
+Decision 2026-11-03: the draft (`web/poc`) stays German. **The final version must be multilingual.**
 
-- **Automatische Erkennung** über die Browser-Einstellung (`navigator.languages`, beim ersten Aufruf auch der
-  `Accept-Language`-Kopf), Rückfall Englisch. **Umschalten** jederzeit über Mehr → Sprache; die Wahl wird pro
-  Handy gespeichert (Sitzungs-Token bzw. `localStorage`).
-- **Sprachumfang (Vorschlag, noch zu bestätigen):**
-  - Hauptsprachen der EU: Englisch, Deutsch, Französisch, Spanisch, Italienisch, Polnisch, Niederländisch,
-    Rumänisch, **Portugiesisch in der brasilianischen Variante (pt-BR)**, die auch in Portugal verstanden wird.
-  - Weltweit viel gesprochen: Chinesisch (vereinfacht), Hindi, Arabisch, Japanisch, Türkisch, Indonesisch,
-    ggf. Russisch und Ukrainisch.
-- **Technik:**
-  - Alle Texte liegen in einer Datei pro Sprache (JSON, Schlüssel → Text, mit Platzhaltern und Pluralformen
-    über `Intl.PluralRules`). Zahlen und Zeiten über `Intl.NumberFormat`.
-  - Die Dateien werden gzip-komprimiert im Flash abgelegt und erst bei Bedarf geladen. Grob 5–8 KB pro Sprache.
-  - **Keine eingebetteten Schriften.** Chinesisch, Arabisch, Hindi und Japanisch nutzen die Systemschriften der Handys.
-  - **Arabisch ist rechts-nach-links:** Das Layout von Anfang an mit CSS-Logik-Eigenschaften (`margin-inline-start`
-    usw.) und `dir="rtl"` bauen. Symbole wie ⏪/⏩ bleiben dabei richtungstreu.
-  - Kinder ohne Lesen: Symbole und Farben tragen die Bedeutung, Text ist Zusatz. Das hilft auch bei langen
-    Übersetzungen (Deutsch, Französisch).
-  - Namenswürfel: eigene Wortlisten pro Sprache.
-- **Übersetzung:** Englisch ist die Quellsprache. Alle anderen Sprachen werden aus Englisch übersetzt und vor einem
-  Release von Muttersprachlern gegengelesen.
+- **Automatic detection** via the browser setting (`navigator.languages`, on first access also the
+  `Accept-Language` header), fallback English. **Switch** at any time via More → Language; the choice is stored per
+  phone (session token or `localStorage`).
+- **Language scope (proposal, still to be confirmed):**
+  - Main EU languages: English, German, French, Spanish, Italian, Polish, Dutch,
+    Romanian, **Portuguese in the Brazilian variant (pt-BR)**, which is also understood in Portugal.
+  - Widely spoken worldwide: Chinese (simplified), Hindi, Arabic, Japanese, Turkish, Indonesian,
+    possibly Russian and Ukrainian.
+- **Technology:**
+  - All texts are in one file per language (JSON, key → text, with placeholders and plural forms
+    via `Intl.PluralRules`). Numbers and times via `Intl.NumberFormat`.
+  - The files are stored gzip-compressed in flash and only loaded when needed. Roughly 5–8 KB per language.
+  - **No embedded fonts.** Chinese, Arabic, Hindi and Japanese use the phones' system fonts.
+  - **Arabic is right-to-left:** build the layout from the start with CSS logical properties (`margin-inline-start`
+    etc.) and `dir="rtl"`. Symbols like ⏪/⏩ keep their direction.
+  - Children who cannot read: symbols and colors carry the meaning, text is secondary. This also helps with long
+    translations (German, French).
+  - Name dice: own word lists per language.
+- **Translation:** English is the source language. All other languages are translated from English and
+  proofread by native speakers before a release.
 
-## 10. Offene Punkte
+## 10. Open items
 
-- [ ] Spürt man 0,3-s-Ruckler? (Prototyp)
-- [ ] Hebel-Geste 3× umlegen: in der Praxis zuverlässig erkennbar? Status-LED soll das Fenster zusätzlich anzeigen.
-- [ ] „Wer darf steuern“: Ist „jeder“ als Standard für Partys sicher genug?
-- [x] Hühner zählen: entfällt. Ausscheiden und Statistik sind optional (Standard aus).
+- [ ] Can you feel 0.3 s jolts? (prototype)
+- [ ] Lever gesture flip 3×: reliably detectable in practice? The status LED should additionally show the window.
+- [ ] "Who may control": is "anyone" as default safe enough for parties?
+- [x] Counting chickens: dropped. Elimination and statistics are optional (default off).

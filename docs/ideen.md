@@ -1,635 +1,635 @@
-# Ideensammlung und Gremium
+# Idea collection and panel
 
-Stand: 2026-11-01 · Status: Sammlung, nichts ist beschlossen. Ergänzt [software-konzept.md](software-konzept.md).
+Status: 2026-11-06 · collection, nothing is decided. Extends [software-konzept.md](software-konzept.md).
 
-## 1. Vorgehen
+## 1. Approach
 
-1. **Fünf Ideen-Teams** (KI-Agenten) haben unabhängig voneinander gesammelt: Spielmodi & Spielmechanik,
-   Party/Multiplayer/Trinkspiel, User Experience & Design, Besitzer- und Admin-Einstellungen,
-   Hardware/Sicherheit/Robustheit. Ergebnis: **254 Ideen** (Katalog in Abschnitt 5).
-2. Ein **Gremium aus vier Nutzertypen** hat jede Idee bewertet (0 = egal bis 3 = unbedingt) und
-   angegeben, ob sie in V1 gehört:
+1. **Five idea teams** (AI agents) collected independently: game modes & game mechanics,
+   party/multiplayer/drinking game, user experience & design, owner and admin settings,
+   hardware/safety/robustness. Result: **254 ideas** (catalog in section 5).
+2. A **panel of four user types** rated every idea (0 = don't care to 3 = must have) and
+   stated whether it belongs in V1:
 
-   | Persona | Kurzprofil |
+   | Persona | Short profile |
    |---|---|
-   | Familien-Elternteil | 2 Kinder (6 und 9), Technik-Laie, will einfach, fair, sicher |
-   | Party-Gastgeber | WG-Partys mit 6–10 Leuten, Trinkspiele, Chaos, Zuschauer |
-   | Bastler/Besitzer | baut und verschenkt den Bausatz, will Robustheit und Einstellbarkeit |
-   | Gelegenheitsspieler | Gast mit fremdem iPhone, 20 Sekunden Geduld, keine Anmeldung |
+   | Family parent | 2 children (6 and 9), not technical, wants simple, fair, safe |
+   | Party host | shared-flat parties with 6–10 people, drinking games, chaos, spectators |
+   | Maker/owner | builds the kit and gives it away, wants robustness and configurability |
+   | Casual player | guest with someone else's iPhone, 20 seconds of patience, no sign-up |
 
-3. Die V1-Auswahl unten fasst Dubletten zusammen (z. B. vier Varianten des Rückspulers) und ist ein
-   **Vorschlag** auf Basis der Stimmen. Endgültig entscheiden wir.
+3. The V1 selection below merges duplicates (e.g. four variants of the rewind) and is a
+   **proposal** based on the votes. We make the final decision.
 
-Legende im Katalog: Aufwand klein/mittel/groß · HW = mit geplanter Hardware machbar (ja / eingeschränkt / nein) ·
-★ = Summe der Bewertungen (max. 12) · V1 = Stimmen für V1 (max. 4).
+Catalog legend: effort small/medium/large · HW = feasible with the planned hardware (yes / limited / no) ·
+★ = sum of ratings (max. 12) · V1 = votes for V1 (max. 4).
 
-## 2. Was das Gremium sagt
+## 2. What the panel says
 
-- **Familie**: „Hebel umlegen, und es läuft.“ Sicherheit (Finger im Arm → Stopp) und ein Kinderprofil
-  mit einem Tipp. Zwei, drei Modi reichen. Rückspuler ja, aber mit Kontingent, Sperrzeit und Vorwarnung.
-  Saboteure, Wetten, Geheimmissionen bringen Streit. Trinkspiel nicht in V1. Bildschirme müssen Kinder
-  ohne Lesen verstehen.
-- **Party**: Alles entscheidet sich in den ersten 30 Sekunden: QR scannen, Huhn antippen, großer Knopf.
-  Rückspuler mit Vorwarnung ist das Herz. Ausgeschiedene und Zuschauer brauchen etwas zu tun.
-  Schadenfreude lebt davon, dass alle sehen, **wer** gespult hat. Wunsch für bald danach: Großbild am Fernseher.
-- **Bastler**: Ein frisch eingelegtes Board darf nichts kaputt machen: sichere Standardwerte,
-  Blockier-Erkennung, Richtungswechsel über Null, Turbo-Zeitbudget, Unterspannung, Update mit Rücksprung.
-  Lehnt alles ab, was aus dem Motorstrom mehr Wissen vortäuscht, als die Hardware hat (Treffer zählen,
-  Drehzahl, Chip-Erkennung). Wünscht Diagnose-Export und Kurzanleitung für Beschenkte.
-- **Gast**: Größtes Risiko ist das Captive Portal auf dem iPhone. Rettungsseite, ehrliche Verbindungsanzeige,
-  Wiederverbinden mit Platzgarantie sind wichtiger als jeder Spielmodus. Ein großer Knopf, keine
-  Kontingent-Arithmetik. iOS hat keine Vibration und ohne HTTPS keinen Wake Lock → sichtbare Rückmeldung nötig.
+- **Family**: "Flip the lever and it runs." Safety (finger in the arm → stop) and a kids profile
+  with one tap. Two or three modes are enough. Rewind yes, but with allowance, lock time and warning.
+  Saboteurs, bets, secret missions cause arguments. Drinking game not in V1. Children must understand screens
+  without reading.
+- **Party**: everything is decided in the first 30 seconds: scan QR, tap chicken, big button.
+  Rewind with warning is the heart. Eliminated players and spectators need something to do.
+  Gloating lives on everyone seeing **who** rewound. Wish for soon after: big screen on the TV.
+- **Maker**: a freshly inserted board must not break anything: safe defaults,
+  block detection, direction change through zero, turbo time budget, undervoltage, update with rollback.
+  Rejects everything that pretends to know more from the motor current than the hardware has (counting hits,
+  speed, chip detection). Wants diagnostics export and a quick guide for gift recipients.
+- **Guest**: the biggest risk is the captive portal on the iPhone. Rescue page, honest connection indicator,
+  reconnect with seat guarantee matter more than any game mode. One big button, no
+  allowance arithmetic. iOS has no vibration and no Wake Lock without HTTPS → visible feedback needed.
 
-**Einig über alle vier**: Rückspuler, QR-Lobby mit Hühnerfarben, Klassisch und Druckkochtopf,
-Verbindungsanzeige, Gamepad-Ansicht, Countdown, Blockier-Erkennung, Notaus.
+**Agreed by all four**: rewind, QR lobby with chicken colors, Classic and Pressure Cooker,
+connection indicator, gamepad view, countdown, block detection, emergency stop.
 
-**Einig abgelehnt**: Modus-Editoren mit Zeitleiste oder Wenn-dann-Regeln (V1), Reaktionsduelle im
-0,3-s-Fenster (WLAN-Latenz macht sie unfair), Auktionen, Strom-„Sensorik“ für Treffer oder Position.
+**Rejected by all**: mode editors with timeline or if-then rules (V1), reaction duels in a
+0.3 s window (Wi-Fi latency makes them unfair), auctions, current "sensing" for hits or position.
 
-## 3. Vorschlag für V1
+## 3. Proposal for V1
 
-### Spiel
+### Game
 
-| Funktion | Zusammengefasst aus | Notiz |
+| Feature | Merged from | Note |
 |---|---|---|
-| **Klassisch plus** | modi-1 | auch Standard beim Spielen ohne Handy |
-| **Druckkochtopf** (langsame Steigerung) | modi-2 | Runden enden von selbst |
-| **Würfelmotor** (Zufall) | modi-6 | |
-| **Fiesheits-Regler** von „Kindergeburtstag“ bis „Endgegner“ | modi-45 | skaliert alle Modusparameter innerhalb der Admin-Grenzen; ersetzt in V1 den Modus-Editor |
-| **Mini-Ruckler** statt langer Rückwärtsfahrt | modi-10 | Spürbarkeit im Prototyp prüfen (Rampe) |
-| **Rückspuler** mit Kontingent pro Spieler, globaler Sperre für alle, Halten zum Auslösen, Vorwarnung 0,5 s, Anzeige „wer hat gespult“ | party-1, modi-11, modi-12, technik-29, ux-9, ux-22 | Kern des Multiplayer-Spaßes |
-| **Geister-Boost**: Ausgeschiedene bekommen Boost-Knöpfe | party-6, modi-28 | jeder hat bis zum Ende etwas zu tun |
-| **„Ich bin raus“** per Selbstmeldung mit Bestätigung | party-24, ux-13 | Elektronik sieht die Chips nicht |
+| **Classic plus** | modi-1 | also the default when playing without a phone |
+| **Pressure Cooker** (slow increase) | modi-2 | rounds end by themselves |
+| **Dice Engine** (random) | modi-6 | |
+| **Meanness slider** from "Kids' Party" to "Final Boss" | modi-45 | scales all mode parameters within the admin limits; replaces the mode editor in V1 |
+| **Mini jolt** instead of long reverse travel | modi-10 | check perceptibility on the prototype (ramp) |
+| **Rewind** with allowance per player, global lock for everyone, hold to trigger, warning 0.5 s, display "who rewound" | party-1, modi-11, modi-12, technik-29, ux-9, ux-22 | core of the multiplayer fun |
+| **Ghost boost**: eliminated players get boost buttons | party-6, modi-28 | everyone has something to do until the end |
+| **"I'm out"** by self-report with confirmation | party-24, ux-13 | the electronics cannot see the chips |
 
-### Bedienung
+### Operation
 
-| Funktion | Zusammengefasst aus |
+| Feature | Merged from |
 |---|---|
-| **QR-Lobby mit Hühnerfarben**: Huhn antippen statt Platz wählen, Namenswürfel statt Tippen | party-47, ux-4, ux-1, ux-2, ux-5 |
-| **Drei-Sekunden-Onboarding** für Gäste, keine Anmeldung | ux-6 |
-| **Gamepad-Ansicht**: ein großer Knopf, Querformat möglich | ux-7 |
-| **Countdown-Ritual** 3-2-1 synchron auf allen Handys | ux-34 |
-| **Verbindungs-Ampel** mit ehrlicher Sprache, **Wiederverbinden mit Platzgarantie** | ux-28, ux-40 |
-| **Captive-Portal-Rettungsseite** mit Anleitung je Betriebssystem | ux-3 |
-| **Hebel-Spiegel**: echter Hebel live im UI, zeigt Fehlbedienung | ux-30 |
+| **QR lobby with chicken colors**: tap a chicken instead of picking a seat, name dice instead of typing | party-47, ux-4, ux-1, ux-2, ux-5 |
+| **Three-second onboarding** for guests, no sign-up | ux-6 |
+| **Gamepad view**: one big button, landscape possible | ux-7 |
+| **Countdown ritual** 3-2-1 in sync on all phones | ux-34 |
+| **Connection traffic light** with honest wording, **reconnect with seat guarantee** | ux-28, ux-40 |
+| **Captive portal rescue page** with instructions per operating system | ux-3 |
+| **Lever mirror**: real lever live in the UI, shows misuse | ux-30 |
 
-### Besitzer / Admin
+### Owner / admin
 
-| Funktion | Zusammengefasst aus |
+| Feature | Merged from |
 |---|---|
-| **Profil-Schnellwahl** Kinder / Familie / Party (ein Tipp stellt Tempo, Rückwärts, Rückspuler, erlaubte Modi um) | party-39, besitzer-1, technik-33, ux-25 |
-| **Tempo-Deckel** als großer Schieberegler | besitzer-3 |
-| **Grenzen für Partyfunktionen** (Kontingente, Sperrzeiten) | party-49 |
+| **Profile quick pick** Kids / Family / Party (one tap sets speed, reverse, rewind, allowed modes) | party-39, besitzer-1, technik-33, ux-25 |
+| **Speed cap** as a large slider | besitzer-3 |
+| **Limits for party features** (allowances, lock times) | party-49 |
 
-### Technik und Sicherheit
+### Technology and safety
 
-| Funktion | Zusammengefasst aus |
+| Feature | Merged from |
 |---|---|
-| **Blockier-Erkennung** über Motorstrom mit Sofort-Stopp, ausgeblendet während des Anlaufs | technik-1, technik-2 |
-| **Notaus** für den Spielleiter im UI | technik-32 |
-| **Sichere Standardwerte**, solange kein Modell gewählt ist | technik-48 |
-| **Richtungswechsel nur über Null** mit Totzeit | technik-3 |
-| **Mehrstufiger Watchdog** (Motor-Task, Firmware, Hardware) | technik-16 |
-| **Unterspannung in drei Stufen** (Warnung, Runde beenden, Schlaf) | technik-11 |
-| **Turbo-Zeitbudget** über Nennspannung | technik-5 |
-| **Rate-Limit** pro Sitzung, **Sitzplatz-Diebstahl** verhindern | technik-28, technik-30 |
+| **Block detection** via motor current with immediate stop, masked during start-up | technik-1, technik-2 |
+| **Emergency stop** for the game master in the UI | technik-32 |
+| **Safe defaults** as long as no model is selected | technik-48 |
+| **Direction change only through zero** with dead time | technik-3 |
+| **Multi-stage watchdog** (motor task, firmware, hardware) | technik-16 |
+| **Undervoltage in three stages** (warning, end round, sleep) | technik-11 |
+| **Turbo time budget** above nominal voltage | technik-5 |
+| **Rate limit** per session, prevent **seat theft** | technik-28, technik-30 |
 
-Erster klickbarer Entwurf dieser Auswahl (überholt, siehe [web-ui-konzept.md](web-ui-konzept.md) und [web/poc](../web/poc/index.html)): [web/prototype/index.html](../web/prototype/index.html) (im Browser öffnen;
-Hebel, Mitspieler, Verbindung und Akku werden über die Leiste „Simulation“ gesteuert).
+First clickable draft of this selection (outdated, see [web-ui-konzept.md](web-ui-konzept.md) and [web/poc](../web/poc/index.html)): [web/prototype/index.html](../web/prototype/index.html) (open in the browser;
+lever, players, connection and battery are controlled via the "Simulation" bar).
 
-## 4. Kandidaten für V1.1 und später
+## 4. Candidates for V1.1 and later
 
-- **Zuschauer-Großbild** am TV/Tablet (ux-15), Zuschauer-Rolle mit Jubel/Buh (party-15, party-18)
-- **Sabotage-Statistik und Titel** am Rundenende, Highlight-Ticker (party-30, party-48)
-- **Update mit Rücksprung**, Konfiguration mit Prüfsumme, **Diagnose-Export** (technik-46, technik-47, technik-22)
-- **Trinkspiel-Modus** mit einfacher Regelliste, alkoholfrei als Standard, Freischaltung durch Admin (party-33, party-34, besitzer-27)
-- Fake-out-Bremse, Zeitrennen, sichtbares Rückwärts-Budget (modi-16, modi-20, modi-14/ux-48)
-- Chaos-Taste für den Spielleiter (party-43)
-- Modus-Editor (frühestens nach V1, wenn klar ist, was Fiesheits-Regler und Profile nicht abdecken)
+- **Spectator big screen** on TV/tablet (ux-15), spectator role with cheer/boo (party-15, party-18)
+- **Sabotage statistics and titles** at round end, highlight ticker (party-30, party-48)
+- **Update with rollback**, configuration with checksum, **diagnostics export** (technik-46, technik-47, technik-22)
+- **Drinking game mode** with a simple rule list, alcohol-free by default, unlocked by admin (party-33, party-34, besitzer-27)
+- Fake-out brake, Time Race, visible reverse budget (modi-16, modi-20, modi-14/ux-48)
+- Chaos button for the game master (party-43)
+- Mode editor (after V1 at the earliest, once it is clear what the meanness slider and profiles do not cover)
 
-## 5. Katalog aller Ideen
+## 5. Catalog of all ideas
 
-Innerhalb jedes Themas sortiert nach Bewertung des Gremiums.
+Within each topic sorted by the panel's rating.
 
-### 5.1 Spielmodi & Spielmechanik (53)
+### 5.1 Game modes & game mechanics (53)
 
-- **Klassisch plus** — Konstante Geschwindigkeit wie im Original, nur einstellbar und mit sanfter Anlauframpe. Gedacht als Referenzmodus und Rückfallebene, wenn niemand ein Handy in die Hand nehmen will. *Hinweis: Ist praktisch der Hebel-ohne-Handy-Standard aus dem Konzept.*
-  <br>`modi-1` · Geschwindigkeitsprofil · Aufwand klein · HW ja · ★ 11 · V1 4/4
-- **Langsame Steigerung (Druckkochtopf)** — Die Runde beginnt gemütlich und wird alle paar Sekunden ein wenig schneller, bis die Turbo-Grenze erreicht ist. So entsteht ein natürlicher Spannungsbogen und Runden enden von selbst, ohne dass sie ewig dauern. *Hinweis: Der Baustein ramp_up ist schon vorgesehen; die Kurve (linear, exponentiell, Treppe) könnte wählbar sein.*
-  <br>`modi-2` · Geschwindigkeitsprofil · Aufwand klein · HW ja · ★ 11 · V1 4/4
-- **Rückspuler mit Joker-Kontingent** — Jeder Spieler hat pro Runde z. B. 2 Rückspul-Joker (0,5-1 s Rückwärts) mit Abklingzeit, ausgelöst per großem Knopf am Handy. Auf allen Handys erscheint, wer gespult hat, damit Rache und Absprachen entstehen. *Hinweis: Kern-Idee aus dem Auftrag; die globalen Rückwärtsgrenzen (Mindestabstand, Anteil) müssen weiter greifen.*
-  <br>`modi-11` · Rückwärts in Maßen · Aufwand mittel · HW ja · ★ 10 · V1 3/4
-- **Fiesheits-Regler (ein Regler für alles)** — Ein einziger Schieberegler von "Kindergeburtstag" bis "Endgegner" skaliert alle Modusparameter gemeinsam: Tempo, Zufall, Fake-outs, Rückwärtsanteil innerhalb der Admin-Grenzen. Das ist eine Schnelleinstellung für alle, die nicht basteln wollen.
-  <br>`modi-45` · Balancing · Aufwand klein · HW ja · ★ 10 · V1 3/4
-- **Ausgeschiedene als Störenfriede (Geistermodus)** — Wer raus ist, ist nicht arbeitslos: Ausgeschiedene bekommen Boosts, Fake-out-Bremsen oder Rückspuler, um die Verbleibenden zu ärgern. So hat jeder bis zum Rundenende etwas zu tun. *Hinweis: Erweitert "Last Chicken Standing" aus dem Konzept um mehr Aktionstypen.*
-  <br>`modi-28` · Handicap & Balancing · Aufwand klein · HW ja · ★ 10 · V1 2/4
-- **Fake-out-Bremse** — Louie bremst plötzlich stark ab, als würde er stehen bleiben, und beschleunigt dann wieder. Die Wippen-Spieler, die schon für einen Treffer ausgeholt haben, schlagen ins Leere. *Hinweis: Die aktive Bremse der H-Brücke macht das spürbar abrupt; die Rampe darf beim Bremsen nicht zu weich sein.*
-  <br>`modi-16` · Pausen & Fake-outs · Aufwand klein · HW ja · ★ 9 · V1 1/4
-- **Rückwärts-Zucker (Mini-Ruckler)** — Statt echter Rückwärtsphasen gibt es nur sehr kurze Richtungs-Ruckler von 0,3-0,5 s, die die Flugbahn stören, ohne dass man wehrlos wird. Das ist als Standard-Würze für alle Modi gedacht, die Rückwärts erlauben. *Hinweis: Wegen der Rampe gegen Brownout fällt die Richtungsumkehr träger aus; ob 0,3 s spürbar sind, muss der Prototyp zeigen.*
-  <br>`modi-10` · Rückwärts in Maßen · Aufwand klein · HW eingeschränkt · ★ 8 · V1 3/4
-- **Rückspul-Sperrfeuer (globale Abklingzeit)** — Nach jedem Rückspuler ist das Rückspulen für alle für einige Sekunden gesperrt, angezeigt als roter Ring auf allen Handys. Daraus entsteht ein Wettrennen: Wer zuerst drückt, hat den Joker, und alle anderen warten. *Hinweis: Verhindert Spam durch mehrere Spieler hintereinander.*
-  <br>`modi-12` · Rückwärts in Maßen · Aufwand klein · HW ja · ★ 8 · V1 3/4
-- **Rückwärts-Budget der Runde** — Die Runde hat ein gemeinsames Rückwärts-Budget (z. B. 5 s gesamt), das als Balken auf allen Handys sichtbar ist. Alle Rückspuler und Zufalls-Rückwärtsstöße zehren davon, und wenn es leer ist, gibt es nur noch vorwärts. *Hinweis: Macht die Admin-Grenze "max. Anteil an der Rundenzeit" für Spieler sichtbar.*
-  <br>`modi-14` · Rückwärts in Maßen · Aufwand klein · HW ja · ★ 8 · V1 1/4
-- **Zeitrennen (Survival-Timer)** — Die Runde dauert eine feste Zeit (z. B. 90 s). Gewonnen hat, wer am Ende noch die meisten Chips hat, gezählt von Hand und im Handy eingetragen. Runden sind so planbar, ideal für Partys mit wechselnden Spielern. *Hinweis: Chips zählt die Elektronik nicht, Eingabe per Handy oder durch den Spielleiter.*
-  <br>`modi-20` · Rundenformat · Aufwand klein · HW ja · ★ 8 · V1 1/4
-- **Schleichfahrt vor dem Sprint** — Louie wird für einige Sekunden fast unmerklich langsam (Kriechgang), alle entspannen sich, und dann kommt ein Sprint auf Turbo-Grenze. Die Ruhe vor dem Sturm ist das eigentliche Spielelement. *Hinweis: Mindestspannung beachten, sonst bleibt der Motor stehen; aus dem Modellprofil.*
-  <br>`modi-19` · Pausen & Fake-outs · Aufwand klein · HW ja · ★ 8 · V1 0/4
-- **Reiner Zufall (Würfelmotor)** — In zufälligen Abständen wird eine neue Zufallsgeschwindigkeit innerhalb von Min/Max gewählt. Das ist der einfachste Chaosmodus, und man kann mit ihm keinen Rhythmus lernen. *Hinweis: Entspricht speed.type=random aus dem Konzept.*
-  <br>`modi-6` · Zufall · Aufwand klein · HW ja · ★ 7 · V1 3/4
-- **Treppe mit Ansage** — Die Geschwindigkeit springt stufenweise nach oben, jede Stufe wird auf allen Handys mit Countdown angekündigt ("Stufe 4 in 3...2...1"). Die Vorfreude gehört hier zum Spiel, der Schreck wird zur Ansage. *Hinweis: Ohne Handy gibt es keine Ankündigung; als Ersatz könnte die Status-LED blinken (im Batteriefach aber schlecht sichtbar).*
-  <br>`modi-5` · Geschwindigkeitsprofil · Aufwand klein · HW ja · ★ 7 · V1 0/4
-- **Schwebe-Pause (Stopp mit Countdown)** — Louie hält kurz an, auf allen Handys läuft ein Countdown, und dann geht es mit voller Geschwindigkeit oder rückwärts weiter (Überraschung). Die Pause baut Spannung auf und gibt Zeit, Chips nachzuzählen.
-  <br>`modi-17` · Pausen & Fake-outs · Aufwand klein · HW ja · ★ 7 · V1 0/4
-- **Spielleiter als Dirigent** — Im Live-Modus steuert der Spielleiter Louie direkt mit einem Schieberegler und Effekt-Knöpfen (Fake-out, Sprint, Ruckler), wie ein DJ. Grenzen und Rampen setzt weiterhin der Server durch. *Hinweis: Die Latenz (bis ca. 100 ms plus Rampe) macht die Steuerung weich, aber ausreichend.*
-  <br>`modi-50` · Spielmodus · Aufwand klein · HW ja · ★ 6 · V1 1/4
-- **Gewichteter Zufall / Launen** — Statt gleichverteiltem Zufall hat Louie Launen: "verschlafen", "nervös" oder "wütend", jede mit eigener Geschwindigkeitsverteilung. Die Launen wechseln selbst zufällig, und die aktuelle Laune wird auf den Handys als Gesicht angezeigt.
-  <br>`modi-7` · Zufall · Aufwand mittel · HW ja · ★ 6 · V1 0/4
-- **Publikumsjoker (Zuschauer stimmen ab)** — Gäste ohne Platz können per Handy abstimmen: "schneller", "langsamer" oder "zurück". Wenn genug Stimmen in einem Zeitfenster zusammenkommen, wird die Aktion ausgelöst, und das Publikum ist damit Teil des Spiels. *Hinweis: Die Client-Zahl ist begrenzt (Ziel 8-10 am Hotspot); bei großen Partys ist das Heim-WLAN nötig.*
-  <br>`modi-34` · Spieler-Interaktion · Aufwand mittel · HW eingeschränkt · ★ 6 · V1 0/4
-- **Zufall mit Gedächtnis (fair random)** — Der Zufall merkt sich, wie lange es schon ruhig war, und erhöht dann die Wahrscheinlichkeit für einen Ausreißer (und umgekehrt). So gibt es keine minutenlangen Langeweile-Strecken und keine Dauer-Hektik, obwohl es zufällig wirkt. *Hinweis: Gut als Option für alle Zufallsbausteine statt als eigener Modus.*
-  <br>`modi-8` · Zufall · Aufwand mittel · HW ja · ★ 5 · V1 0/4
-- **Fehlstart-Bluff** — Beim Rundenstart zuckt Louie kurz an, stoppt, zuckt wieder, und erst beim dritten Mal geht es wirklich los. Das ist ein kleiner Gag zu Rundenbeginn, abschaltbar für Kinder, die das nervt.
-  <br>`modi-18` · Pausen & Fake-outs · Aufwand klein · HW ja · ★ 5 · V1 0/4
-- **Best-of-3 / Best-of-5** — Mehrere Runden hintereinander, Siege werden auf den Handys gezählt, zwischen den Runden gibt es eine kurze Pause mit Zwischenstand. Wer den Matchball hat, bekommt optional ein Handicap. *Hinweis: Die Siegerermittlung braucht eine manuelle Eingabe ("ich bin raus" oder Spielleiter).*
-  <br>`modi-21` · Rundenformat · Aufwand mittel · HW ja · ★ 5 · V1 0/4
-- **King of the Hill (Herausforderer-Runden)** — Der Sieger bleibt sitzen, die Verlierer werden durch wartende Spieler ersetzt. Eine Siegesserie wird angezeigt ("Lisa: 4 in Folge") und erhöht ab einer bestimmten Länge automatisch die Schwierigkeit für den Champion.
-  <br>`modi-23` · Rundenformat · Aufwand mittel · HW ja · ★ 5 · V1 0/4
-- **Sudden Death** — Wenn nur noch zwei Spieler übrig sind (vom Spielleiter markiert), schaltet der Modus auf eine eigene Endphase: schneller, mehr Fake-outs, und jeder hat einen letzten Rückspuler. So wird das oft zähe Duell am Ende kürzer und dramatischer. *Hinweis: Funktioniert nur, wenn die Ausgeschiedenen zuverlässig gemeldet werden.*
-  <br>`modi-24` · Rundenformat · Aufwand mittel · HW ja · ★ 5 · V1 0/4
-- **Ein-Chip-Blitzrunde** — Jeder spielt nur mit einem Chip, Runde maximal 30 s und mit hoher Geschwindigkeit. Die Runden sind schnell, eignen sich zum Aufwärmen oder als Entscheidungsrunde bei Gleichstand. *Hinweis: Eher eine Spielregel mit passendem Modus-Preset als eine Firmware-Funktion.*
-  <br>`modi-25` · Rundenformat · Aufwand klein · HW ja · ★ 5 · V1 0/4
-- **Glücksrad zwischen den Runden** — Nach jeder Runde dreht der Verlierer ein Glücksrad auf dem Handy, das den Modifikator der nächsten Runde bestimmt ("doppelte Joker", "kein Rückwärts", "Turbo-Start"). Das bringt Abwechslung, ohne dass man Modi auswählen muss.
-  <br>`modi-36` · Rundenformat · Aufwand mittel · HW ja · ★ 5 · V1 0/4
-- **Trinkspiel-Ereignisse** — Optionaler Erwachsenen-Modus: Bestimmte Motor-Ereignisse werden zu Trinkregeln, die auf den Handys erscheinen ("Rückwärts: der Auslöser trinkt", "Fake-out: alle, die gezuckt haben", "Sprint: letzter Chip-Verlierer"). Die Regeln sind editierbar, und es gibt eine alkoholfreie Variante mit Aufgaben statt Schlucken. *Hinweis: Nur per Admin freischaltbar und mit Altershinweis; nie als Standard.*
-  <br>`modi-47` · Trinkspiel · Aufwand mittel · HW ja · ★ 5 · V1 0/4
-- **Wechselnder Dirigent** — Alle 20 s wechselt die Steuerung reihum an einen anderen Spieler, der Louie dann live lenkt, auch gegen die anderen. Wer gerade steuert, wird auf allen Handys groß angezeigt. *Hinweis: Der Dirigent spielt gleichzeitig mit; einhändige Bedienung neben der Wippe ist schwierig, eventuell nur Knöpfe statt Regler.*
-  <br>`modi-51` · Spielmodus · Aufwand mittel · HW ja · ★ 5 · V1 0/4
-- **Kinder-Handicap pro Platz** — Pro Platz lässt sich ein Handicap einstellen, z. B. bekommt das jüngste Kind mehr Joker, die Erwachsenen weniger oder gar keinen Rückspuler. Damit können gemischte Altersgruppen gegeneinander spielen, ohne dass jemand immer verliert. *Hinweis: Die Motorgeschwindigkeit gilt für alle gleich; ein echtes Handicap am Spielfeld ist nicht möglich, nur bei den Handy-Aktionen.*
-  <br>`modi-29` · Handicap & Balancing · Aufwand mittel · HW eingeschränkt · ★ 4 · V1 1/4
-- **Herzschlag** — Die Geschwindigkeit pulsiert rhythmisch (schnell-langsam-schnell) wie ein Herzschlag, der im Lauf der Runde immer schneller wird. Wer den Rhythmus erkennt, kann ihn ausnutzen, bis er kippt. *Hinweis: Die Rampengrenze (max. V/s) dämpft sehr schnelle Pulse; die Periode sollte daher eher 1-3 s betragen.*
-  <br>`modi-3` · Geschwindigkeitsprofil · Aufwand klein · HW ja · ★ 4 · V1 0/4
-- **Wellengang** — Die Geschwindigkeit folgt einer langen, langsamen Sinuskurve mit leichtem Rauschen. Das fühlt sich an wie Seegang: lange ruhige Täler und dann ein Wellenkamm, bei dem alle hektisch werden.
-  <br>`modi-4` · Geschwindigkeitsprofil · Aufwand klein · HW ja · ★ 4 · V1 0/4
-- **Aufholjagd-Boost (Rubberbanding)** — Wer schon Chips verloren hat (eingetragen am Handy), bekommt mehr oder stärkere Boosts und Rückspuler als die Führenden. So bleiben auch zurückliegende Spieler beteiligt. *Hinweis: Die Chipzahl ist eine Selbstangabe, daher Missbrauch möglich (Kinder melden sich ärmer).*
-  <br>`modi-27` · Handicap & Balancing · Aufwand mittel · HW ja · ★ 4 · V1 0/4
-- **Champion-Steuer** — Wer die letzte Runde gewonnen hat, verliert in der nächsten Runde Joker oder muss einen Rückspuler der anderen ohne Abklingzeit hinnehmen. Das ist eine einfache automatische Balancing-Regel für Serien.
-  <br>`modi-30` · Handicap & Balancing · Aufwand klein · HW ja · ★ 4 · V1 0/4
-- **Saboteur unter uns** — Einer der Spieler ist heimlich Saboteur und hat stärkere Rückspuler, die anonym ausgelöst werden. Am Ende tippt jeder, wer es war, und wer richtig tippt, bekommt Punkte. *Hinweis: Funktioniert nur mit eigenem Handy pro Spieler; Bildschirme müssen verdeckt bleiben.*
-  <br>`modi-33` · Spieler-Interaktion · Aufwand mittel · HW ja · ★ 4 · V1 0/4
-- **Bündnis-Spuler** — Zwei Spieler müssen innerhalb von 2 s gemeinsam drücken, damit ein Rückspuler ausgelöst wird, der dann stärker oder länger ist. Daraus entstehen kurzfristige Allianzen und Verrat. *Hinweis: Wegen der WLAN-Latenz ist ein großzügiges Zeitfenster sinnvoll.*
-  <br>`modi-35` · Spieler-Interaktion · Aufwand mittel · HW ja · ★ 4 · V1 0/4
-- **Louie hat Hunger (Blockier-Event)** — Wenn jemand Louies Flugzeug absichtlich festhält (Motorstrom steigt stark an), stoppt der Motor sofort zum Schutz, und auf den Handys erscheint "Foul! Wer war das?". Das Spiel kann daraus eine Strafe für die nächste Runde machen. *Hinweis: Die Blockiererkennung über den Strom ist realistisch, sie sagt aber nicht, wer blockiert hat. Sie dient vor allem dem Motorschutz und sollte unabhängig vom Spiel immer aktiv sein.*
-  <br>`modi-37` · Motorstrom-Ereignisse · Aufwand mittel · HW eingeschränkt · ★ 4 · V1 0/4
-- **Modus-Editor: Kurve malen** — Man malt mit dem Finger eine Geschwindigkeitskurve über die Zeit, die als Punkteliste gespeichert und interpoliert wird. Das ist besonders für Kinder intuitiv ("hier soll er ganz schnell werden"). *Hinweis: Die Server-Klemmung auf Rampe und Grenzen glättet zu steile Striche; die Vorschau sollte die geklemmte Kurve zeigen.*
-  <br>`modi-42` · Modus-Editor · Aufwand mittel · HW ja · ★ 4 · V1 0/4
-- **Automatische Schwierigkeit (Lernender Louie)** — Louie merkt sich, wie lange Runden in dieser Gruppe dauern, und passt die Steigerung so an, dass Runden etwa eine Zielzeit (z. B. 2 min) treffen. Sind Runden zu lang, wird es schneller, sind sie zu kurz, gemütlicher. *Hinweis: Die Rundendauer kennt das Gerät (Start bis Hebel aus), zuverlässiger mit Ende-Meldung.*
-  <br>`modi-46` · Balancing · Aufwand mittel · HW ja · ★ 4 · V1 0/4
-- **Trinkspiel: Rückspul-Preis** — Jeder Rückspuler kostet den Auslöser einen Schluck, oder er darf einen Schluck verteilen, wenn er jemanden rauswirft. Daraus entsteht ein Abwägen zwischen Ärgern und Selbstschutz. *Hinweis: Ist im Wesentlichen nur Text und Anzeige auf den Handys.*
-  <br>`modi-48` · Trinkspiel · Aufwand klein · HW ja · ★ 4 · V1 0/4
-- **Countdown-Bombe** — Ein sichtbarer Timer läuft ab, und bei null gibt es einen zufälligen Großeffekt (Sprint, Mini-Ruckler-Serie oder Vollbremsung). Spieler können den Timer per Handy mit Jokern verlängern oder verkürzen.
-  <br>`modi-53` · Pausen & Fake-outs · Aufwand mittel · HW ja · ★ 4 · V1 0/4
-- **Hebel-Geste als Spielaktion** — Ohne Handy kann der Hebel im Spiel genutzt werden: kurz aus-an innerhalb von 0,5 s = Pause, doppelt = nächster Modus. Damit ist ein Teil der Funktionen auch für Runden ohne Handy erreichbar. *Hinweis: Verwechslungsgefahr mit normalem Stopp und mit den Wiederherstellungsgesten beim Start; der Hebel trennt den Motor dabei kurz hart.*
-  <br>`modi-39` · Bedienung ohne Handy · Aufwand mittel · HW eingeschränkt · ★ 3 · V1 0/4
-- **Modus-Editor: Ereignis-Würfel** — Statt einer festen Timeline gibt es eine Liste von Ereignissen mit Wahrscheinlichkeit pro Sekunde (Fake-out 5 %, Rückwärts-Ruckler 3 %, Sprint 4 %). Das UI zeigt zusätzlich eine geschätzte "Fiesheit" und die erwartete Rundendauer. *Hinweis: Passt eng zum bestehenden JSON-Schema (chance/duration).*
-  <br>`modi-41` · Modus-Editor · Aufwand mittel · HW ja · ★ 3 · V1 0/4
-- **Modi teilen per QR-Code** — Ein selbst gebauter Modus wird als kompakter Code oder QR-Code exportiert, den andere Louie-Besitzer einscannen können. Ohne Cloud lässt er sich so von Party zu Party weitergeben. *Hinweis: Ohne HTTPS ist kein Kamerazugriff im Browser möglich; der QR-Code muss mit der System-Kamera-App gescannt werden, z. B. als Link mit Modus im URL-Fragment.*
-  <br>`modi-44` · Modus-Editor · Aufwand mittel · HW ja · ★ 3 · V1 0/4
-- **Seed-Duell (gleicher Zufall für alle)** — Ein Zufallsablauf wird über einen Code (z. B. "HUHN-42") festgelegt und lässt sich wiederholen. Gruppen oder Turnierrunden können exakt denselben "zufälligen" Ablauf spielen, und man kann besonders fiese Seeds teilen. *Hinweis: Durch Motortoleranz und Akkustand ist das nicht bitgenau gleich, die Sollwerte schon.*
-  <br>`modi-9` · Zufall · Aufwand klein · HW ja · ★ 2 · V1 0/4
-- **Spiegelrunde** — Eine Sonderrunde, die komplett rückwärts läuft, aber deutlich langsamer, damit man sich wehren kann. Gedacht als seltener Event-Modus oder als Strafrunde, nie als Standard. *Hinweis: Kollidiert mit der Standardgrenze (max. 10 % Anteil); geht nur, wenn der Admin das explizit erlaubt. Ob der Mechanismus rückwärts gleich gut fliegt, ist zu prüfen.*
-  <br>`modi-15` · Rückwärts in Maßen · Aufwand klein · HW eingeschränkt · ★ 2 · V1 0/4
-- **Punktejagd über mehrere Runden** — Statt "wer zuletzt übrig ist" gibt es Punkte: Platzierung pro Runde, Bonus für eingesetzte Rückspuler, die jemanden rauswerfen, Malus für frühes Ausscheiden. Die Gesamtwertung läuft über den Abend. *Hinweis: Wer durch welchen Rückspuler rausflog, sieht die Elektronik nicht; das kann nur per Ehrlichkeitsknopf erfasst werden.*
-  <br>`modi-26` · Rundenformat · Aufwand mittel · HW eingeschränkt · ★ 2 · V1 0/4
-- **Auktion der Joker** — Vor der Runde bieten die Spieler mit Chips (echten, aus ihrem Vorrat) oder Punkten auf Extra-Rückspuler. Wer viel bietet, startet mit weniger Chips, hat aber mehr Waffen. *Hinweis: Die Chips sind physisch, gezählt wird von Hand; das UI verwaltet nur die Gebote.*
-  <br>`modi-31` · Handicap & Balancing · Aufwand mittel · HW ja · ★ 2 · V1 0/4
-- **Geheime Missionen** — Jeder Spieler bekommt vor der Runde verdeckt auf seinem Handy eine Mission ("Löse 2 Rückspuler aus, während Platz 3 noch drin ist", "Überlebe 60 s ohne Joker"). Erfüllte Missionen bringen Bonuspunkte. *Hinweis: Nur Missionen, die sich über Handy-Aktionen und Zeit prüfen lassen, sind automatisch auswertbar, alles andere per Ehrlichkeit.*
-  <br>`modi-32` · Spieler-Interaktion · Aufwand mittel · HW eingeschränkt · ★ 2 · V1 0/4
-- **Konter-Spuler** — Wer zum Zeitpunkt eines Rückspulers ebenfalls innerhalb von 0,3 s drückt, hebt ihn auf (Louie zuckt nur), und der Auslöser verliert seinen Joker. Daraus wird ein Reaktionsduell zwischen den Handys. *Hinweis: WLAN-Latenz mehrerer Handys (50-200 ms, schwankend) macht das Timing unfair; dafür wäre ein großzügiges Fenster nötig.*
-  <br>`modi-13` · Rückwärts in Maßen · Aufwand mittel · HW eingeschränkt · ★ 1 · V1 0/4
-- **Turnierbaum für große Gruppen** — Bei mehr als 4 Leuten erzeugt das UI Vorrunden mit je bis zu 4 Spielern, die Sieger kommen ins Finale. Der Turnierbaum ist live auf allen Handys sichtbar, und das Finale bekommt einen eigenen, härteren Modus. *Hinweis: Hängt an Profilen/Multi-User (Stufe 3); RAM für Turnierdaten ist unkritisch, das UI ist der Aufwand.*
-  <br>`modi-22` · Rundenformat · Aufwand groß · HW ja · ★ 1 · V1 0/4
-- **Party-Marathon mit Saisons** — Ein Abend wird zur Saison: mehrere Modi in festgelegter oder zufälliger Reihenfolge, eine Gesamtwertung, ein Mid-Season-Twist (z. B. ab Runde 5 Rückspuler doppelt) und eine Siegerehrung am Ende. Das ist das Dach für Turnier-, Punkte- und Handicap-Ideen. *Hinweis: Braucht Profile und Persistenz über Runden (Flash-Schreibzyklen sparsam halten).*
-  <br>`modi-49` · Rundenformat · Aufwand groß · HW ja · ★ 1 · V1 0/4
-- **Musik-Synchron (Tempo nach BPM)** — Ein Handy spielt Musik ab, und Louies Geschwindigkeit folgt einem vorgegebenen BPM-Profil der Playlist (vom Nutzer eingegeben oder per Tap-Tempo). Wenn der Beat droppt, kommt ein Sprint. *Hinweis: Das Gerät hat keinen Lautsprecher oder Mikrofon; das Handy liefert nur Tempo-Sollwerte. Eine echte Audioanalyse im Browser ist ohne HTTPS (Mikrofon) nicht möglich.*
-  <br>`modi-52` · Spielmodus · Aufwand groß · HW eingeschränkt · ★ 1 · V1 0/4
-- **Treffer-Ahnung über Stromspitzen** — Experimentell: Kurze Stromspitzen, wenn Louie gegen eine Wippe oder einen Chip stößt, werden gezählt und als "Treffer-Zähler" bzw. Intensitätsanzeige gezeigt. Das Ergebnis ist kein Chip-Ergebnis, aber ein Gefühl für Action. *Hinweis: Sehr unsicher: Die Signale sind klein und verrauscht, und Shunt, RC-Filter und ADC-Rate müssen reichen. Erst auf dem Prototyp messen.*
-  <br>`modi-38` · Motorstrom-Ereignisse · Aufwand groß · HW eingeschränkt · ★ 0 · V1 0/4
-- **Modus-Editor: Baukasten-Timeline** — Ein Modus besteht aus einer Abfolge von Blöcken ("10 s konstant 50 %", "Zufall 30-80 % für 20 s", "Fake-out", "Schleichfahrt", "Wiederholen"), die man am Handy per Drag-and-drop anordnet. Eine Vorschaukurve zeigt den Verlauf, und eine Probefahrt läuft auf echter Hardware. *Hinweis: Das JSON-Format müsste von Parametern auf Sequenzen erweitert werden; die Größe pro Modus sollte begrenzt bleiben (Flash, RAM).*
-  <br>`modi-40` · Modus-Editor · Aufwand groß · HW ja · ★ 0 · V1 0/4
-- **Modus-Editor: Bedingungen (Wenn-dann)** — Einfache Regeln wie "wenn nur noch 2 Spieler übrig sind, dann +20 %" oder "nach 60 s Rückspuler für alle freischalten". Damit lassen sich dynamische Modi bauen, ohne zu programmieren. *Hinweis: Die Bedingungen hängen an Handy-Meldungen (Ausscheiden); eine eigene kleine Regel-Engine kostet Firmware-Aufwand und Testaufwand.*
-  <br>`modi-43` · Modus-Editor · Aufwand groß · HW ja · ★ 0 · V1 0/4
+- **Classic plus** — Constant speed as in the original, only adjustable and with a gentle start ramp. Intended as the reference mode and fallback when nobody wants to pick up a phone. *Note: This is practically the lever-without-phone default from the concept.*
+  <br>`modi-1` · Speed profile · effort small · HW yes · ★ 11 · V1 4/4
+- **Slow increase (Pressure Cooker)** — The round starts relaxed and gets a bit faster every few seconds until the turbo limit is reached. This creates a natural arc of tension, and rounds end by themselves without dragging on forever. *Note: The building block ramp_up is already planned; the curve (linear, exponential, staircase) could be selectable.*
+  <br>`modi-2` · Speed profile · effort small · HW yes · ★ 11 · V1 4/4
+- **Rewind with joker allowance** — Each player has e.g. 2 rewind jokers per round (0.5-1 s reverse) with cooldown, triggered by a big button on the phone. All phones show who rewound, so revenge and deals emerge. *Note: Core idea from the brief; the global reverse limits (minimum interval, share) must still apply.*
+  <br>`modi-11` · Reverse in moderation · effort medium · HW yes · ★ 10 · V1 3/4
+- **Meanness slider (one slider for everything)** — A single slider from "Kids' Party" to "Final Boss" scales all mode parameters together: speed, randomness, fake-outs, reverse share within the admin limits. It is a quick setting for everyone who does not want to tinker.
+  <br>`modi-45` · Balancing · effort small · HW yes · ★ 10 · V1 3/4
+- **Eliminated players as troublemakers (ghost mode)** — Whoever is out is not idle: eliminated players get boosts, fake-out brakes or rewinds to annoy the remaining players. So everyone has something to do until the round ends. *Note: Extends "Last Chicken Standing" from the concept with more action types.*
+  <br>`modi-28` · Handicap & balancing · effort small · HW yes · ★ 10 · V1 2/4
+- **Fake-out brake** — Louie suddenly brakes hard as if he were stopping, and then accelerates again. Paddle players who have already wound up for a hit swing into thin air. *Note: The active brake of the H-bridge makes this noticeably abrupt; the ramp must not be too soft when braking.*
+  <br>`modi-16` · Pauses & fake-outs · effort small · HW yes · ★ 9 · V1 1/4
+- **Reverse twitch (mini jolt)** — Instead of real reverse phases there are only very short direction jolts of 0.3-0.5 s that disturb the flight path without leaving players defenseless. Intended as the default spice for all modes that allow reverse. *Note: Because of the ramp against brownout, the direction reversal is more sluggish; whether 0.3 s is perceptible must be shown by the prototype.*
+  <br>`modi-10` · Reverse in moderation · effort small · HW limited · ★ 8 · V1 3/4
+- **Rewind barrage (global cooldown)** — After each rewind, rewinding is locked for everyone for a few seconds, shown as a red ring on all phones. This creates a race: whoever presses first gets the joker, and everyone else waits. *Note: Prevents spam by several players in a row.*
+  <br>`modi-12` · Reverse in moderation · effort small · HW yes · ★ 8 · V1 3/4
+- **Reverse budget of the round** — The round has a shared reverse budget (e.g. 5 s in total), visible as a bar on all phones. All rewinds and random reverse kicks draw from it, and when it is empty there is only forward. *Note: Makes the admin limit "max. share of round time" visible to players.*
+  <br>`modi-14` · Reverse in moderation · effort small · HW yes · ★ 8 · V1 1/4
+- **Time Race (survival timer)** — The round lasts a fixed time (e.g. 90 s). The winner is whoever has the most chips left at the end, counted by hand and entered in the phone. Rounds become plannable, ideal for parties with changing players. *Note: The electronics do not count chips; input by phone or by the game master.*
+  <br>`modi-20` · Round format · effort small · HW yes · ★ 8 · V1 1/4
+- **Creep before the sprint** — Louie becomes almost imperceptibly slow for a few seconds (crawl), everyone relaxes, and then a sprint to the turbo limit follows. The calm before the storm is the actual game element. *Note: Observe the minimum voltage, otherwise the motor stalls; taken from the model profile.*
+  <br>`modi-19` · Pauses & fake-outs · effort small · HW yes · ★ 8 · V1 0/4
+- **Pure randomness (Dice Engine)** — At random intervals a new random speed within min/max is chosen. This is the simplest chaos mode, and you cannot learn a rhythm in it. *Note: Corresponds to speed.type=random from the concept.*
+  <br>`modi-6` · Randomness · effort small · HW yes · ★ 7 · V1 3/4
+- **Announced staircase** — The speed jumps up in steps, each step announced on all phones with a countdown ("Level 4 in 3...2...1"). The anticipation is part of the game here; the shock becomes an announcement. *Note: Without a phone there is no announcement; as a substitute the status LED could flash (but it is hard to see in the battery compartment).*
+  <br>`modi-5` · Speed profile · effort small · HW yes · ★ 7 · V1 0/4
+- **Hover pause (stop with countdown)** — Louie stops briefly, a countdown runs on all phones, and then it continues at full speed or in reverse (surprise). The pause builds tension and gives time to recount chips.
+  <br>`modi-17` · Pauses & fake-outs · effort small · HW yes · ★ 7 · V1 0/4
+- **Game master as conductor** — In live mode the game master controls Louie directly with a slider and effect buttons (fake-out, sprint, jolt), like a DJ. The server still enforces limits and ramps. *Note: Latency (up to approx. 100 ms plus ramp) makes the control soft, but sufficient.*
+  <br>`modi-50` · Game mode · effort small · HW yes · ★ 6 · V1 1/4
+- **Weighted randomness / moods** — Instead of uniformly distributed randomness, Louie has moods: "sleepy", "nervous" or "angry", each with its own speed distribution. The moods change randomly by themselves, and the current mood is shown on the phones as a face.
+  <br>`modi-7` · Randomness · effort medium · HW yes · ★ 6 · V1 0/4
+- **Audience joker (spectators vote)** — Guests without a seat can vote by phone: "faster", "slower" or "back". When enough votes come together in a time window, the action is triggered, and the audience becomes part of the game. *Note: The number of clients is limited (target 8-10 on the hotspot); large parties need the home Wi-Fi.*
+  <br>`modi-34` · Player interaction · effort medium · HW limited · ★ 6 · V1 0/4
+- **Randomness with memory (fair random)** — The randomness remembers how long it has been quiet and then raises the probability of an outlier (and vice versa). So there are no minute-long boring stretches and no constant hectic, although it feels random. *Note: Better as an option for all random building blocks than as a separate mode.*
+  <br>`modi-8` · Randomness · effort medium · HW yes · ★ 5 · V1 0/4
+- **False-start bluff** — At round start Louie twitches briefly, stops, twitches again, and only the third time does it really start. A small gag at the start of the round, can be switched off for children who find it annoying.
+  <br>`modi-18` · Pauses & fake-outs · effort small · HW yes · ★ 5 · V1 0/4
+- **Best of 3 / best of 5** — Several rounds in a row, wins are counted on the phones, between rounds there is a short pause with the current standings. Whoever has match point optionally gets a handicap. *Note: Determining the winner needs manual input ("I'm out" or game master).*
+  <br>`modi-21` · Round format · effort medium · HW yes · ★ 5 · V1 0/4
+- **King of the hill (challenger rounds)** — The winner stays seated, the losers are replaced by waiting players. A winning streak is displayed ("Lisa: 4 in a row") and from a certain length automatically increases the difficulty for the champion.
+  <br>`modi-23` · Round format · effort medium · HW yes · ★ 5 · V1 0/4
+- **Sudden death** — When only two players are left (marked by the game master), the mode switches to its own end phase: faster, more fake-outs, and everyone has one last rewind. This makes the often drawn-out duel at the end shorter and more dramatic. *Note: Only works if eliminations are reported reliably.*
+  <br>`modi-24` · Round format · effort medium · HW yes · ★ 5 · V1 0/4
+- **One-chip lightning round** — Everyone plays with only one chip, round max. 30 s and at high speed. The rounds are quick and suit warming up or as a tie-breaker. *Note: More a game rule with a matching mode preset than a firmware feature.*
+  <br>`modi-25` · Round format · effort small · HW yes · ★ 5 · V1 0/4
+- **Wheel of fortune between rounds** — After each round the loser spins a wheel of fortune on the phone that determines the modifier for the next round ("double jokers", "no reverse", "turbo start"). This adds variety without having to pick modes.
+  <br>`modi-36` · Round format · effort medium · HW yes · ★ 5 · V1 0/4
+- **Drinking game events** — Optional adult mode: certain motor events become drinking rules that appear on the phones ("Reverse: the trigger drinks", "Fake-out: everyone who flinched", "Sprint: last chip loser"). The rules are editable, and there is an alcohol-free variant with tasks instead of sips. *Note: Only unlockable by admin and with an age notice; never the default.*
+  <br>`modi-47` · Drinking game · effort medium · HW yes · ★ 5 · V1 0/4
+- **Rotating conductor** — Every 20 s control passes in turn to another player, who then steers Louie live, even against the others. Whoever is currently steering is shown large on all phones. *Note: The conductor plays at the same time; one-handed operation next to the paddle is difficult, possibly only buttons instead of sliders.*
+  <br>`modi-51` · Game mode · effort medium · HW yes · ★ 5 · V1 0/4
+- **Kids' handicap per seat** — A handicap can be set per seat, e.g. the youngest child gets more jokers, the adults fewer or no rewinds at all. This lets mixed age groups play against each other without someone always losing. *Note: The motor speed is the same for everyone; a real handicap on the playing field is not possible, only for the phone actions.*
+  <br>`modi-29` · Handicap & balancing · effort medium · HW limited · ★ 4 · V1 1/4
+- **Heartbeat** — The speed pulses rhythmically (fast-slow-fast) like a heartbeat that gets faster and faster during the round. Whoever recognizes the rhythm can exploit it until it tips over. *Note: The ramp limit (max. V/s) dampens very fast pulses; the period should therefore be around 1-3 s.*
+  <br>`modi-3` · Speed profile · effort small · HW yes · ★ 4 · V1 0/4
+- **Swell** — The speed follows a long, slow sine curve with slight noise. It feels like a sea swell: long calm troughs and then a wave crest where everyone gets hectic.
+  <br>`modi-4` · Speed profile · effort small · HW yes · ★ 4 · V1 0/4
+- **Catch-up boost (rubberbanding)** — Whoever has already lost chips (entered on the phone) gets more or stronger boosts and rewinds than the leaders. This keeps trailing players involved. *Note: The chip count is self-reported, so abuse is possible (children report themselves poorer).*
+  <br>`modi-27` · Handicap & balancing · effort medium · HW yes · ★ 4 · V1 0/4
+- **Champion tax** — Whoever won the last round loses jokers in the next round or has to accept one of the others' rewinds without cooldown. A simple automatic balancing rule for streaks.
+  <br>`modi-30` · Handicap & balancing · effort small · HW yes · ★ 4 · V1 0/4
+- **Saboteur among us** — One of the players is secretly the saboteur and has stronger rewinds that are triggered anonymously. At the end everyone guesses who it was, and whoever guesses right gets points. *Note: Only works with one phone per player; screens must stay hidden.*
+  <br>`modi-33` · Player interaction · effort medium · HW yes · ★ 4 · V1 0/4
+- **Alliance rewind** — Two players must press together within 2 s to trigger a rewind, which is then stronger or longer. Short-term alliances and betrayal emerge. *Note: Because of Wi-Fi latency, a generous time window makes sense.*
+  <br>`modi-35` · Player interaction · effort medium · HW yes · ★ 4 · V1 0/4
+- **Louie is hungry (block event)** — If someone deliberately holds Louie's plane (motor current rises sharply), the motor stops immediately for protection, and the phones show "Foul! Who was that?". The game can turn this into a penalty for the next round. *Note: Block detection via current is realistic, but it does not say who blocked. It mainly serves motor protection and should always be active regardless of the game.*
+  <br>`modi-37` · Motor current events · effort medium · HW limited · ★ 4 · V1 0/4
+- **Mode editor: draw a curve** — You draw a speed curve over time with your finger; it is stored as a list of points and interpolated. Especially intuitive for children ("here he should get really fast"). *Note: The server clamping to ramp and limits smooths strokes that are too steep; the preview should show the clamped curve.*
+  <br>`modi-42` · Mode editor · effort medium · HW yes · ★ 4 · V1 0/4
+- **Automatic difficulty (learning Louie)** — Louie remembers how long rounds last in this group and adjusts the increase so that rounds hit a target time (e.g. 2 min). If rounds are too long, it gets faster; if they are too short, more relaxed. *Note: The device knows the round duration (start to lever off), more reliably with an end report.*
+  <br>`modi-46` · Balancing · effort medium · HW yes · ★ 4 · V1 0/4
+- **Drinking game: rewind price** — Every rewind costs the trigger a sip, or he may hand out a sip if he knocks someone out. This creates a trade-off between annoying others and protecting yourself. *Note: Essentially just text and display on the phones.*
+  <br>`modi-48` · Drinking game · effort small · HW yes · ★ 4 · V1 0/4
+- **Countdown bomb** — A visible timer runs down, and at zero there is a random big effect (sprint, mini jolt series or full brake). Players can extend or shorten the timer with jokers on their phone.
+  <br>`modi-53` · Pauses & fake-outs · effort medium · HW yes · ★ 4 · V1 0/4
+- **Lever gesture as game action** — Without a phone the lever can be used in the game: briefly off-on within 0.5 s = pause, twice = next mode. This makes part of the features reachable for rounds without a phone. *Note: Risk of confusion with normal stop and with the recovery gestures at start; the lever briefly cuts the motor hard.*
+  <br>`modi-39` · Operation without phone · effort medium · HW limited · ★ 3 · V1 0/4
+- **Mode editor: event dice** — Instead of a fixed timeline there is a list of events with a probability per second (fake-out 5 %, reverse jolt 3 %, sprint 4 %). The UI also shows an estimated "meanness" and the expected round duration. *Note: Fits closely with the existing JSON schema (chance/duration).*
+  <br>`modi-41` · Mode editor · effort medium · HW yes · ★ 3 · V1 0/4
+- **Share modes via QR code** — A custom mode is exported as a compact code or QR code that other Louie owners can scan. Without a cloud it can be passed on from party to party. *Note: Without HTTPS there is no camera access in the browser; the QR code must be scanned with the system camera app, e.g. as a link with the mode in the URL fragment.*
+  <br>`modi-44` · Mode editor · effort medium · HW yes · ★ 3 · V1 0/4
+- **Seed duel (same randomness for everyone)** — A random sequence is fixed via a code (e.g. "CHICK-42") and can be repeated. Groups or tournament rounds can play exactly the same "random" sequence, and particularly mean seeds can be shared. *Note: Because of motor tolerance and battery level it is not bit-identical, but the setpoints are.*
+  <br>`modi-9` · Randomness · effort small · HW yes · ★ 2 · V1 0/4
+- **Mirror round** — A special round that runs completely in reverse, but much slower so that you can defend yourself. Intended as a rare event mode or as a penalty round, never as the default. *Note: Conflicts with the default limit (max. 10 % share); only possible if the admin explicitly allows it. Whether the mechanism flies equally well in reverse needs checking.*
+  <br>`modi-15` · Reverse in moderation · effort small · HW limited · ★ 2 · V1 0/4
+- **Point hunt over several rounds** — Instead of "who is left last" there are points: placement per round, bonus for rewinds that knock someone out, penalty for early elimination. The overall ranking runs over the evening. *Note: The electronics cannot see who was knocked out by which rewind; this can only be recorded via an honesty button.*
+  <br>`modi-26` · Round format · effort medium · HW limited · ★ 2 · V1 0/4
+- **Joker auction** — Before the round, players bid with chips (real ones, from their supply) or points for extra rewinds. Whoever bids a lot starts with fewer chips but has more weapons. *Note: The chips are physical and counted by hand; the UI only manages the bids.*
+  <br>`modi-31` · Handicap & balancing · effort medium · HW yes · ★ 2 · V1 0/4
+- **Secret missions** — Before the round each player gets a hidden mission on their phone ("Trigger 2 rewinds while seat 3 is still in", "Survive 60 s without a joker"). Completed missions bring bonus points. *Note: Only missions that can be checked via phone actions and time are automatically evaluable; everything else relies on honesty.*
+  <br>`modi-32` · Player interaction · effort medium · HW limited · ★ 2 · V1 0/4
+- **Counter rewind** — Whoever also presses within 0.3 s at the moment of a rewind cancels it (Louie only twitches), and the trigger loses his joker. This becomes a reaction duel between the phones. *Note: Wi-Fi latency of several phones (50-200 ms, fluctuating) makes the timing unfair; a generous window would be needed.*
+  <br>`modi-13` · Reverse in moderation · effort medium · HW limited · ★ 1 · V1 0/4
+- **Tournament bracket for large groups** — With more than 4 people the UI creates preliminary rounds with up to 4 players each; the winners go to the final. The bracket is visible live on all phones, and the final gets its own, harder mode. *Note: Depends on profiles/multi-user (stage 3); RAM for tournament data is not critical, the UI is the effort.*
+  <br>`modi-22` · Round format · effort large · HW yes · ★ 1 · V1 0/4
+- **Party marathon with seasons** — An evening becomes a season: several modes in a fixed or random order, an overall ranking, a mid-season twist (e.g. from round 5 rewinds count double) and an award ceremony at the end. This is the umbrella for tournament, points and handicap ideas. *Note: Needs profiles and persistence across rounds (keep flash write cycles low).*
+  <br>`modi-49` · Round format · effort large · HW yes · ★ 1 · V1 0/4
+- **Music sync (speed by BPM)** — A phone plays music, and Louie's speed follows a given BPM profile of the playlist (entered by the user or via tap tempo). When the beat drops, a sprint follows. *Note: The device has no speaker or microphone; the phone only supplies speed setpoints. Real audio analysis in the browser is not possible without HTTPS (microphone).*
+  <br>`modi-52` · Game mode · effort large · HW limited · ★ 1 · V1 0/4
+- **Hit hunch via current spikes** — Experimental: short current spikes when Louie bumps into a paddle or a chip are counted and shown as a "hit counter" or intensity display. The result is not a chip result, but a feeling for action. *Note: Very uncertain: the signals are small and noisy, and the IPROPI current measurement of the DRV8213, RC filter and ADC rate must suffice. Measure on the prototype first.*
+  <br>`modi-38` · Motor current events · effort large · HW limited · ★ 0 · V1 0/4
+- **Mode editor: building-block timeline** — A mode consists of a sequence of blocks ("10 s constant 50 %", "random 30-80 % for 20 s", "fake-out", "creep", "repeat") that you arrange on the phone by drag-and-drop. A preview curve shows the progression, and a test drive runs on real hardware. *Note: The JSON format would have to be extended from parameters to sequences; the size per mode should stay limited (flash, RAM).*
+  <br>`modi-40` · Mode editor · effort large · HW yes · ★ 0 · V1 0/4
+- **Mode editor: conditions (if-then)** — Simple rules like "if only 2 players are left, then +20 %" or "after 60 s unlock rewinds for everyone". This lets you build dynamic modes without programming. *Note: The conditions depend on phone reports (elimination); a small custom rule engine costs firmware and test effort.*
+  <br>`modi-43` · Mode editor · effort large · HW yes · ★ 0 · V1 0/4
 
-### 5.2 Party, Multiplayer & Trinkspiel (49)
+### 5.2 Party, multiplayer & drinking game (49)
 
-- **Rückspuler-Knopf** — Jeder Spieler hat auf dem Handy einen Rückspul-Knopf, der Louie für 0,5–1 s rückwärts zucken lässt. Kontingent pro Runde (z. B. 2) und ein sichtbarer Abklingring. Alle Handys zeigen kurz an, wer gespult hat, damit es Schadenfreude und Rache gibt. *Hinweis: Gleichzeitige Anfragen nicht addieren; globale Rückwärts-Grenzen (Dauer, Abstand, Anteil) gelten immer. Rampe beim Richtungswechsel nötig.*
-  <br>`party-1` · Rückspuler & Sabotage · Aufwand klein · HW ja · ★ 11 · V1 4/4
-- **Handy-QR-Lobby mit Plätzen in Hühnerfarben** — Ein großer QR-Code auf dem Bildschirm des Spielleiters lädt neue Handys ein, die direkt eine freie Farbe zugewiesen bekommen. Ist alles voll, landet man automatisch als Zuschauer. *Hinweis: QR-Erzeugung im Browser mit kleiner JS-Bibliothek.*
-  <br>`party-47` · UX & Design · Aufwand klein · HW ja · ★ 11 · V1 4/4
-- **Ausscheiden per Selbstmeldung** — Wer seinen letzten Chip verliert, tippt auf seinem Handy 'Ich bin raus'. Das Handy wechselt dann in den Ausgeschiedenen-Modus mit Boosts. Optional bestätigt der Spielleiter. *Hinweis: Grundlage für viele andere Ideen, da die Hardware Chip-Verluste nicht erkennt.*
-  <br>`party-24` · Party-Moderation · Aufwand klein · HW ja · ★ 10 · V1 2/4
-- **Turbo-Boost für Ausgeschiedene** — Wer raus ist, bekommt Boost-Knöpfe und kann Louie kurz beschleunigen, um die Verbleibenden zu ärgern. Hält ausgeschiedene Spieler bei der Stange statt gelangweilt zuzuschauen. *Hinweis: Ausscheiden muss manuell gemeldet werden (Spieler oder Spielleiter), die Elektronik sieht es nicht.*
-  <br>`party-6` · Boosts · Aufwand klein · HW ja · ★ 9 · V1 3/4
-- **Kinder- und Party-Profil** — Ein Schalter in der Lobby schaltet zwischen 'Kinder' (kein Rückwärts, keine Sabotage, keine Trinkregeln) und 'Party' (alles erlaubt). Admin legt fest, was im jeweiligen Profil sichtbar ist.
-  <br>`party-39` · Party-Moderation · Aufwand klein · HW ja · ★ 9 · V1 3/4
-- **Admin-Grenzen für Partyfunktionen** — Admin legt fest: max. Rückspuler pro Spieler, ob Zuschauer eingreifen dürfen, Trinkspiel erlaubt ja/nein, max. Zuschauerzahl, Pflichtpausen. So bleibt das Spiel auch im Party-Chaos fair und sicher. *Hinweis: Ergänzt die bestehenden Rückwärts-Grenzen aus dem Konzept.*
-  <br>`party-49` · Party-Moderation · Aufwand klein · HW ja · ★ 8 · V1 3/4
-- **Bremsfalle** — Statt rückwärts kann ein Spieler eine kurze Vollbremsung (0,5 s, Kurzschlussbremse) auslösen. Louie stoppt abrupt, das Flugzeug sackt ab und trifft unberechenbar. Sanftere Sabotage als Rückwärts. *Hinweis: Bremsen über H-Brücke vorhanden; Mechanik auf ruckartige Stopps prüfen.*
-  <br>`party-5` · Rückspuler & Sabotage · Aufwand klein · HW ja · ★ 8 · V1 2/4
-- **Hühner-Avatare und Spitznamen** — Spieler wählen in der Lobby einen Namen und ein Hühner-Emoji/Avatar in ihrer Farbe. Diese erscheinen bei allen Ereignissen ('Gackernde Gisela spult zurück!').
-  <br>`party-29` · UX & Design · Aufwand klein · HW ja · ★ 8 · V1 1/4
-- **Handy vibriert bei Gefahr** — Wird gerade ein Rückspuler, Boost oder eine Ereigniskarte ausgelöst, vibrieren alle Spielerhandys kurz. Haptisches Feedback, ohne aufs Display schauen zu müssen. *Hinweis: Vibration API nicht auf iOS Safari verfügbar.*
-  <br>`party-27` · UX & Design · Aufwand klein · HW ja · ★ 7 · V1 2/4
-- **Zeitlupen-Joker** — Jeder hat einmal pro Spiel einen Joker, der Louie für 3 s stark verlangsamt. Gut zum Verteidigen, wenn man selbst bedroht ist, oder um andere aus dem Takt zu bringen.
-  <br>`party-8` · Boosts · Aufwand klein · HW ja · ★ 7 · V1 0/4
-- **Zuschauer-Rolle** — Wer nicht mitspielt, scannt den QR-Code und bekommt eine Zuschauer-Ansicht: Live-Geschwindigkeit, Ereignisse, wer wen sabotiert hat, Wettschein. Zuschauer können begrenzt eingreifen (z. B. ein Boost pro Runde). *Hinweis: Viele WebSocket-Clients belasten den RAM des ESP32-C3; Zuschauer-Anzahl begrenzen (z. B. 6–8).*
-  <br>`party-15` · Zuschauer · Aufwand mittel · HW ja · ★ 6 · V1 2/4
-- **Zuschauer-Buh und -Jubel** — Zuschauer hämmern auf einen Jubel- oder Buh-Knopf. Erreicht der Jubelpegel eine Schwelle, gibt es einen kleinen Boost; bei viel Buh kurz langsamer. Das Publikum wird zum Teil des Spiels. *Hinweis: Button-Spam drosseln (Server sammelt pro Sekunde).*
-  <br>`party-18` · Zuschauer · Aufwand klein · HW ja · ★ 6 · V1 1/4
-- **Sabotage-Statistik und Titel** — Nach dem Spiel vergibt das System Titel: 'Größter Saboteur', 'Pechvogel' (am häufigsten Opfer), 'Boost-Junkie', 'Pazifist' (nichts eingesetzt). Sorgt für Gesprächsstoff. *Hinweis: Daten nur im RAM bis Ende der Session, kein Speichern nötig.*
-  <br>`party-30` · Party-Moderation · Aufwand klein · HW ja · ★ 6 · V1 1/4
-- **Alkoholfreier Modus als Standard** — Jede Trinkregel hat eine neutrale Variante: 'Schluck Wasser', 'Liegestütz', 'Witz erzählen', 'Kompliment machen'. Pro Spieler einstellbar, sodass gemischte Runden möglich sind. *Hinweis: Text-Bausteine, kaum Speicher.*
-  <br>`party-34` · Trinkspiel · Aufwand klein · HW ja · ★ 6 · V1 1/4
-- **Highlight-Ticker** — Ein laufender Ticker unten auf allen Handys erzählt die Runde: '12 s: Blau spult zurück', '20 s: Combo-Boost von Rot und Gelb'. Nach der Runde als Zusammenfassung zum Teilen (Screenshot).
-  <br>`party-48` · UX & Design · Aufwand klein · HW ja · ★ 6 · V1 1/4
-- **Angekündigter Rückspuler** — Der Rückspuler wird nicht sofort ausgelöst, sondern alle Handys zeigen einen 3-2-1-Countdown mit dem Namen des Saboteurs. Das macht Rückwärts weniger unfair, weil sich alle vorbereiten können, und erhöht die Spannung. *Hinweis: Admin-Variante: geheim vs. angekündigt.*
-  <br>`party-3` · Rückspuler & Sabotage · Aufwand klein · HW ja · ★ 6 · V1 0/4
-- **Sudden Death** — Bleiben zwei Spieler übrig, startet automatisch Sudden Death: steigende Geschwindigkeit, alle Ausgeschiedenen haben je einen Rückspuler und einen Boost. Alle Handys zeigen ein dramatisches Finale-Design. *Hinweis: Benötigt Ausscheiden-Meldungen.*
-  <br>`party-40` · Spielmodi · Aufwand mittel · HW ja · ★ 6 · V1 0/4
-- **Trinkspiel-Modus mit Regeln aus der Lobby** — Ein eigener Modus 'Party (18+)', der nach Rundenende Ansagen anzeigt: 'Wer ausgeschieden ist, trinkt einen Schluck', 'Der Saboteur verteilt 2 Schlucke'. Regeln sind eine wählbare Liste im UI. *Hinweis: Admin muss ihn freischalten; Standard aus.*
-  <br>`party-33` · Trinkspiel · Aufwand mittel · HW ja · ★ 5 · V1 1/4
-- **Chaos-Taste für den Spielleiter** — Der Spielleiter hat einen großen roten Chaos-Knopf: löst eine zufällige Kombination aus Boost, Bremse und kurzem Rückwärts aus. Einmal pro Runde, mit Countdown für alle.
-  <br>`party-43` · Party-Moderation · Aufwand klein · HW ja · ★ 5 · V1 1/4
-- **Ereigniskarten-Ziehen** — Alle 20–40 s erscheint auf allen Handys eine Ereigniskarte: 'Sturmböe' (Speed-Schwankungen), 'Windstille' (langsam), 'Looping-Rausch' (kurz Vollgas), 'Rückenwind' (mini-Rückwärts). Die Karte wird groß animiert, bevor sie wirkt. *Hinweis: Rückwärts-Karten müssen unter den globalen Grenzen bleiben.*
-  <br>`party-10` · Ereigniskarten · Aufwand mittel · HW ja · ★ 5 · V1 0/4
-- **Glücksrad zwischen den Runden** — Nach jeder Runde dreht der Verlierer (oder Gewinner) auf dem Handy ein Glücksrad, das die Regel der nächsten Runde bestimmt: 'Nur Rückspuler', 'Doppelte Geschwindigkeit', 'Linke Hand', 'Augen zu für den Spielleiter' usw. *Hinweis: Physische Regeln (linke Hand) sind reine Ansagen, keine Technik.*
-  <br>`party-12` · Ereigniskarten · Aufwand mittel · HW ja · ★ 5 · V1 0/4
-- **Modus-Wahl per Abstimmung in der Lobby** — Statt dass der Spielleiter wählt, schlägt das System 3 Modi vor und alle Handys stimmen 10 s lang ab. Bei Gleichstand entscheidet ein Zufallsrad.
-  <br>`party-14` · Abstimmungen · Aufwand klein · HW ja · ★ 5 · V1 0/4
-- **Team-Kapitän mit Fernsteuerung** — Pro Team spielt einer an der Wippe, der andere sitzt daneben mit dem Handy und setzt Rückspuler/Boosts ein. Rollen wechseln jede Runde. Kommunikation im Team wird zum Spiel.
-  <br>`party-20` · Teams · Aufwand klein · HW ja · ★ 5 · V1 0/4
-- **Rundenturnier mit Punktetabelle** — Mehrere Runden hintereinander, Punkte pro Platzierung. Die Lobby zeigt eine Tabelle, am Ende gibt es eine Siegerehrung mit Konfetti-Animation auf allen Handys. *Hinweis: Platzierung wird per Tipp vom Spielleiter oder den Spielern eingetragen.*
-  <br>`party-23` · Party-Moderation · Aufwand mittel · HW ja · ★ 5 · V1 0/4
-- **Party-Moderator-Ansagen** — Ein Handy (z. B. am Lautsprecher) wird zum Moderator: Es spricht oder zeigt Ansagen wie 'Achtung, Rot ist in Gefahr!', 'Noch 10 Sekunden!', 'Wer hat da zurückgespult?'. Text-to-Speech im Browser. *Hinweis: Ton nur über Handys, die Platine hat keinen Lautsprecher. Web Speech API ist offline nicht auf allen Geräten verfügbar; Alternative vorab gespeicherte Sounds (Flash knapp).*
-  <br>`party-25` · Party-Moderation · Aufwand mittel · HW ja · ★ 5 · V1 0/4
-- **Geheimer Saboteur** — Zu Rundenbeginn bekommt ein zufälliger Spieler heimlich einen Extra-Rückspuler. Nach der Runde stimmen alle ab, wer der Saboteur war. Richtig geraten: Saboteur verliert einen Punkt (oder trinkt), falsch: alle anderen. *Hinweis: Funktioniert nur, wenn Rückspuler anonym ausgelöst werden.*
-  <br>`party-4` · Rückspuler & Sabotage · Aufwand mittel · HW ja · ★ 4 · V1 0/4
-- **Boost-Kombo** — Drücken zwei oder mehr Spieler innerhalb von 1 s gleichzeitig Boost, gibt es einen stärkeren Combo-Boost mit Effekt auf allen Handys ('DOPPEL-TURBO!'). Belohnt Absprachen und spontane Allianzen. *Hinweis: Turbo-Grenze aus Admin bleibt hart.*
-  <br>`party-7` · Boosts · Aufwand klein · HW ja · ★ 4 · V1 0/4
-- **Live-Abstimmung über die nächste Phase** — Mitten in der Runde poppt eine 5-s-Abstimmung auf: 'Schneller oder langsamer?' oder 'Rückwärtsstoß jetzt: ja/nein?'. Die Mehrheit entscheidet sofort. Zuschauer stimmen mit. *Hinweis: Spieler haben beide Hände an den Wippen; Abstimmen eher für Zuschauer und Ausgeschiedene.*
-  <br>`party-13` · Abstimmungen · Aufwand mittel · HW ja · ★ 4 · V1 0/4
-- **Zuschauer-Wetten** — Vor der Runde setzen Zuschauer virtuelle Hühnerfedern auf den Spieler, der ihrer Meinung nach gewinnt. Am Ende Rangliste der besten Tipper. Optional: Quoten ändern sich nach Anzahl der Wetten. *Hinweis: Gewinner muss manuell eingetragen werden. Nur virtuelle Punkte, kein Geld.*
-  <br>`party-16` · Zuschauer · Aufwand mittel · HW ja · ★ 4 · V1 0/4
-- **Pflicht-Pausen und Wasser-Runde** — Nach X Runden pausiert das Spiel automatisch, alle Handys zeigen 'Wasser-Pause – 2 Minuten'. Der Spielleiter kann verlängern, aber nicht überspringen (Admin-Einstellung).
-  <br>`party-36` · Trinkspiel · Aufwand klein · HW ja · ★ 4 · V1 0/4
-- **Energie-Leiste statt fester Kontingente** — Jeder Spieler hat eine Energie-Leiste, die sich langsam auflädt. Rückspuler kostet viel, Boost mittel, Zeitlupe wenig. Spieler entscheiden taktisch, wann sie was einsetzen. *Hinweis: Mehr UI-Komplexität; für Kinder evtl. zu abstrakt.*
-  <br>`party-9` · Boosts · Aufwand mittel · HW ja · ★ 3 · V1 0/4
-- **Karte auf der Hand** — Jeder Spieler bekommt zu Rundenbeginn 3 zufällige Aktionskarten (Boost, Bremse, Rückspuler, Schild, Zeitlupe) und spielt sie per Wischgeste aus. Wie ein Kartenspiel parallel zum Brettspiel.
-  <br>`party-11` · Ereigniskarten · Aufwand mittel · HW ja · ★ 3 · V1 0/4
-- **Teams 2 gegen 2** — Plätze werden zu zwei Teams zusammengefasst. Rückspuler und Boosts sind Team-Ressourcen, die auf dem Team-Handy geteilt sind. Ein Team verliert, wenn beide Spieler raus sind.
-  <br>`party-19` · Teams · Aufwand mittel · HW ja · ★ 3 · V1 0/4
-- **Status-LED als Bühnenlicht** — Die Status-LED auf der Platine blinkt passend zum Spiel: Countdown-Blinken vor dem Start, schnelles Flackern bei Rückspulern, Dauerlicht beim Boost. Ein kleiner sichtbarer Hinweis im Spiel selbst. *Hinweis: Nur eine LED im Batteriefach, unter dem Spiel kaum sichtbar.*
-  <br>`party-28` · UX & Design · Aufwand klein · HW eingeschränkt · ★ 3 · V1 0/4
-- **Rache-Bonus** — Wer zurückgespult wurde, bekommt für 10 s einen Rache-Rückspuler, der nur gegen den Verursacher zählt (nach Ansage). Erzeugt kleine Fehden am Tisch. *Hinweis: Der Motor dreht für alle; 'gegen den Verursacher' ist nur Erzählung, physisch trifft es alle gleich.*
-  <br>`party-31` · Rückspuler & Sabotage · Aufwand klein · HW eingeschränkt · ★ 3 · V1 0/4
-- **Hebel-Geste als Tisch-Joker** — Wer ohne Handy spielt, kann über den Original-Hebel einen Effekt auslösen: zweimal schnell umlegen = Pause für alle (z. B. zum Nachfüllen der Getränke oder Chips sortieren). *Hinweis: Hebel trennt den Motor hardwareseitig; Gesten dürfen nicht mit Start/Stopp und Recovery-Gesten verwechselt werden.*
-  <br>`party-32` · Party-Moderation · Aufwand mittel · HW eingeschränkt · ★ 3 · V1 0/4
-- **Rückspuler kostet einen Schluck** — Im Trinkspiel-Modus darf man unbegrenzt zurückspulen, aber jeder Rückspuler kostet den Auslöser einen Schluck (bzw. alkoholfreie Aufgabe). Die Grenzen der Rückwärtsfahrt bleiben trotzdem aktiv.
-  <br>`party-37` · Trinkspiel · Aufwand klein · HW ja · ★ 3 · V1 0/4
-- **Ruhige Hände (Strom-Spionage)** — Wenn Louie blockiert wird (z. B. jemand hält das Flugzeug fest), steigt der Motorstrom. Das System erkennt das und ruft auf allen Handys 'Schummler!' aus, mit Strafe nach Regelwerk. *Hinweis: Nur grobes Blockieren erkennbar, wer es war, sieht die Elektronik nicht. Blockierschutz muss Motor ohnehin abschalten.*
-  <br>`party-44` · Spielmodi · Aufwand mittel · HW eingeschränkt · ★ 3 · V1 0/4
-- **Verräter-Modus** — Ein Teammitglied wird heimlich zum Verräter und arbeitet mit Rückspulern gegen das eigene Team. Wird er enttarnt, wechselt er das Team.
-  <br>`party-21` · Teams · Aufwand mittel · HW ja · ★ 2 · V1 0/4
-- **Kopfgeld** — Zufällig wird ein Spieler zum 'Gejagten' erklärt (sein Huhn leuchtet auf allen Handys rot). Wer ihm einen Chip abnimmt, bekommt einen Bonus-Rückspuler. Fokussiert die Sabotage auf eine Person. *Hinweis: Chip-Verlust muss manuell gemeldet werden.*
-  <br>`party-22` · Spielmodi · Aufwand mittel · HW eingeschränkt · ★ 2 · V1 0/4
-- **Soundboard pro Spieler** — Jeder Spieler wählt einen Sieges- und einen Fluchsound. Bei Rückspulern spielt das Handy des Opfers einen Rücklauf-Sound ab. Kleine Sounddateien aus dem Flash. *Hinweis: Flash 4 MB: nur wenige, stark komprimierte Sounds. Alternativ per WebAudio synthetisiert.*
-  <br>`party-26` · UX & Design · Aufwand mittel · HW eingeschränkt · ★ 2 · V1 0/4
-- **Wahrheit oder Pflicht bei Chipverlust** — Wer einen Chip verliert, tippt es ein und bekommt eine Zufallskarte 'Wahrheit oder Pflicht'. Familien- und Erwachsenen-Kartendecks wählbar. *Hinweis: Kartentexte im Flash begrenzen, ggf. vom Admin hochladbar.*
-  <br>`party-38` · Trinkspiel · Aufwand mittel · HW ja · ★ 2 · V1 0/4
-- **Auktion um Superkräfte** — Vor der Runde werden Superkräfte (Dreifach-Rückspuler, Schild, Mega-Boost) versteigert. Bezahlt wird mit Punkten aus vorigen Runden oder mit Schlucken im Trinkspiel.
-  <br>`party-42` · Spielmodi · Aufwand mittel · HW ja · ★ 2 · V1 0/4
-- **Duell-Modus 1 gegen 1 per Handy** — Zwei Spieler halten je ein Handy, der Rest spielt an den Wippen. Die Handy-Duellanten bekämpfen sich mit Rückspulern und Boosts; wer am Ende den Favoriten am Tisch durchbringt, gewinnt.
-  <br>`party-45` · Spielmodi · Aufwand mittel · HW ja · ★ 2 · V1 0/4
-- **Rückspul-Lotterie** — Statt dass Spieler gezielt zurückspulen, kaufen sie Lose. Zu einem zufälligen Zeitpunkt wird ein Los gezogen und dessen Besitzer darf einen Rückspuler auslösen. Weniger Reaktionsspiel, mehr Glück.
-  <br>`party-46` · Rückspuler & Sabotage · Aufwand klein · HW ja · ★ 2 · V1 0/4
-- **Rückspul-Konter (Schild)** — Wer gerade Opfer eines Rückspulers wird, kann innerhalb eines kurzen Fensters (ca. 0,3 s) einen Schild-Knopf drücken und den Stoß abbrechen. Ein Schild pro Runde. Fühlt sich an wie ein Reaktionsduell. *Hinweis: WLAN-Latenz am Handy (50–200 ms) macht das Fenster unfair; eher als 'Rückspuler wird mit kurzer Ankündigung verzögert' umsetzen.*
-  <br>`party-2` · Rückspuler & Sabotage · Aufwand mittel · HW eingeschränkt · ★ 1 · V1 0/4
-- **Live-Wetten während der Runde** — Zuschauer können während der Runde Mini-Wetten platzieren: 'Wer verliert als Nächstes einen Chip?' Wer richtig liegt, bekommt Punkte oder darf einen Boost auslösen. *Hinweis: Chip-Verluste muss jemand per Handy eintragen, sonst kein Auswerten möglich.*
-  <br>`party-17` · Zuschauer · Aufwand groß · HW eingeschränkt · ★ 1 · V1 0/4
-- **Schluck-Zähler mit Obergrenze** — Das UI zählt die Schlucke pro Spieler mit und erzwingt eine Pause oder Wasser-Runde, wenn eine einstellbare Grenze pro Stunde erreicht ist. Zeigt auch an, wie lange gespielt wurde. *Hinweis: Verantwortungsvolles Feature; Werte manuell bestätigt, nicht gemessen.*
-  <br>`party-35` · Trinkspiel · Aufwand mittel · HW ja · ★ 1 · V1 0/4
-- **Rhythmus-Modus zur Musik** — Ein Handy spielt Musik ab und gibt den Takt an den Server weiter; Louie wechselt zum Beat die Geschwindigkeit. Bei Drops gibt es kurze Boosts. *Hinweis: Beat-Erkennung im Browser aufwendig, Latenz zwischen Handy und Motor.*
-  <br>`party-41` · Spielmodi · Aufwand groß · HW eingeschränkt · ★ 1 · V1 0/4
+- **Rewind button** — Each player has a rewind button on the phone that makes Louie twitch backwards for 0.5–1 s. Allowance per round (e.g. 2) and a visible cooldown ring. All phones briefly show who rewound, so there is gloating and revenge. *Note: Do not add up simultaneous requests; global reverse limits (duration, interval, share) always apply. Ramp needed at direction change.*
+  <br>`party-1` · Rewind & sabotage · effort small · HW yes · ★ 11 · V1 4/4
+- **Phone QR lobby with seats in chicken colors** — A large QR code on the game master's screen invites new phones, which are directly assigned a free color. If everything is full, you automatically end up as a spectator. *Note: QR generation in the browser with a small JS library.*
+  <br>`party-47` · UX & design · effort small · HW yes · ★ 11 · V1 4/4
+- **Elimination by self-report** — Whoever loses their last chip taps 'I'm out' on their phone. The phone then switches to the eliminated mode with boosts. Optionally the game master confirms. *Note: Basis for many other ideas, since the hardware does not detect chip losses.*
+  <br>`party-24` · Party moderation · effort small · HW yes · ★ 10 · V1 2/4
+- **Turbo boost for eliminated players** — Whoever is out gets boost buttons and can briefly speed up Louie to annoy the remaining players. Keeps eliminated players engaged instead of watching bored. *Note: Elimination must be reported manually (player or game master); the electronics cannot see it.*
+  <br>`party-6` · Boosts · effort small · HW yes · ★ 9 · V1 3/4
+- **Kids and party profile** — A switch in the lobby toggles between 'Kids' (no reverse, no sabotage, no drinking rules) and 'Party' (everything allowed). The admin defines what is visible in each profile.
+  <br>`party-39` · Party moderation · effort small · HW yes · ★ 9 · V1 3/4
+- **Admin limits for party features** — The admin defines: max. rewinds per player, whether spectators may interfere, drinking game allowed yes/no, max. number of spectators, mandatory breaks. This keeps the game fair and safe even in party chaos. *Note: Extends the existing reverse limits from the concept.*
+  <br>`party-49` · Party moderation · effort small · HW yes · ★ 8 · V1 3/4
+- **Brake trap** — Instead of reverse, a player can trigger a short full brake (0.5 s, short-circuit brake). Louie stops abruptly, the plane sags and hits unpredictably. Gentler sabotage than reverse. *Note: Braking via H-bridge is available; check the mechanics for jerky stops.*
+  <br>`party-5` · Rewind & sabotage · effort small · HW yes · ★ 8 · V1 2/4
+- **Chicken avatars and nicknames** — Players choose a name and a chicken emoji/avatar in their color in the lobby. These appear with all events ('Clucking Clara rewinds!').
+  <br>`party-29` · UX & design · effort small · HW yes · ★ 8 · V1 1/4
+- **Phone vibrates on danger** — When a rewind, boost or event card is triggered, all player phones vibrate briefly. Haptic feedback without having to look at the display. *Note: Vibration API not available on iOS Safari.*
+  <br>`party-27` · UX & design · effort small · HW yes · ★ 7 · V1 2/4
+- **Slow-motion joker** — Everyone has one joker per game that slows Louie down strongly for 3 s. Good for defending when you are threatened yourself, or for throwing others off their rhythm.
+  <br>`party-8` · Boosts · effort small · HW yes · ★ 7 · V1 0/4
+- **Spectator role** — Whoever does not play scans the QR code and gets a spectator view: live speed, events, who sabotaged whom, betting slip. Spectators can interfere to a limited degree (e.g. one boost per round). *Note: Many WebSocket clients burden the RAM of the ESP32-C3; limit the number of spectators (e.g. 6–8).*
+  <br>`party-15` · Spectators · effort medium · HW yes · ★ 6 · V1 2/4
+- **Spectator boo and cheer** — Spectators hammer a cheer or boo button. If the cheer level reaches a threshold, there is a small boost; with a lot of booing, briefly slower. The audience becomes part of the game. *Note: Throttle button spam (server aggregates per second).*
+  <br>`party-18` · Spectators · effort small · HW yes · ★ 6 · V1 1/4
+- **Sabotage statistics and titles** — After the game the system awards titles: 'Biggest Saboteur', 'Unlucky Bird' (most often a victim), 'Boost Junkie', 'Pacifist' (used nothing). Provides talking points. *Note: Data only in RAM until the end of the session, no saving needed.*
+  <br>`party-30` · Party moderation · effort small · HW yes · ★ 6 · V1 1/4
+- **Alcohol-free mode as default** — Every drinking rule has a neutral variant: 'Sip of water', 'Push-up', 'Tell a joke', 'Give a compliment'. Adjustable per player, so mixed rounds are possible. *Note: Text snippets, hardly any memory.*
+  <br>`party-34` · Drinking game · effort small · HW yes · ★ 6 · V1 1/4
+- **Highlight ticker** — A running ticker at the bottom of all phones narrates the round: '12 s: Blue rewinds', '20 s: Combo boost from Red and Yellow'. After the round as a summary to share (screenshot).
+  <br>`party-48` · UX & design · effort small · HW yes · ★ 6 · V1 1/4
+- **Announced rewind** — The rewind is not triggered immediately; instead all phones show a 3-2-1 countdown with the saboteur's name. This makes reverse less unfair because everyone can prepare, and increases the tension. *Note: Admin variant: secret vs. announced.*
+  <br>`party-3` · Rewind & sabotage · effort small · HW yes · ★ 6 · V1 0/4
+- **Sudden death** — When two players are left, sudden death starts automatically: rising speed, all eliminated players have one rewind and one boost each. All phones show a dramatic finale design. *Note: Requires elimination reports.*
+  <br>`party-40` · Game modes · effort medium · HW yes · ★ 6 · V1 0/4
+- **Drinking game mode with rules from the lobby** — A separate mode 'Party (18+)' that shows announcements after round end: 'Whoever is out takes a sip', 'The saboteur hands out 2 sips'. Rules are a selectable list in the UI. *Note: The admin must unlock it; off by default.*
+  <br>`party-33` · Drinking game · effort medium · HW yes · ★ 5 · V1 1/4
+- **Chaos button for the game master** — The game master has a big red chaos button: triggers a random combination of boost, brake and short reverse. Once per round, with a countdown for everyone.
+  <br>`party-43` · Party moderation · effort small · HW yes · ★ 5 · V1 1/4
+- **Drawing event cards** — Every 20–40 s an event card appears on all phones: 'Gust' (speed fluctuations), 'Calm' (slow), 'Looping frenzy' (briefly full throttle), 'Tailwind' (mini reverse). The card is animated large before it takes effect. *Note: Reverse cards must stay within the global limits.*
+  <br>`party-10` · Event cards · effort medium · HW yes · ★ 5 · V1 0/4
+- **Wheel of fortune between rounds** — After each round the loser (or winner) spins a wheel of fortune on the phone that determines the rule of the next round: 'Rewinds only', 'Double speed', 'Left hand', 'Eyes closed for the game master' etc. *Note: Physical rules (left hand) are just announcements, no technology.*
+  <br>`party-12` · Event cards · effort medium · HW yes · ★ 5 · V1 0/4
+- **Mode choice by vote in the lobby** — Instead of the game master choosing, the system suggests 3 modes and all phones vote for 10 s. On a tie, a random wheel decides.
+  <br>`party-14` · Votes · effort small · HW yes · ★ 5 · V1 0/4
+- **Team captain with remote control** — Per team one plays at the paddle, the other sits next to them with the phone and uses rewinds/boosts. Roles swap every round. Communication within the team becomes the game.
+  <br>`party-20` · Teams · effort small · HW yes · ★ 5 · V1 0/4
+- **Round tournament with points table** — Several rounds in a row, points per placement. The lobby shows a table; at the end there is an award ceremony with a confetti animation on all phones. *Note: Placement is entered by a tap from the game master or the players.*
+  <br>`party-23` · Party moderation · effort medium · HW yes · ★ 5 · V1 0/4
+- **Party host announcements** — One phone (e.g. on a speaker) becomes the host: it speaks or shows announcements like 'Watch out, Red is in danger!', '10 seconds left!', 'Who just rewound?'. Text-to-speech in the browser. *Note: Sound only via phones; the board has no speaker. Web Speech API is not available offline on all devices; alternative: prerecorded sounds (flash is tight).*
+  <br>`party-25` · Party moderation · effort medium · HW yes · ★ 5 · V1 0/4
+- **Secret saboteur** — At round start a random player secretly gets an extra rewind. After the round everyone votes on who the saboteur was. Guessed right: the saboteur loses a point (or drinks); wrong: everyone else. *Note: Only works if rewinds are triggered anonymously.*
+  <br>`party-4` · Rewind & sabotage · effort medium · HW yes · ★ 4 · V1 0/4
+- **Boost combo** — If two or more players press boost within 1 s, there is a stronger combo boost with an effect on all phones ('DOUBLE TURBO!'). Rewards deals and spontaneous alliances. *Note: The admin turbo limit stays hard.*
+  <br>`party-7` · Boosts · effort small · HW yes · ★ 4 · V1 0/4
+- **Live vote on the next phase** — In the middle of the round a 5 s vote pops up: 'Faster or slower?' or 'Reverse kick now: yes/no?'. The majority decides immediately. Spectators vote too. *Note: Players have both hands on the paddles; voting is more for spectators and eliminated players.*
+  <br>`party-13` · Votes · effort medium · HW yes · ★ 4 · V1 0/4
+- **Spectator bets** — Before the round, spectators place virtual chicken feathers on the player they think will win. At the end, a ranking of the best tipsters. Optional: odds change with the number of bets. *Note: The winner must be entered manually. Only virtual points, no money.*
+  <br>`party-16` · Spectators · effort medium · HW yes · ★ 4 · V1 0/4
+- **Mandatory breaks and water round** — After X rounds the game pauses automatically, all phones show 'Water break – 2 minutes'. The game master can extend but not skip it (admin setting).
+  <br>`party-36` · Drinking game · effort small · HW yes · ★ 4 · V1 0/4
+- **Energy bar instead of fixed allowances** — Each player has an energy bar that recharges slowly. Rewind costs a lot, boost medium, slow motion little. Players decide tactically when to use what. *Note: More UI complexity; possibly too abstract for children.*
+  <br>`party-9` · Boosts · effort medium · HW yes · ★ 3 · V1 0/4
+- **Cards in hand** — At round start each player gets 3 random action cards (boost, brake, rewind, shield, slow motion) and plays them with a swipe gesture. Like a card game in parallel to the board game.
+  <br>`party-11` · Event cards · effort medium · HW yes · ★ 3 · V1 0/4
+- **Teams 2 vs 2** — Seats are combined into two teams. Rewinds and boosts are team resources shared on the team phone. A team loses when both players are out.
+  <br>`party-19` · Teams · effort medium · HW yes · ★ 3 · V1 0/4
+- **Status LED as stage light** — The status LED on the board flashes to match the game: countdown flashing before the start, fast flickering on rewinds, steady light on boost. A small visible hint in the game itself. *Note: Only one LED in the battery compartment, hardly visible under the game.*
+  <br>`party-28` · UX & design · effort small · HW limited · ★ 3 · V1 0/4
+- **Revenge bonus** — Whoever was rewound gets a revenge rewind for 10 s that only counts against the culprit (by announcement). Creates small feuds at the table. *Note: The motor turns for everyone; 'against the culprit' is just narrative, physically it hits everyone equally.*
+  <br>`party-31` · Rewind & sabotage · effort small · HW limited · ★ 3 · V1 0/4
+- **Lever gesture as table joker** — Whoever plays without a phone can trigger an effect via the original lever: flip twice quickly = pause for everyone (e.g. to refill drinks or sort chips). *Note: The lever disconnects the motor in hardware; gestures must not be confused with start/stop and recovery gestures.*
+  <br>`party-32` · Party moderation · effort medium · HW limited · ★ 3 · V1 0/4
+- **Rewind costs a sip** — In drinking game mode you may rewind without limit, but each rewind costs the trigger a sip (or an alcohol-free task). The reverse travel limits stay active anyway.
+  <br>`party-37` · Drinking game · effort small · HW yes · ★ 3 · V1 0/4
+- **Steady hands (current spying)** — If Louie is blocked (e.g. someone holds the plane), the motor current rises. The system detects this and calls out 'Cheater!' on all phones, with a penalty according to the rules. *Note: Only coarse blocking is detectable; the electronics cannot see who did it. Block protection must switch off the motor anyway.*
+  <br>`party-44` · Game modes · effort medium · HW limited · ★ 3 · V1 0/4
+- **Traitor mode** — A team member secretly becomes a traitor and works against their own team with rewinds. If unmasked, they switch teams.
+  <br>`party-21` · Teams · effort medium · HW yes · ★ 2 · V1 0/4
+- **Bounty** — A random player is declared 'hunted' (their chicken glows red on all phones). Whoever takes a chip from them gets a bonus rewind. Focuses the sabotage on one person. *Note: Chip loss must be reported manually.*
+  <br>`party-22` · Game modes · effort medium · HW limited · ★ 2 · V1 0/4
+- **Soundboard per player** — Each player chooses a victory and a curse sound. On rewinds the victim's phone plays a rewind sound. Small sound files from flash. *Note: Flash 4 MB: only a few, heavily compressed sounds. Alternatively synthesized via WebAudio.*
+  <br>`party-26` · UX & design · effort medium · HW limited · ★ 2 · V1 0/4
+- **Truth or dare on chip loss** — Whoever loses a chip enters it and gets a random 'truth or dare' card. Family and adult card decks selectable. *Note: Limit card texts in flash, possibly uploadable by the admin.*
+  <br>`party-38` · Drinking game · effort medium · HW yes · ★ 2 · V1 0/4
+- **Superpower auction** — Before the round, superpowers (triple rewind, shield, mega boost) are auctioned. Payment is with points from previous rounds or with sips in the drinking game.
+  <br>`party-42` · Game modes · effort medium · HW yes · ★ 2 · V1 0/4
+- **Duel mode 1 vs 1 by phone** — Two players each hold a phone, the rest play at the paddles. The phone duelists fight each other with rewinds and boosts; whoever gets their favorite at the table through wins.
+  <br>`party-45` · Game modes · effort medium · HW yes · ★ 2 · V1 0/4
+- **Rewind lottery** — Instead of players rewinding deliberately, they buy tickets. At a random moment a ticket is drawn and its owner may trigger a rewind. Less reaction game, more luck.
+  <br>`party-46` · Rewind & sabotage · effort small · HW yes · ★ 2 · V1 0/4
+- **Rewind counter (shield)** — Whoever is currently the victim of a rewind can press a shield button within a short window (approx. 0.3 s) and cancel the kick. One shield per round. Feels like a reaction duel. *Note: Wi-Fi latency on the phone (50–200 ms) makes the window unfair; better implemented as 'rewind is delayed with a short announcement'.*
+  <br>`party-2` · Rewind & sabotage · effort medium · HW limited · ★ 1 · V1 0/4
+- **Live bets during the round** — Spectators can place mini bets during the round: 'Who loses a chip next?' Whoever is right gets points or may trigger a boost. *Note: Someone must enter chip losses by phone, otherwise no evaluation is possible.*
+  <br>`party-17` · Spectators · effort large · HW limited · ★ 1 · V1 0/4
+- **Sip counter with upper limit** — The UI counts the sips per player and enforces a break or water round when an adjustable limit per hour is reached. Also shows how long has been played. *Note: Responsible feature; values confirmed manually, not measured.*
+  <br>`party-35` · Drinking game · effort medium · HW yes · ★ 1 · V1 0/4
+- **Rhythm mode to music** — A phone plays music and passes the beat to the server; Louie changes speed to the beat. On drops there are short boosts. *Note: Beat detection in the browser is complex; latency between phone and motor.*
+  <br>`party-41` · Game modes · effort large · HW limited · ★ 1 · V1 0/4
 
-### 5.3 User Experience & Design (52)
+### 5.3 User experience & design (52)
 
-- **Verbindungs-Ampel mit ehrlicher Sprache** — Oben rechts ein kleines Louie-Symbol: grün = verbunden, gelb blinkend = verbinde neu, rot = weg. Antippen zeigt Klartext ('Dein Handy hat das Louie-WLAN verlassen – wahrscheinlich, weil es kein Internet hat. Tippe hier, um zurückzukehren.') statt Fehlercodes.
-  <br>`ux-28` · Fehler- und Verbindungsanzeigen · Aufwand klein · HW ja · ★ 11 · V1 4/4
-- **Drei-Sekunden-Onboarding für Gäste** — Wer nur zuschaut, landet sofort auf einer Ansicht mit großem Status und einem einzigen Knopf 'Mitspielen'. Keine Menüs, kein Hamburger, keine Einstellungen sichtbar. Alles Weitere erscheint erst, wenn man eine Rolle hat (progressive Enthüllung).
-  <br>`ux-6` · Bildschirmaufbau · Aufwand klein · HW ja · ★ 10 · V1 4/4
-- **Spieler-Ansicht als Gamepad** — Während der Runde wird das Handy zum Ein-Knopf-Controller: oben schmaler Statusstreifen (Geschwindigkeit, Phase), Mitte ein riesiger Boost-Knopf mit Abklingring, darunter der Rückspuler-Knopf mit Kontingent-Punkten. Querformat optional, Knopf immer unter dem Daumen. Nichts, was man versehentlich wegwischt. *Hinweis: Ohne Wake Lock geht der Bildschirm aus – Hinweis 'Bildschirm-Timeout verlängern' oder Trick mit stummem Video-Loop prüfen.*
-  <br>`ux-7` · Spieler-Ansicht · Aufwand mittel · HW ja · ★ 10 · V1 4/4
-- **Countdown-Ritual vor dem Start** — Wenn der Spielleiter freigibt, zählen alle Handys synchron 3-2-1 mit großem Zahlen-Zoom und Propeller-Anlaufgeräusch, der Motor startet mit sanfter Rampe genau auf 'Los'. Macht jede Runde zum Event. *Hinweis: Gilt nur bei 'Start nach Freigabe'; bei Hebel-direkt-Start kurzer Ersatz-Jingle.*
-  <br>`ux-34` · Animation / Sound · Aufwand klein · HW ja · ★ 10 · V1 4/4
-- **Wiederverbinden mit Platzgarantie** — Wenn ein Handy kurz wegfällt (Bildschirm aus, WLAN gewechselt), bleibt sein Huhn 60 s reserviert und auf den anderen Handys halbtransparent mit Sanduhr. Beim Zurückkehren 'Willkommen zurück, Federico!' und alles ist wie vorher. *Hinweis: Baut auf dem geplanten Sitzungstoken auf.*
-  <br>`ux-40` · Fehler- und Verbindungsanzeigen · Aufwand klein · HW ja · ★ 10 · V1 4/4
-- **Lobby-QR auf dem Handy des Spielleiters** — Der Spielleiter tippt 'Freunde einladen' und sein Handy zeigt bildschirmfüllend den WLAN-QR und danach den Steuerungs-QR. Neue Mitspieler scannen einfach das Handy statt unter dem Spiel nach dem Aufkleber zu suchen. Wechselt automatisch alle 4 s zwischen beiden Codes. *Hinweis: QR-Generator muss als kleine JS-Datei offline im Flash liegen (ca. 5–10 KB); WLAN-Passwort wird dabei sichtbar, Admin-Schalter zum Abschalten.*
-  <br>`ux-2` · Onboarding / Beitreten · Aufwand klein · HW ja · ★ 10 · V1 2/4
-- **Vorwarnung vor Rückwärtsstoß** — 0,5 s bevor ein (geplanter oder per Rückspuler ausgelöster) Rückwärtsstoß greift, färbt sich bei allen Handys der Rand rot und es ertönt ein 'Piep-Piep' wie beim rückwärtsfahrenden LKW. Gibt den Opfern eine winzige Chance und macht Rückwärts weniger frustrierend. *Hinweis: Verzögerung muss serverseitig eingeplant werden; WLAN-Latenz kann die Vorwarnung schrumpfen lassen. Optional als Admin-Schalter.*
-  <br>`ux-22` · Sound / Haptik · Aufwand klein · HW ja · ★ 9 · V1 4/4
-- **Captive-Portal-Rettungsseite mit Daumen-Animation** — Die Portalseite zeigt nur einen riesigen Knopf 'Im Browser öffnen' und eine animierte Hand, die bei iOS/Android jeweils den richtigen Weg zeigt ('Ohne Internet verbunden bleiben' antippen). Erkennt das Betriebssystem am User-Agent und zeigt nur die passende Anleitung. *Hinweis: Verhalten der Portal-Browser ändert sich mit OS-Versionen; im Prototyp mit echten Geräten prüfen.*
-  <br>`ux-3` · Onboarding / Beitreten · Aufwand mittel · HW ja · ★ 9 · V1 3/4
-- **Huhn wählen statt Platz wählen** — Beim Beitreten sieht man das Spielbrett von oben als Illustration mit vier Hühnern in den Originalfarben. Man tippt auf 'sein' Huhn, das gackert kurz und hüpft. Bereits vergebene Hühner tragen den Spitznamen bzw. das Emoji des Besitzers und sind ausgegraut. *Hinweis: Farben je Modell (Louie alt/neu, Chewie) unterschiedlich – Farbpalette pro Modellprofil hinterlegen.*
-  <br>`ux-4` · Onboarding / Beitreten · Aufwand klein · HW ja · ★ 9 · V1 2/4
-- **Halten-zum-Auslösen für mächtige Aktionen** — Rückspuler und andere starke Eingriffe lösen erst nach kurzem Gedrückthalten (ca. 300 ms) mit sich füllendem Ring aus. Verhindert Fehlauslösung in der Hosentasche und macht den Moment dramatischer. Boost bleibt ein schneller Tipp.
-  <br>`ux-9` · Spieler-Ansicht / Haptik · Aufwand klein · HW ja · ★ 8 · V1 4/4
-- **Ein QR für alles (Aufkleber-Duo als Bild-Story)** — Der Aufkleber zeigt nicht nur zwei nackte QR-Codes, sondern eine kleine Comic-Leiste: 1. Louie winkt ins WLAN, 2. Louie zeigt aufs Steuerpult. Kinder verstehen die Reihenfolge ohne Text, Erwachsene scannen einfach nacheinander. Optional ein dritter Mini-QR 'Hilfe', der eine im Flash liegende Anleitungsseite öffnet. *Hinweis: Hilfe-QR funktioniert nur, wenn man schon im Louie-WLAN ist; Druckqualität bei kleinem Aufkleber testen.*
-  <br>`ux-1` · Onboarding / Beitreten · Aufwand klein · HW ja · ★ 8 · V1 3/4
-- **Selbstmeldung 'Ich bin raus' mit Bestätigung** — Spieler können selbst 'Mein letzter Chip ist weg' wischen; der Spielleiter bekommt einen kleinen Bestätigungs-Toast. Nimmt dem Spielleiter Arbeit ab und funktioniert auch ohne Spielleiter (dann gilt die Selbstmeldung direkt). *Hinweis: Mogeln möglich – als Party-Feature eher Feature als Bug.*
-  <br>`ux-13` · Spieler-Ansicht · Aufwand klein · HW ja · ★ 8 · V1 2/4
-- **Namenswürfel für Spitznamen** — Statt Tastatur gibt es einen Würfel-Knopf, der lustige Hühnernamen generiert ('Gackerline', 'Federico', 'Rührei-Rudi'). Kinder ohne Lese-/Schreibkenntnis kommen so ohne Tippen ins Spiel, Erwachsene können überschreiben. Im Trinkspiel-Modus andere Wortliste ('Eierlikör-Eddi'). *Hinweis: Wortlisten klein halten (wenige KB).*
-  <br>`ux-5` · Onboarding / Kinderfreundlichkeit · Aufwand klein · HW ja · ★ 8 · V1 1/4
-- **Hebel-Spiegel im UI** — Das UI zeigt den echten Hebel als großen Kippschalter-Grafik, der sich live mitbewegt. Bei Fehlbedienung (Hebel steht beim Aufwecken auf An) wackelt die Grafik und zeigt die Richtung, in die man ihn legen muss. Bei Hebel-Gesten werden die Umlegungen live mitgezählt ('3 von 5 – weiter so'). *Hinweis: Hebel trennt den Motor in Reihe – ob die Elektronik den Hebelzustand bei getrenntem Motor sicher erkennt, hängt von der Schaltung ab (laut Konzept vorgesehen).*
-  <br>`ux-30` · Fehler- und Verbindungsanzeigen / Onboarding · Aufwand klein · HW ja · ★ 7 · V1 2/4
-- **Sieger-Konfetti und Ehrenrunde** — Wenn nur noch ein Huhn übrig ist und der Spielleiter das bestätigt, regnet es auf allen Handys Konfetti in der Siegerfarbe, das Großbild zeigt das Siegerhuhn mit Krone, und Louie dreht eine langsame Ehrenrunde, bevor er stoppt. *Hinweis: Ehrenrunde nur wenn Hebel noch an ist.*
-  <br>`ux-35` · Animation · Aufwand klein · HW ja · ★ 7 · V1 1/4
-- **Rückwärts-Budget sichtbar machen** — Ein kleiner gemeinsamer Balken für alle zeigt, wie viel Rückwärtsanteil der Runde (z. B. 10 %) schon verbraucht ist. Ist er leer, sind alle Rückspuler grau mit Hinweis 'Louie hat genug vom Rückwärtsfliegen'. Macht die serverseitigen Grenzen verständlich statt frustrierend.
-  <br>`ux-48` · Spieler-Ansicht / Fehleranzeigen · Aufwand klein · HW ja · ★ 7 · V1 1/4
-- **Spielleiter-Cockpit** — Der Spielleiter sieht oben eine Live-Kurve der Geschwindigkeit (letzte 30 s) mit markierten Rückwärtsstößen und Boosts, darunter vier Hühner-Kacheln zum Antippen 'ausgeschieden', unten breite Pause- und Stopp-Leiste. Wichtige Aktionen in Daumenreichweite, Stopp knallrot und mit Bestätigung durch Wischen. *Hinweis: Stopp im UI ist Software; echter Not-Aus bleibt der Hebel – UI sollte das ehrlich anzeigen.*
-  <br>`ux-10` · Spielleiter-Ansicht · Aufwand mittel · HW ja · ★ 7 · V1 0/4
-- **Nur ein Handy macht Lärm** — Damit nicht sechs Handys gleichzeitig gackern, gibt es eine Rolle 'Lautsprecher': Standardmäßig spielt nur das Großbild oder der Spielleiter Sound, Spieler-Handys geben nur ihre eigenen Rückmeldungen leise wieder. Umschaltbar im Lobby-Menü.
-  <br>`ux-20` · Sound / Ansagen · Aufwand klein · HW ja · ★ 7 · V1 0/4
-- **Status-LED-Alphabet** — Klar definierte Muster für die eine Status-LED: Herzschlag (doppelt kurz, Pause) = bereit im WLAN, langsames Atmen = Hotspot aktiv, schnelles Flackern = Fehler, Morse-artiges 'kurz-lang' = wartet auf Hebel-Bestätigung, dreimal Aufblitzen = Hebel-Geste erkannt, Glimmen = Akku schwach. Auf dem QR-Aufkleber ist eine Mini-Legende aufgedruckt. *Hinweis: Nur eine einfarbige LED – alles muss über Rhythmus und Helligkeit (PWM) laufen, nicht über Farbe.*
-  <br>`ux-31` · Status-LED-Sprache · Aufwand klein · HW ja · ★ 6 · V1 2/4
-- **Eltern-Bremse** — Im Kindermodus begrenzt ein eigener Regler die Höchstgeschwindigkeit und deaktiviert Rückspuler/Rückwärts komplett. Sichtbar durch ein kleines Schnuller-Symbol im Status, damit Erwachsene verstehen, warum alles gemütlicher ist. *Hinweis: Durchsetzen muss der Server über die vorhandenen Grenzwerte, nicht das UI.*
-  <br>`ux-25` · Kinderfreundlichkeit · Aufwand klein · HW ja · ★ 6 · V1 1/4
-- **Freundliche Fehler-Comics** — Jeder bekannte Fehlerzustand hat eine Mini-Illustration mit Louie: 'Hebel steht auf An' (Louie zeigt auf den Hebel), 'Akku schwach' (Louie schwitzt), 'Motor blockiert' (Louie hängt in einer Wippe fest), 'Treiberfehler' (Louie mit Schraubenschlüssel). Jeweils ein konkreter nächster Schritt. *Hinweis: Motor-blockiert-Erkennung über Strommessung ist möglich, Schwellen müssen am Prototyp kalibriert werden; Grafiken als SVG klein halten.*
-  <br>`ux-29` · Fehler- und Verbindungsanzeigen · Aufwand mittel · HW ja · ★ 6 · V1 1/4
-- **Bildschirm-bleibt-an-Hilfe** — Da Wake Lock ohne HTTPS fehlt, zeigt das UI beim ersten Spielen einen kurzen Tipp, wie man die Display-Zeit verlängert, und testet optional den Trick mit einem stummen, unsichtbaren Video-Loop, der viele Handys wach hält. *Hinweis: Video-Trick ist browserabhängig und kostet Handy-Akku; das Video muss im Flash liegen (sehr klein halten).*
-  <br>`ux-41` · Fehler- und Verbindungsanzeigen / UX · Aufwand klein · HW eingeschränkt · ★ 6 · V1 1/4
-- **Ausgeschieden-Bildschirm mit Rachefunktion** — Wer ausscheidet, sieht ein Huhn mit Pflaster und einen Fake-Trauerflor, dann wechselt der Bildschirm in den 'Geister-Modus' mit halbtransparentem Design und Boost-/Rückspul-Knöpfen (falls der Modus das erlaubt). Ausscheiden wird so zum Rollenwechsel statt zum Rausfliegen. *Hinweis: Ausscheiden muss der Spielleiter oder der Spieler selbst melden – die Elektronik sieht keine Chips.*
-  <br>`ux-12` · Spieler-Ansicht / Animation · Aufwand mittel · HW ja · ★ 6 · V1 0/4
-- **Zuschauer-Großbild (TV/Tablet-Modus)** — Eine eigene Ansicht /tv für ein Tablet oder einen Laptop am Fernseher: großer animierter Louie, der in Echtzeit mit der echten Geschwindigkeit und Richtung kreist, vier Hühner mit Chipstand, Event-Ticker ('Anna boostet!', 'Rudi spult zurück!'), Rundenzeit. Kein Bedienelement, nur Show. *Hinweis: Jeder TV-Client zählt als WebSocket-Verbindung; Smart-TV-Browser oft schwach – Tablet/Laptop als Ziel.*
-  <br>`ux-15` · Zuschauer-Großbild · Aufwand mittel · HW ja · ★ 6 · V1 0/4
-- **Hühnerfarben mit Muster für Farbenblinde** — Jede Hühnerfarbe bekommt zusätzlich ein Symbol oder Muster (Punkte, Streifen, Stern, Herz) und eine Form der Kachel. Rot/Grün-Schwäche ist so kein Problem, und Kinder können 'Ich bin das Sternhuhn' sagen.
-  <br>`ux-23` · Farben / Barrierefreiheit · Aufwand klein · HW ja · ★ 6 · V1 0/4
-- **Geschwindigkeits-Tacho als Hühnerstress-Barometer** — Statt Prozentanzeige ein Thermometer mit Hühnergesichtern: entspannt, nervös, panisch, Federn fliegen. Bei Rückwärtsfahrt dreht sich die Skala sichtbar um. Kinder verstehen Geschwindigkeit ohne Zahlen.
-  <br>`ux-36` · Design / Kinderfreundlichkeit · Aufwand klein · HW ja · ★ 6 · V1 0/4
-- **Akku-Anzeige als Louie-Tankanzeige** — Akkustand der Platine als Tankuhr am Flugzeug: voll, halb, Reserve. Bei Reserve sagt die Ansage 'Louie muss bald tanken – noch etwa 2 Runden'. Schätzung aus mittlerer Leistungsaufnahme pro Runde. *Hinweis: Rundenschätzung ungenau, als grobe Angabe kennzeichnen.*
-  <br>`ux-42` · Fehler- und Verbindungsanzeigen / Design · Aufwand klein · HW ja · ★ 5 · V1 2/4
-- **Schlaf-Bildschirm mit schnarchendem Louie** — Geht das Gerät in Schlaf, zeigen alle Handys einen schnarchenden Louie und 'Hebel umlegen zum Wecken'. Eine Minute vorher fragt ein gähnender Louie 'Noch eine Runde?' mit großem 'Wach bleiben'-Knopf.
-  <br>`ux-50` · Animation / Fehleranzeigen · Aufwand klein · HW ja · ★ 5 · V1 1/4
-- **Rückspuler als Kassetten-Knopf** — Der Rückspul-Knopf sieht aus wie eine alte Kassetten-Taste mit Doppelpfeil. Beim Drücken spult eine kleine Bandanimation zurück, auf allen anderen Handys erscheint kurz ein VHS-Rauschen mit dem Namen des Übeltäters ('Rudi spult zurück!'). Kontingent als kleine Kassetten-Symbole, Abklingzeit als sich füllendes Band. *Hinweis: Server entscheidet über Erfolg; UI muss 'abgelehnt (Abklingzeit/global gesperrt)' sauber anzeigen.*
-  <br>`ux-8` · Spieler-Ansicht / Animation · Aufwand mittel · HW ja · ★ 5 · V1 0/4
-- **Rollen-Farbcode im ganzen UI** — Jede Rolle hat eine Rahmenfarbe am Bildschirmrand: Gast grau, Spieler in der eigenen Hühnerfarbe, Spielleiter golden, Admin violett mit Schloss. Man sieht auf einen Blick, wessen Handy welche Macht hat – hilft auch beim Übergeben des Handys.
-  <br>`ux-11` · Bildschirmaufbau · Aufwand klein · HW ja · ★ 5 · V1 0/4
-- **Chip-Zähler per Antippen** — Jeder Spieler hat auf dem Handy drei Hühnerchip-Symbole und tippt einen weg, wenn er einen verliert. Das ergibt Live-Stand und Statistik, ohne Sensorik. Auf dem Großbild sieht man alle Chips aller Spieler. *Hinweis: Rein manuell; die Hardware erkennt Chipverluste nicht. Vergessene Eingaben verfälschen die Statistik.*
-  <br>`ux-14` · Spieler-Ansicht · Aufwand klein · HW eingeschränkt · ★ 5 · V1 0/4
-- **Ansager-Stimme über die Handys** — Das Handy des Spielleiters (oder das Großbild) sagt per Sprachsynthese an: 'Drei, zwei, eins – Louie hebt ab!', 'Achtung, Rückwärtsgang!', 'Gelb ist raus!'. Mehrere Stimm-Persönlichkeiten: Sportreporter, Flughafen-Durchsage, Bauernhof-Opa. *Hinweis: Web Speech API klingt je Gerät verschieden, braucht auf iOS eine Nutzergeste zum Freischalten; offline-Stimmen nicht auf allen Geräten vorhanden.*
-  <br>`ux-18` · Sound / Ansagen · Aufwand mittel · HW ja · ★ 5 · V1 0/4
-- **Synthetische Soundeffekte statt Audiodateien** — Propellerbrummen, Gackern, Rückspul-Quietschen und Boost-Zischen werden per Web Audio API im Browser erzeugt (Oszillatoren, Rauschen). Spart Flash und klingt bewusst retro. Das Propellergeräusch folgt der echten Geschwindigkeit in der Tonhöhe. *Hinweis: Flash-Budget ~100 KB komprimiert spricht gegen Samples; Web Audio braucht Nutzergeste zum Start.*
-  <br>`ux-19` · Sound / Ansagen · Aufwand mittel · HW ja · ★ 5 · V1 0/4
-- **Screenreader- und Großschrift-Unterstützung** — Saubere ARIA-Labels, Live-Regionen für Ansagen ('Runde läuft, Geschwindigkeit hoch'), respektiert Systemschriftgröße und 'Bewegung reduzieren'. Wer reduzierte Bewegung eingestellt hat, bekommt keine wackelnden Animationen und kein Bildschirmflackern.
-  <br>`ux-26` · Barrierefreiheit · Aufwand mittel · HW ja · ★ 5 · V1 0/4
-- **Gleichzeitige Rückspuler als Kollisions-Gag** — Drücken zwei Spieler fast gleichzeitig den Rückspuler, zählt nur einer (laut Konzept nicht addiert). Das UI macht daraus einen Gag: 'Bandsalat! Gelb war schneller', der Verlierer bekommt seinen Rückspuler zurück. *Hinweis: Rückgabe des Kontingents ist eine Spielregel-Entscheidung.*
-  <br>`ux-49` · Spieler-Ansicht / Animation · Aufwand klein · HW ja · ★ 5 · V1 0/4
-- **Vibrations-Sprache (Android) mit iOS-Ersatz** — Kurz-kurz = Boost bereit, lang = Rückwärtsstoß kommt, dreifach = du bist dran beim Partyspiel. Auf iOS, wo Vibration im Browser fehlt, blitzt stattdessen der Bildschirmrand in der Hühnerfarbe und es klickt leise. *Hinweis: navigator.vibrate geht nur auf Android; iOS-Ersatz rein visuell/akustisch.*
-  <br>`ux-21` · Haptik · Aufwand klein · HW eingeschränkt · ★ 4 · V1 1/4
-- **Kindermodus: Bilder statt Text** — Ein Schalter in der Lobby macht das UI bilderbasiert: Icons statt Wörter, größere Knöpfe (≥ 72 px), keine Zahlen, nur 'langsam/schnell'-Schnecke-Rakete-Skala, keine Abbruch-Dialoge mit Kleingedrucktem. Gefährliche Menüs (Admin, Modus-Editor) komplett ausgeblendet.
-  <br>`ux-24` · Kinderfreundlichkeit · Aufwand mittel · HW ja · ★ 4 · V1 0/4
-- **Handy weitergeben-Modus** — Für Runden mit nur einem oder zwei Handys: Das UI wechselt nach jeder Aktion auf einen Bildschirm 'Gib das Handy an Grün weiter' mit großem Farbbanner. Ein Handy reicht so für alle Spieler.
-  <br>`ux-39` · Bildschirmaufbau · Aufwand klein · HW ja · ★ 4 · V1 0/4
-- **Erstes-Mal-Tutorial als Probeflug** — Beim ersten Öffnen bietet das UI einen 30-Sekunden-Probeflug: Louie fliegt langsam, das Handy erklärt mit Sprechblasen 'Das ist dein Boost – probier ihn!', 'Das ist der Rückspuler – nur sparsam!'. Danach ein Häkchen 'Kenne ich schon' pro Gerät im localStorage. *Hinweis: Braucht Hebel an; Rückspuler-Demo in Mini-Dosis innerhalb der Rückwärts-Grenzen.*
-  <br>`ux-43` · Onboarding · Aufwand mittel · HW ja · ★ 4 · V1 0/4
-- **Emoji-Reaktionen in Echtzeit** — Spieler und Zuschauer können Emojis werfen (Huhn, Lachen, Wut, Bier), die auf dem Großbild über den Bildschirm fliegen. Ratenbegrenzt, damit der ESP nicht geflutet wird. *Hinweis: Jede Reaktion ist eine WebSocket-Nachricht; serverseitig drosseln (z. B. 1 pro 2 s pro Client).*
-  <br>`ux-45` · Zuschauer-Großbild / Party · Aufwand klein · HW ja · ★ 4 · V1 0/4
-- **Sprache und Ton pro Gerät merken** — Jedes Handy merkt sich Lautstärke, Ansager-Stimme, Kindermodus, Kontrast und Hand (Links-/Rechtshänder, spiegelt Knopf-Anordnung) lokal. Kein Konto nötig, aber beim nächsten Abend ist alles wie gewohnt. *Hinweis: localStorage kann im privaten Modus leer sein – UI muss ohne funktionieren.*
-  <br>`ux-46` · Barrierefreiheit / UX · Aufwand klein · HW ja · ★ 4 · V1 0/4
-- **Druckbare Spielkarte mit Legende** — Im UI lässt sich eine A6-Karte zum Ausdrucken öffnen: QR-Codes, LED-Muster-Legende, Hebel-Gesten (5× = Hotspot, 10× = Passwort-Reset) und Notfall-Tipps. Liegt dann in der Spielschachtel. *Hinweis: Hebel-Gesten-Info nicht offen auf die Karte, wenn Kinder den Reset nicht kennen sollen – Admin-Option.*
-  <br>`ux-52` · Onboarding / Barrierefreiheit · Aufwand klein · HW ja · ★ 4 · V1 0/4
-- **Hoher-Kontrast- und Partylicht-Modus** — Ein Modus mit extrem großen Zahlen und Schwarz/Gelb für schummrige Partyräume, plus ein 'Discomodus', bei dem der Handybildschirm im Takt der Motorgeschwindigkeit in der Hühnerfarbe pulsiert und als Tischbeleuchtung dient. *Hinweis: Discomodus: Warnhinweis für Fotosensitivität, Blinkfrequenz begrenzen.*
-  <br>`ux-27` · Design / Barrierefreiheit · Aufwand klein · HW ja · ★ 3 · V1 0/4
-- **Ereignis-Ticker mit Schadenfreude-Statistik** — Am Rundenende zeigt jedes Handy eine kleine Karte: 'Du hast 2× zurückgespult, Anna hat danach einen Chip verloren (vielleicht wegen dir)'. Verbindung aus Zeitstempeln von Rückspuler und gemeldetem Chipverlust, mit Augenzwinkern formuliert. *Hinweis: Kausalität ist geraten, da Chipverluste nur manuell gemeldet werden.*
-  <br>`ux-44` · Spieler-Ansicht / Party · Aufwand mittel · HW eingeschränkt · ★ 3 · V1 0/4
-- **Mehrere Louies im Raum unterscheiden** — Wenn zwei Spiele im Raum sind (louie-a3f2, louie-91bc), bekommt jedes Gerät automatisch einen Namen und eine Akzentfarbe ('Louie Blau', 'Chewie Orange'). Ein Knopf 'Welcher bin ich?' lässt die Status-LED des gewählten Geräts wild blinken.
-  <br>`ux-51` · Onboarding / Status-LED-Sprache · Aufwand klein · HW ja · ★ 3 · V1 0/4
-- **LED zählt Spieler mit** — Beim Beitreten eines Handys blinkt die LED so oft, wie Spieler verbunden sind. So merkt man am Tisch ohne Blick aufs Handy, dass 'der Neue' drin ist. *Hinweis: LED sitzt im Batteriefach – Sichtbarkeit im eingebauten Zustand prüfen (ggf. Lichtleiter).*
-  <br>`ux-32` · Status-LED-Sprache · Aufwand klein · HW ja · ★ 2 · V1 0/4
-- **Themen-Skins je Modell** — Je nach Modellprofil ändert sich das ganze UI: Louie alt = Bauernhof in Pastell, Louie neu = knallig-modern, Chewie = Weltraum mit Sternen und Laser-Sounds. Später freischaltbare Skins (Halloween, Weihnachten, Oktoberfest). *Hinweis: Kein Markenmaterial einbauen (Rechte); eigene Illustrationen. Flash-Budget im Blick behalten.*
-  <br>`ux-37` · Design · Aufwand mittel · HW ja · ★ 2 · V1 0/4
-- **Trinkspiel-Haube** — Ein Admin- oder Spielleiter-Schalter blendet eine Trinkspiel-Schicht ein: beim Rückspuler erscheint auf dem Handy des Verursachers 'Prost auf deine Gemeinheit', bei Chipverlust ein Becher-Symbol. Optisch abgedunkeltes 'Bar'-Design. Im Kindermodus ist die Haube gesperrt und unsichtbar. *Hinweis: Verantwortungsvolle Formulierung, alkoholfreie Alternative ('Wasser/Schluck/Strafaufgabe') gleichberechtigt anbieten.*
-  <br>`ux-38` · Design / Party · Aufwand mittel · HW ja · ★ 2 · V1 0/4
-- **Admin-Bereich als 'Hangar'** — Der Admin-Bereich ist optisch klar abgesetzt als Flugzeughangar mit Werkzeugwand: jede Kachel ein Werkzeug (WLAN-Antenne, Tacho für Grenzen, Rückwärtsgang-Hebel, Batterie). Kritische Einstellungen haben ein gelb-schwarzes Warnband und erklären in einem Satz, was passiert.
-  <br>`ux-47` · Bildschirmaufbau / Design · Aufwand mittel · HW ja · ★ 2 · V1 0/4
-- **Großbild-Wiederholung des letzten Rückwärtsstoßes** — Nach jedem Rückspuler zeigt das Großbild eine kurze Zeitlupen-Animation des simulierten Louie inkl. Name des Verursachers und Kommentatorstimme. Die Elektronik liefert nur Zeit und Richtung, die Animation ist komplett im Browser berechnet. *Hinweis: Animation ist Simulation, nicht echte Flugzeugposition – die Elektronik kennt die Position nicht.*
-  <br>`ux-16` · Zuschauer-Großbild / Animation · Aufwand mittel · HW ja · ★ 1 · V1 0/4
-- **Louie-Position schätzen (Umdrehungszähler aus Strom)** — Das Großbild zeigt Louie an einer geschätzten Position, abgeleitet aus Geschwindigkeit und Zeit, eventuell korrigiert durch Stromspitzen, wenn das Flugzeug eine Wippe trifft. Wirkt live, ist aber nur eine Näherung. *Hinweis: Ohne Positionssensor driftet die Schätzung; Stromspitzen-Erkennung ist unsicher und müsste erst am Prototyp erforscht werden.*
-  <br>`ux-17` · Zuschauer-Großbild · Aufwand groß · HW eingeschränkt · ★ 0 · V1 0/4
-- **Motor als Lautsprecher und Signalgeber** — Der Motor 'zuckt' als Feedback ohne Handy: zwei kurze Ruckler = WLAN verbunden, ein langes Summen per hörbarer PWM-Frequenz = Fehler. Mit tieffrequenter PWM kann der Motor sogar leise Töne pfeifen (Startmelodie beim Einschalten). *Hinweis: Funktioniert nur bei Hebel an (Motor in Reihe mit dem Hebel); hörbare PWM erhöht Verluste – nur kurz einsetzen.*
-  <br>`ux-33` · Status-LED-Sprache / Haptik · Aufwand mittel · HW eingeschränkt · ★ 0 · V1 0/4
+- **Connection traffic light with honest wording** — Top right a small Louie icon: green = connected, yellow flashing = reconnecting, red = gone. Tapping shows plain text ('Your phone has left the Louie Wi-Fi – probably because it has no internet. Tap here to return.') instead of error codes.
+  <br>`ux-28` · Error and connection indicators · effort small · HW yes · ★ 11 · V1 4/4
+- **Three-second onboarding for guests** — Whoever is only watching lands immediately on a view with a large status and a single button 'Join game'. No menus, no hamburger, no settings visible. Everything else only appears once you have a role (progressive disclosure).
+  <br>`ux-6` · Screen layout · effort small · HW yes · ★ 10 · V1 4/4
+- **Player view as gamepad** — During the round the phone becomes a one-button controller: at the top a narrow status strip (speed, phase), in the middle a huge boost button with cooldown ring, below it the rewind button with allowance dots. Landscape optional, button always under the thumb. Nothing that can be swiped away by accident. *Note: Without Wake Lock the screen turns off – check a hint 'extend screen timeout' or the trick with a silent video loop.*
+  <br>`ux-7` · Player view · effort medium · HW yes · ★ 10 · V1 4/4
+- **Countdown ritual before the start** — When the game master releases, all phones count 3-2-1 in sync with a large number zoom and a propeller start-up sound; the motor starts with a gentle ramp exactly on 'Go'. Makes every round an event. *Note: Only applies to 'start after release'; with direct lever start a short substitute jingle.*
+  <br>`ux-34` · Animation / sound · effort small · HW yes · ★ 10 · V1 4/4
+- **Reconnect with seat guarantee** — If a phone drops out briefly (screen off, Wi-Fi changed), its chicken stays reserved for 60 s and appears semi-transparent with an hourglass on the other phones. On return 'Welcome back, Federico!' and everything is as before. *Note: Builds on the planned session token.*
+  <br>`ux-40` · Error and connection indicators · effort small · HW yes · ★ 10 · V1 4/4
+- **Lobby QR on the game master's phone** — The game master taps 'Invite friends' and his phone shows the Wi-Fi QR full screen and then the control QR. New players simply scan the phone instead of searching for the sticker under the game. Switches automatically every 4 s between the two codes. *Note: The QR generator must be stored offline in flash as a small JS file (approx. 5–10 KB); the Wi-Fi password becomes visible in the process, admin switch to turn it off.*
+  <br>`ux-2` · Onboarding / joining · effort small · HW yes · ★ 10 · V1 2/4
+- **Warning before a reverse kick** — 0.5 s before a reverse kick (planned or triggered by a rewind) takes effect, the border turns red on all phones and a 'beep-beep' sounds like a reversing truck. Gives the victims a tiny chance and makes reverse less frustrating. *Note: The delay must be scheduled on the server; Wi-Fi latency can shrink the warning. Optional as an admin switch.*
+  <br>`ux-22` · Sound / haptics · effort small · HW yes · ★ 9 · V1 4/4
+- **Captive portal rescue page with thumb animation** — The portal page shows only a huge button 'Open in browser' and an animated hand that shows the right way on iOS/Android ('Stay connected without internet'). Detects the operating system from the user agent and shows only the matching instructions. *Note: Portal browser behavior changes with OS versions; check with real devices on the prototype.*
+  <br>`ux-3` · Onboarding / joining · effort medium · HW yes · ★ 9 · V1 3/4
+- **Pick a chicken instead of a seat** — When joining you see the game board from above as an illustration with four chickens in the original colors. You tap 'your' chicken, it clucks briefly and hops. Chickens already taken carry the owner's nickname or emoji and are greyed out. *Note: Colors differ per model (Louie old/new, Chewie) – store a color palette per model profile.*
+  <br>`ux-4` · Onboarding / joining · effort small · HW yes · ★ 9 · V1 2/4
+- **Hold to trigger for powerful actions** — Rewind and other strong interventions only trigger after a short hold (approx. 300 ms) with a filling ring. Prevents accidental triggering in the pocket and makes the moment more dramatic. Boost stays a quick tap.
+  <br>`ux-9` · Player view / haptics · effort small · HW yes · ★ 8 · V1 4/4
+- **One QR for everything (sticker duo as picture story)** — The sticker shows not just two bare QR codes but a small comic strip: 1. Louie waves into the Wi-Fi, 2. Louie points to the control panel. Children understand the order without text, adults simply scan one after the other. Optionally a third mini QR 'Help' that opens a guide page stored in flash. *Note: The help QR only works if you are already in the Louie Wi-Fi; test print quality on a small sticker.*
+  <br>`ux-1` · Onboarding / joining · effort small · HW yes · ★ 8 · V1 3/4
+- **Self-report 'I'm out' with confirmation** — Players can swipe 'My last chip is gone' themselves; the game master gets a small confirmation toast. Takes work off the game master and also works without a game master (then the self-report applies directly). *Note: Cheating possible – as a party feature more feature than bug.*
+  <br>`ux-13` · Player view · effort small · HW yes · ★ 8 · V1 2/4
+- **Name dice for nicknames** — Instead of a keyboard there is a dice button that generates funny chicken names (e.g. 'Cluckerella', 'Federico', 'Scrambled Sam'). Children who cannot read or write get into the game without typing, adults can overwrite. In drinking game mode a different word list (e.g. 'Eggnog Eddie'). *Note: Keep word lists small (a few KB).*
+  <br>`ux-5` · Onboarding / child-friendliness · effort small · HW yes · ★ 8 · V1 1/4
+- **Lever mirror in the UI** — The UI shows the real lever as a large toggle switch graphic that moves live. On misuse (lever is on when waking up) the graphic wobbles and shows the direction in which to flip it. With lever gestures the flips are counted live ('3 of 5 – keep going'). *Note: The lever disconnects the motor in series – whether the electronics reliably detect the lever state with the motor disconnected depends on the circuit (planned according to the concept).*
+  <br>`ux-30` · Error and connection indicators / onboarding · effort small · HW yes · ★ 7 · V1 2/4
+- **Winner confetti and lap of honor** — When only one chicken is left and the game master confirms it, confetti in the winner's color rains on all phones, the big screen shows the winning chicken with a crown, and Louie flies a slow lap of honor before stopping. *Note: Lap of honor only if the lever is still on.*
+  <br>`ux-35` · Animation · effort small · HW yes · ★ 7 · V1 1/4
+- **Make the reverse budget visible** — A small shared bar for everyone shows how much of the round's reverse share (e.g. 10 %) has been used. When it is empty, all rewinds are grey with the hint 'Louie has had enough of flying backwards'. Makes the server-side limits understandable instead of frustrating.
+  <br>`ux-48` · Player view / error indicators · effort small · HW yes · ★ 7 · V1 1/4
+- **Game master cockpit** — At the top the game master sees a live speed curve (last 30 s) with marked reverse kicks and boosts, below four chicken tiles to tap 'eliminated', at the bottom a wide pause and stop bar. Important actions within thumb reach, stop bright red and confirmed by swiping. *Note: Stop in the UI is software; the real emergency stop stays the lever – the UI should show this honestly.*
+  <br>`ux-10` · Game master view · effort medium · HW yes · ★ 7 · V1 0/4
+- **Only one phone makes noise** — So that six phones do not cluck at the same time, there is a 'speaker' role: by default only the big screen or the game master plays sound; player phones only play their own feedback quietly. Switchable in the lobby menu.
+  <br>`ux-20` · Sound / announcements · effort small · HW yes · ★ 7 · V1 0/4
+- **Status LED alphabet** — Clearly defined patterns for the single status LED: heartbeat (double short, pause) = ready on Wi-Fi, slow breathing = hotspot active, fast flicker = error, Morse-like 'short-long' = waiting for lever confirmation, three flashes = lever gesture detected, glow = battery low. A mini legend is printed on the QR sticker. *Note: Only one single-color LED – everything must work via rhythm and brightness (PWM), not color.*
+  <br>`ux-31` · Status LED language · effort small · HW yes · ★ 6 · V1 2/4
+- **Parent brake** — In kids mode a separate slider limits the top speed and disables rewinds/reverse completely. Visible through a small pacifier icon in the status, so adults understand why everything is more relaxed. *Note: The server must enforce this via the existing limits, not the UI.*
+  <br>`ux-25` · Child-friendliness · effort small · HW yes · ★ 6 · V1 1/4
+- **Friendly error comics** — Each known error state has a mini illustration with Louie: 'Lever is on' (Louie points at the lever), 'Battery low' (Louie sweats), 'Motor blocked' (Louie is stuck in a paddle), 'Driver fault' (Louie with a wrench). Each with a concrete next step. *Note: Motor-blocked detection via current measurement is possible, thresholds must be calibrated on the prototype; keep graphics small as SVG.*
+  <br>`ux-29` · Error and connection indicators · effort medium · HW yes · ★ 6 · V1 1/4
+- **Screen-stays-on help** — Since Wake Lock is missing without HTTPS, the UI shows a short tip the first time you play on how to extend the display timeout, and optionally tests the trick with a silent, invisible video loop that keeps many phones awake. *Note: The video trick depends on the browser and costs phone battery; the video must be in flash (keep it very small).*
+  <br>`ux-41` · Error and connection indicators / UX · effort small · HW limited · ★ 6 · V1 1/4
+- **Eliminated screen with revenge feature** — Whoever is eliminated sees a chicken with a band-aid and a fake mourning ribbon, then the screen switches to 'ghost mode' with a semi-transparent design and boost/rewind buttons (if the mode allows it). Elimination becomes a role change instead of being kicked out. *Note: The game master or the player must report elimination – the electronics cannot see chips.*
+  <br>`ux-12` · Player view / animation · effort medium · HW yes · ★ 6 · V1 0/4
+- **Spectator big screen (TV/tablet mode)** — A separate view /tv for a tablet or a laptop on the TV: large animated Louie circling in real time with the real speed and direction, four chickens with chip count, event ticker ('Anna boosts!', 'Rudi rewinds!'), round time. No controls, just show. *Note: Each TV client counts as a WebSocket connection; smart TV browsers are often weak – target tablet/laptop.*
+  <br>`ux-15` · Spectator big screen · effort medium · HW yes · ★ 6 · V1 0/4
+- **Chicken colors with patterns for color-blind players** — Each chicken color also gets a symbol or pattern (dots, stripes, star, heart) and a tile shape. Red/green weakness is then no problem, and children can say 'I'm the star chicken'.
+  <br>`ux-23` · Colors / accessibility · effort small · HW yes · ★ 6 · V1 0/4
+- **Speedometer as chicken stress barometer** — Instead of a percentage display, a thermometer with chicken faces: relaxed, nervous, panicked, feathers flying. In reverse the scale visibly flips. Children understand speed without numbers.
+  <br>`ux-36` · Design / child-friendliness · effort small · HW yes · ★ 6 · V1 0/4
+- **Battery display as Louie fuel gauge** — Battery level of the board as a fuel gauge on the plane: full, half, reserve. At reserve the announcement says 'Louie needs to refuel soon – about 2 rounds left'. Estimate from average power consumption per round. *Note: Round estimate is imprecise; mark it as a rough figure.*
+  <br>`ux-42` · Error and connection indicators / design · effort small · HW yes · ★ 5 · V1 2/4
+- **Sleep screen with snoring Louie** — When the device goes to sleep, all phones show a snoring Louie and 'Flip the lever to wake'. One minute before, a yawning Louie asks 'One more round?' with a large 'Stay awake' button.
+  <br>`ux-50` · Animation / error indicators · effort small · HW yes · ★ 5 · V1 1/4
+- **Rewind as cassette button** — The rewind button looks like an old cassette key with a double arrow. When pressed, a small tape animation rewinds; all other phones briefly show VHS noise with the culprit's name ('Rudi rewinds!'). Allowance as small cassette icons, cooldown as a filling tape. *Note: The server decides on success; the UI must show 'rejected (cooldown/globally locked)' cleanly.*
+  <br>`ux-8` · Player view / animation · effort medium · HW yes · ★ 5 · V1 0/4
+- **Role color code across the UI** — Each role has a frame color at the screen edge: guest grey, player in their own chicken color, game master gold, admin violet with a lock. You see at a glance whose phone has which power – also helps when handing the phone over.
+  <br>`ux-11` · Screen layout · effort small · HW yes · ★ 5 · V1 0/4
+- **Chip counter by tapping** — Each player has three chicken chip icons on the phone and taps one away when losing one. This gives live standings and statistics without sensors. The big screen shows all chips of all players. *Note: Purely manual; the hardware does not detect chip losses. Forgotten inputs distort the statistics.*
+  <br>`ux-14` · Player view · effort small · HW limited · ★ 5 · V1 0/4
+- **Announcer voice via the phones** — The game master's phone (or the big screen) announces via speech synthesis: 'Three, two, one – Louie takes off!', 'Watch out, reverse gear!', 'Yellow is out!'. Several voice personalities: sports reporter, airport announcement, farmyard grandpa. *Note: Web Speech API sounds different on each device, needs a user gesture on iOS to unlock; offline voices are not available on all devices.*
+  <br>`ux-18` · Sound / announcements · effort medium · HW yes · ★ 5 · V1 0/4
+- **Synthetic sound effects instead of audio files** — Propeller hum, clucking, rewind squeak and boost hiss are generated in the browser via the Web Audio API (oscillators, noise). Saves flash and sounds deliberately retro. The propeller sound follows the real speed in pitch. *Note: Flash budget ~100 KB compressed argues against samples; Web Audio needs a user gesture to start.*
+  <br>`ux-19` · Sound / announcements · effort medium · HW yes · ★ 5 · V1 0/4
+- **Screen reader and large text support** — Clean ARIA labels, live regions for announcements ('Round running, speed high'), respects system font size and 'reduce motion'. Whoever has set reduced motion gets no wobbling animations and no screen flicker.
+  <br>`ux-26` · Accessibility · effort medium · HW yes · ★ 5 · V1 0/4
+- **Simultaneous rewinds as collision gag** — If two players press rewind almost at the same time, only one counts (not added up, per the concept). The UI turns this into a gag: 'Tape tangle! Yellow was faster', the loser gets their rewind back. *Note: Returning the allowance is a game rule decision.*
+  <br>`ux-49` · Player view / animation · effort small · HW yes · ★ 5 · V1 0/4
+- **Vibration language (Android) with iOS substitute** — Short-short = boost ready, long = reverse kick coming, triple = your turn in the party game. On iOS, where vibration is missing in the browser, the screen edge flashes in the chicken color instead and there is a quiet click. *Note: navigator.vibrate only works on Android; iOS substitute purely visual/acoustic.*
+  <br>`ux-21` · Haptics · effort small · HW limited · ★ 4 · V1 1/4
+- **Kids mode: pictures instead of text** — A switch in the lobby makes the UI picture-based: icons instead of words, larger buttons (≥ 72 px), no numbers, only a 'slow/fast' snail-rocket scale, no cancel dialogs with small print. Dangerous menus (admin, mode editor) completely hidden.
+  <br>`ux-24` · Child-friendliness · effort medium · HW yes · ★ 4 · V1 0/4
+- **Pass-the-phone mode** — For rounds with only one or two phones: after each action the UI switches to a screen 'Pass the phone to Green' with a large color banner. So one phone is enough for all players.
+  <br>`ux-39` · Screen layout · effort small · HW yes · ★ 4 · V1 0/4
+- **First-time tutorial as test flight** — On first opening, the UI offers a 30-second test flight: Louie flies slowly, the phone explains with speech bubbles 'This is your boost – try it!', 'This is the rewind – use it sparingly!'. Afterwards a checkmark 'Already know it' per device in localStorage. *Note: Needs lever on; rewind demo in a mini dose within the reverse limits.*
+  <br>`ux-43` · Onboarding · effort medium · HW yes · ★ 4 · V1 0/4
+- **Emoji reactions in real time** — Players and spectators can throw emojis (chicken, laughter, anger, beer) that fly across the big screen. Rate-limited so the ESP is not flooded. *Note: Each reaction is a WebSocket message; throttle on the server (e.g. 1 per 2 s per client).*
+  <br>`ux-45` · Spectator big screen / party · effort small · HW yes · ★ 4 · V1 0/4
+- **Remember language and sound per device** — Each phone remembers volume, announcer voice, kids mode, contrast and hand (left-/right-handed, mirrors button layout) locally. No account needed, but the next evening everything is as usual. *Note: localStorage can be empty in private mode – the UI must work without it.*
+  <br>`ux-46` · Accessibility / UX · effort small · HW yes · ★ 4 · V1 0/4
+- **Printable game card with legend** — In the UI an A6 card can be opened for printing: QR codes, LED pattern legend, lever gestures (5× = hotspot, 10× = password reset) and emergency tips. It then lives in the game box. *Note: Do not put the lever gesture info openly on the card if children should not know the reset – admin option.*
+  <br>`ux-52` · Onboarding / accessibility · effort small · HW yes · ★ 4 · V1 0/4
+- **High-contrast and party-light mode** — A mode with extremely large numbers and black/yellow for dim party rooms, plus a 'disco mode' in which the phone screen pulses in the chicken color in time with the motor speed and serves as table lighting. *Note: Disco mode: photosensitivity warning, limit flash frequency.*
+  <br>`ux-27` · Design / accessibility · effort small · HW yes · ★ 3 · V1 0/4
+- **Event ticker with gloating statistics** — At round end each phone shows a small card: 'You rewound 2×, Anna lost a chip afterwards (maybe because of you)'. Connection from timestamps of rewind and reported chip loss, phrased with a wink. *Note: Causality is guessed, since chip losses are only reported manually.*
+  <br>`ux-44` · Player view / party · effort medium · HW limited · ★ 3 · V1 0/4
+- **Tell several Louies in the room apart** — If there are two games in the room (louie-a3f2, louie-91bc), each device automatically gets a name and an accent color ('Louie Blue', 'Chewie Orange'). A button 'Which one am I?' makes the status LED of the selected device flash wildly.
+  <br>`ux-51` · Onboarding / status LED language · effort small · HW yes · ★ 3 · V1 0/4
+- **LED counts players** — When a phone joins, the LED flashes as many times as players are connected. So you notice at the table without looking at the phone that 'the new one' is in. *Note: The LED sits in the battery compartment – check visibility when installed (possibly light guide).*
+  <br>`ux-32` · Status LED language · effort small · HW yes · ★ 2 · V1 0/4
+- **Theme skins per model** — Depending on the model profile, the whole UI changes: old Louie = farm in pastel, new Louie = bright and modern, Chewie = space with stars and laser sounds. Later unlockable skins (Halloween, Christmas, Oktoberfest). *Note: Do not include brand material (rights); own illustrations. Keep an eye on the flash budget.*
+  <br>`ux-37` · Design · effort medium · HW yes · ★ 2 · V1 0/4
+- **Drinking game overlay** — An admin or game master switch shows a drinking game layer: on a rewind the culprit's phone shows 'Cheers to your meanness', on chip loss a cup icon. Visually darkened 'bar' design. In kids mode the overlay is locked and invisible. *Note: Responsible wording; offer an alcohol-free alternative ('water/sip/penalty task') on equal terms.*
+  <br>`ux-38` · Design / party · effort medium · HW yes · ★ 2 · V1 0/4
+- **Admin area as 'hangar'** — The admin area is visually clearly set apart as an aircraft hangar with a tool wall: each tile a tool (Wi-Fi antenna, speedometer for limits, reverse gear lever, battery). Critical settings have a yellow-black warning stripe and explain in one sentence what happens.
+  <br>`ux-47` · Screen layout / design · effort medium · HW yes · ★ 2 · V1 0/4
+- **Big-screen replay of the last reverse kick** — After each rewind the big screen shows a short slow-motion animation of the simulated Louie, including the culprit's name and a commentator voice. The electronics only supply time and direction; the animation is computed entirely in the browser. *Note: The animation is a simulation, not the real plane position – the electronics do not know the position.*
+  <br>`ux-16` · Spectator big screen / animation · effort medium · HW yes · ★ 1 · V1 0/4
+- **Estimate Louie's position (revolution counter from current)** — The big screen shows Louie at an estimated position, derived from speed and time, possibly corrected by current spikes when the plane hits a paddle. Looks live, but is only an approximation. *Note: Without a position sensor the estimate drifts; current spike detection is uncertain and would first have to be researched on the prototype.*
+  <br>`ux-17` · Spectator big screen · effort large · HW limited · ★ 0 · V1 0/4
+- **Motor as speaker and signal device** — The motor 'twitches' as feedback without a phone: two short jolts = Wi-Fi connected, a long hum at an audible PWM frequency = error. With low-frequency PWM the motor can even whistle quiet tones (start melody at power-on). *Note: Only works with lever on (motor in series with the lever); audible PWM increases losses – use only briefly.*
+  <br>`ux-33` · Status LED language / haptics · effort medium · HW limited · ★ 0 · V1 0/4
 
-### 5.4 Besitzer- und Admin-Einstellungen (41)
+### 5.4 Owner and admin settings (41)
 
-- **Tempo-Deckel als großer Schieberegler** — Ein einziger, prominenter Regler "Maximal so schnell" mit Vorschau-Animation des Fliegers, der alles andere (Modi, Boosts, Turbo) nach oben begrenzt. Darunter ein Satz in Klartext, z. B. "Louie fährt höchstens wie im Original". Eltern verstehen das sofort, ohne Volt oder Prozent. *Hinweis: Technisch nur eine Umrechnung auf die bestehenden Grenzwerte; Kalibrierung pro Modell nötig.*
-  <br>`besitzer-3` · Profile & Grenzen · Aufwand klein · HW ja · ★ 8 · V1 3/4
-- **QR-Code-Wand: Einladung auf dem Handy teilen** — Ein Admin- oder Spielleiter-Bildschirm zeigt riesig die zwei QR-Codes (WLAN beitreten, Steuerung öffnen) plus Kurzanleitung, damit man das Handy einfach in die Tischmitte legen kann. Optional mit Platzwahl-Link, der direkt Platz 3 reserviert. *Hinweis: QR-Erzeugung im Browser per kleiner JS-Bibliothek, offline im Flash.*
-  <br>`besitzer-14` · WLAN & Netzwerk · Aufwand klein · HW ja · ★ 7 · V1 2/4
-- **Profil-Schnellwahl: Kinder / Familie / Party / Erwachsene** — Vier große Kacheln im Admin-Bereich stellen mit einem Tipp ein ganzes Paket um: Geschwindigkeitsbereich, Rückwärts-Grenzen, Rückspuler-Kontingent, erlaubte Modi und ob Trinkspiel-Inhalte sichtbar sind. Der Besitzer muss nicht 30 Regler kennen, sondern wählt nur "Heute kommen die Nichten". Einzelwerte lassen sich danach trotzdem anpassen und das Paket als eigenes Profil speichern. *Hinweis: Baut auf den vorhandenen Admin-Grenzen auf; braucht klare Regel, was ein Profil überschreibt und was nicht.*
-  <br>`besitzer-1` · Profile & Grenzen · Aufwand mittel · HW ja · ★ 7 · V1 1/4
-- **Blockierschutz mit einstellbarer Empfindlichkeit** — Steigt der Motorstrom stark an (Finger, Arm verkeilt, Kind hält den Flieger fest), stoppt der Motor sofort und meldet das im UI. Der Besitzer stellt die Empfindlichkeit ein und ob danach automatisch weitergefahren oder auf Freigabe gewartet wird. Im Kinderprofil immer streng. *Hinweis: Wichtig auch gegen Überhitzung von Motor und H-Brücke; Rückwärtsstöße und Anlauf erzeugen ebenfalls Stromspitzen, Schwelle muss das unterscheiden.*
-  <br>`besitzer-23` · Hardware-Sicherheit · Aufwand mittel · HW ja · ★ 7 · V1 1/4
-- **Akku-Schutzeinstellungen** — Admin sieht Akkuzustand mit Ladezyklen-Schätzung und stellt Unterspannungs-Warnung, sanftes Rundenende und Abschaltschwelle ein. Option "Akkuschonend": Turbo nur oberhalb einer Mindestspannung, damit der Akku nicht leergesaugt wird und kein Brownout den ESP neu startet. *Hinweis: Abschaltschwelle nach unten hart begrenzen, damit LiPo nicht tiefentladen werden kann.*
-  <br>`besitzer-24` · Hardware-Sicherheit · Aufwand klein · HW ja · ★ 6 · V1 1/4
-- **Not-Aus-Knopf auf jedem Handy** — Admin kann einschalten, dass jedes verbundene Handy (nicht nur Spielleiter) einen roten Stopp-Knopf hat. Missbrauch wird protokolliert, und nach einem Stopp startet die Runde erst wieder über den Hebel. Im Kinderprofil standardmäßig an. *Hinweis: Hebel bleibt der eigentliche, softwareunabhängige Not-Aus.*
-  <br>`besitzer-26` · Hardware-Sicherheit · Aufwand klein · HW ja · ★ 6 · V1 1/4
-- **Trinkspiel-Freischaltung mit Altersbestätigung** — Trinkspiel-Inhalte (Regeln, Strafansagen, Modus-Texte) sind standardmäßig unsichtbar. Der Admin schaltet sie bewusst frei, bestätigt "alle Teilnehmenden sind volljährig" und kann sie an ein Ortsprofil oder Zeitfenster binden. Im Kinderprofil ist die Freischaltung nicht möglich. *Hinweis: Reine Selbstauskunft, kein echter Altersnachweis; ehrlich so kommunizieren.*
-  <br>`besitzer-27` · Jugendschutz · Aufwand klein · HW ja · ★ 6 · V1 1/4
-- **Spieler sperren oder rauswerfen** — Admin oder Spielleiter sieht alle verbundenen Handys (Spitzname, Platz, Verbindungszeit) und kann einzelne Sitzungen trennen, stummschalten (keine Boosts/Rückspuler) oder für den Abend sperren. Hilft gegen den einen Gast, der vom Sofa aus nur trollt. *Hinweis: Sperre nur pro Token, umgehbar durch Cookie löschen; für Spielzeug ausreichend.*
-  <br>`besitzer-32` · Rechte & Rollen · Aufwand mittel · HW ja · ★ 5 · V1 0/4
-- **Gerätename und Persönlichkeit** — Der Besitzer gibt seinem Gerät einen Namen ("Louie vom Dachboden", "Chewie der Zweite"), ein Emoji und eine Hauptfarbe für das UI. Daraus werden Hotspot-Name, mDNS-Name (louie-dachboden.local) und Begrüßungstext abgeleitet. Bei mehreren Geräten auf einer Party sieht man sofort, welches welches ist. *Hinweis: Namen für SSID/Hostname auf erlaubte Zeichen einschränken.*
-  <br>`besitzer-10` · Personalisierung · Aufwand klein · HW ja · ★ 4 · V1 1/4
-- **Rückwärts-Budget als sichtbares Konto** — Statt drei abstrakter Grenzwerte (Dauer, Abstand, Anteil) sieht der Besitzer ein "Rückwärts-Konto pro Runde", z. B. 6 Sekunden, das Modus-Zufall und alle Rückspuler gemeinsam aufbrauchen. Im Spiel zeigt ein kleiner Balken, wie viel noch übrig ist. Das macht die Begrenzung für alle nachvollziehbar und fair. *Hinweis: Variante: getrennte Konten für Modus und Spieler.*
-  <br>`besitzer-4` · Rückwärts & Rückspuler · Aufwand mittel · HW ja · ★ 4 · V1 0/4
-- **Rückspuler-Feintuning für Gastgeber** — Eigene Admin-Seite nur für den Rückspuler: Kontingent pro Spieler, Abklingzeit pro Spieler und global, Stoßlänge (0,3–1 s), ob Ausgeschiedene spulen dürfen, ob man sich selbst nach einem Rückspuler kurz schützen kann (Immunität), und ob zwei gleichzeitige Spuler sich gegenseitig aufheben. Als Vorlagen: "sanft", "gemein", "Chaos". *Hinweis: Richtungswechsel brauchen immer Rampe; sehr kurze Stöße (<0,3 s) evtl. mechanisch kaum spürbar, im Prototyp testen.*
-  <br>`besitzer-5` · Rückwärts & Rückspuler · Aufwand mittel · HW ja · ★ 4 · V1 0/4
-- **Letzte-Runde-Knopf für Eltern** — Ein Admin- oder Spielleiter-Knopf "Das ist die letzte Runde" kündigt das Ende auf allen Handys groß an und sperrt danach neue Starts für eine einstellbare Zeit. Spart Diskussionen am Abend, weil das Spiel und nicht die Eltern Schluss sagt.
-  <br>`besitzer-7` · Zeit & Ruhe · Aufwand klein · HW ja · ★ 4 · V1 0/4
-- **Sicheres Update mit Rückfall** — Updates landen in einer zweiten Partition; startet die neue Firmware nicht sauber oder meldet der Admin innerhalb von 5 Minuten nicht "funktioniert", springt das Gerät automatisch auf die alte Version zurück. Zusätzlich Update nur bei ausreichendem Akku und Hebel aus. *Hinweis: 4 MB Flash reicht für zwei Partitionen plus Dateisystem nur knapp; Partitionierung früh festlegen.*
-  <br>`besitzer-20` · Updates & Wartung · Aufwand mittel · HW ja · ★ 4 · V1 0/4
-- **Alkoholfrei-Schalter und Ersatzaufgaben** — Im Trinkspiel-Modus kann jeder Spieler für sich "alkoholfrei" wählen; Strafen werden dann zu Wasser, Saft, Kniebeugen oder lustigen Aufgaben. Der Besitzer kann festlegen, dass alkoholfrei der Standard ist und Alkohol pro Person aktiv gewählt werden muss.
-  <br>`besitzer-28` · Jugendschutz · Aufwand klein · HW ja · ★ 4 · V1 0/4
-- **Einstellungen sperren bis Spielende** — Option, dass während einer laufenden Runde nicht einmal der Admin Grenzen oder Profile ändern kann, außer Not-Aus. Verhindert, dass jemand heimlich den Turbo für sich hochdreht. Änderungen werden vorgemerkt und nach der Runde aktiv.
-  <br>`besitzer-33` · Profile & Grenzen · Aufwand klein · HW ja · ★ 4 · V1 0/4
-- **Backup als Datei und als QR-Code** — Komplette Konfiguration (ohne Passwörter, optional mit WLANs) als JSON-Datei herunterladen und wieder einspielen. Zusätzlich: einzelne Modi als kompakter QR-Code oder Textschnipsel, den man fotografieren, per Messenger schicken oder an ein anderes Gerät verfüttern kann. *Hinweis: Herunterladen im unsicheren Kontext geht per Blob-Link; QR nur für kleine Modi (Längenlimit).*
-  <br>`besitzer-15` · Backup & Teilen · Aufwand mittel · HW ja · ★ 3 · V1 1/4
-- **Geräuschpegel und Klänge auf den Handys** — Das Gerät selbst hat keinen Lautsprecher, aber die Handys können Effekte abspielen (Motor-Brumm, Hühnergackern, Rückspul-Geräusch). Der Besitzer stellt ein: Sounds an/aus, nur auf dem Spielleiter-Handy, Lautstärke-Empfehlung, "Flüstermodus" ohne Töne und mit langsamerem Motor (der Motor selbst ist bei niedriger Drehzahl leiser). *Hinweis: Kein Buzzer auf der Platine; Ton nur über Browser. Audio-Dateien kosten Flash (4 MB), also wenige, kurze, komprimierte Clips. iOS spielt Audio erst nach Nutzerinteraktion.*
-  <br>`besitzer-8` · Lautstärke & Atmosphäre · Aufwand mittel · HW eingeschränkt · ★ 3 · V1 0/4
-- **Leisere Motorgeräusche durch PWM-Wahl** — Admin-Option, die PWM-Frequenz (z. B. 20 kHz unhörbar vs. tiefer für mehr Drehmoment) und die Rampensteilheit wählt. Ein "Leise"-Preset nutzt weiche Rampen und keine abrupten Richtungswechsel, damit nachts im Nebenzimmer niemand aufwacht. *Hinweis: Nur als Experten-Einstellung; Getriebegeräusch bleibt.*
-  <br>`besitzer-9` · Lautstärke & Atmosphäre · Aufwand klein · HW ja · ★ 3 · V1 0/4
-- **Hühnerfarben und Platznamen umbenennen** — Die vier Plätze lassen sich frei benennen und mit Farben versehen, passend zu den echten Chips oder zu eigenen Aufklebern (z. B. "Platz am Fenster", "Oma"). Bei Chewie andere Standardnamen passend zum Thema. Optional feste Stammspieler pro Platz.
-  <br>`besitzer-11` · Personalisierung · Aufwand klein · HW ja · ★ 3 · V1 0/4
-- **Gäste-Hotspot mit Wegwerf-Passwort** — Für Partys erzeugt der Admin ein Party-Passwort für den Hotspot, das nach dem Abend (oder nach X Stunden) automatisch verfällt und zum Aufkleber-Passwort zurückkehrt. Ein QR-Code dazu wird groß auf dem Admin-Handy angezeigt, damit Gäste ihn abscannen. *Hinweis: Zeitablauf ohne Uhr über Laufzeit/Neustart lösen; Wiederherstellung per Hebel-Geste bleibt.*
-  <br>`besitzer-13` · WLAN & Netzwerk · Aufwand mittel · HW ja · ★ 3 · V1 0/4
-- **Werksreset in Stufen** — Drei Reset-Stufen statt einer: nur Statistik löschen, Einstellungen auf Standard (Modi und WLANs bleiben), alles löschen. Jede Stufe mit Klartext, was verloren geht, und Hebel-Bestätigung. Vor dem Komplettreset wird automatisch ein Backup zum Download angeboten.
-  <br>`besitzer-35` · Updates & Wartung · Aufwand klein · HW ja · ★ 3 · V1 0/4
-- **Schlaf- und Aufwach-Verhalten** — Einstellungen, wie schnell Louie einschläft, ob er per Hebel-Geste oder nur per Einschalten aufwacht, und ob er nach dem Aufwachen automatisch ins letzte Profil oder ins sichere Kinderprofil geht. Dazu ein Transportmodus, der WLAN komplett aus lässt, bis man ihn aktiv weckt. *Hinweis: GPIO-Wake aus Deep Sleep beim C3 laut Konzept noch zu bestätigen.*
-  <br>`besitzer-40` · Zeit & Ruhe · Aufwand mittel · HW eingeschränkt · ★ 3 · V1 0/4
-- **Party-Bericht am Ende des Abends** — Nach einer Party erstellt das UI eine Zusammenfassung zum Teilen (Bild oder Text): Anzahl Runden, wildester Rückspuler, Champion des Abends, längste Überlebenszeit. Der Besitzer stellt ein, ob Namen darin vorkommen oder alles anonym bleibt. *Hinweis: Bild per Canvas im Browser erzeugbar; Datenschutz bei Namen beachten.*
-  <br>`besitzer-41` · Statistik · Aufwand mittel · HW ja · ★ 3 · V1 0/4
-- **Kindersicherung mit Hebel-Siegel** — Im Kinderprofil werden alle Turbo- und Rückwärtsfunktionen hart gesperrt, und das Lösen der Sperre verlangt neben dem Admin-Passwort ein Umlegen des Hebels in einem bestimmten Rhythmus. So kann ein Kind, das zufällig das Passwort kennt, aus dem Kinderzimmer heraus nichts freischalten, ohne am Spiel zu sein. *Hinweis: Wie bei der Ersteinrichtung: physischer Zugriff gilt als Besitzernachweis.*
-  <br>`besitzer-2` · Jugendschutz · Aufwand klein · HW ja · ★ 2 · V1 0/4
-- **Rundenzeit- und Spielzeit-Limit** — Der Besitzer legt fest: maximale Dauer einer Runde, maximale Spielzeit pro Tag oder pro Sitzung ("nach 45 Minuten ist Schluss"), und optional feste Ruhezeiten (z. B. nach 19:30 nur Gemütlich-Modus oder gar nicht). Kurz vor Ablauf kommt ein freundlicher Hinweis im UI ("Noch eine letzte Runde!"). *Hinweis: Uhrzeit nur bei Heim-WLAN per NTP sicher; im Hotspot kann das Handy die Zeit beim Verbinden mitliefern (manipulierbar).*
-  <br>`besitzer-6` · Zeit & Ruhe · Aufwand mittel · HW eingeschränkt · ★ 2 · V1 0/4
-- **Konfiguration auf andere Geräte klonen** — Ein Knopf "Diese Einstellungen auf ein anderes Louie übertragen" erzeugt ein Paket (Grenzen, Profile, Modi, Rechte), das man auf dem zweiten Gerät einspielt. Modellabhängige Werte (alter/neuer Louie, Chewie) werden dabei nicht blind übernommen, sondern über die Prozent-Logik umgerechnet. *Hinweis: Über Datei/Handy als Brücke einfach machbar.*
-  <br>`besitzer-18` · Mehrere Geräte · Aufwand mittel · HW ja · ★ 2 · V1 0/4
-- **Update-Kanal und Update-Erinnerung** — Admin wählt "stabil" oder "experimentell". Im Heim-WLAN kann das UI (das Handy hat Internet) prüfen, ob es eine neuere Firmware gibt, und den Admin darauf hinweisen. Das Herunterladen macht das Handy, der Upload aufs Gerät läuft lokal. *Hinweis: Gerät selbst bleibt ohne Cloud; Prüfung nur im Browser. Herkunft der Datei per Signatur/Checksumme prüfen.*
-  <br>`besitzer-19` · Updates & Wartung · Aufwand mittel · HW ja · ★ 2 · V1 0/4
-- **Spielstatistik für Besitzer** — Ein Statistik-Bereich zeigt: Anzahl Runden, Gesamtspielzeit, Lieblingsmodus, längste Runde, wie oft der Rückspuler gedrückt wurde und von wem, häufigster Sieger (falls Ausscheiden markiert wurde). Kann zurückgesetzt oder komplett abgeschaltet werden. *Hinweis: Gerät erkennt Ausscheiden nicht selbst; Sieger-Statistik nur so gut wie die Eingaben. Flash-Schreibzyklen schonen (gebündelt speichern).*
-  <br>`besitzer-21` · Statistik · Aufwand mittel · HW eingeschränkt · ★ 2 · V1 0/4
-- **Wartungsanzeige für Motor und Getriebe** — Aus Laufzeit und Motorstrom berechnet das Gerät einen "Gesundheitswert" und meldet z. B. "Motor braucht mehr Strom als früher, Getriebe prüfen oder Flugarm reinigen". Dazu Betriebsstundenzähler und Zähler für Blockierungen. *Hinweis: Motorstrommessung vorhanden, aber Aussagekraft muss am Prototyp erst kalibriert werden.*
-  <br>`besitzer-22` · Statistik · Aufwand mittel · HW eingeschränkt · ★ 2 · V1 0/4
-- **Hitze-Schätzung und Zwangspause** — Ohne Temperatursensor schätzt die Firmware aus Strom mal Zeit die Erwärmung von Motor und Treiber. Nach langen Turbo-Phasen erzwingt sie eine kurze Abkühlpause ("Louie muss tanken") und senkt die Höchstgeschwindigkeit, bis sich der Wert erholt hat. *Hinweis: Nur Modell, kein Messwert; der DRV8833 hat selbst eine Übertemperaturabschaltung als letzte Linie.*
-  <br>`besitzer-25` · Hardware-Sicherheit · Aufwand mittel · HW eingeschränkt · ★ 2 · V1 0/4
-- **Verantwortungs-Bremse im Trinkspiel** — Admin-Einstellungen für maximale Anzahl Strafschlucke pro Person und Stunde, Pflichtpausen nach einer Anzahl Runden und automatische Wasser-Runde. Erreicht jemand die Grenze, schaltet das UI für diese Person auf Ersatzaufgaben um. Optional ein deutlicher Hinweis "Kein Fahren nach dem Spiel". *Hinweis: Gerät kann nur zählen, was über die Handys eingegeben wird.*
-  <br>`besitzer-29` · Jugendschutz · Aufwand mittel · HW ja · ★ 2 · V1 0/4
-- **Rechte-Matrix zum Antippen** — Statt einzelner Schalter eine Tabelle Rollen × Rechte (Gast, Spieler, Spielleiter, Profil) mit Häkchen: Modi speichern, Rückspulen, Boost, Spielleiter werden, Not-Aus, Statistik sehen. Darunter die Vorlagen "offen", "normal", "streng". *Hinweis: Passt direkt zur geplanten Rechte-Liste in der Konfiguration.*
-  <br>`besitzer-30` · Rechte & Rollen · Aufwand mittel · HW ja · ★ 2 · V1 0/4
-- **Änderungsprotokoll** — Ein kurzes Logbuch im Admin-Bereich: wer (Sitzung/Profil) wann was geändert hat, wann Updates eingespielt wurden, wann Sperren oder Blockierungen ausgelöst haben. Die letzten 50 Einträge im Ringpuffer, als Datei exportierbar. *Hinweis: Zeitangaben ohne NTP nur relativ (seit Start).*
-  <br>`besitzer-34` · Updates & Wartung · Aufwand klein · HW ja · ★ 2 · V1 0/4
-- **Status-LED-Optionen** — Besitzer wählt, was die Status-LED zeigt: Netzmodus, Akkustand, Abklingzeit des Rückspulers, oder gar nichts ("dunkel" für Nachtpartys oder damit Kinder nicht davon abgelenkt werden). Helligkeit per PWM einstellbar. *Hinweis: Nur eine einfarbige LED im Batteriefach, wahrscheinlich schlecht sichtbar.*
-  <br>`besitzer-36` · Personalisierung · Aufwand klein · HW ja · ★ 2 · V1 0/4
-- **Modellprofil-Kalibrierung per Assistent** — Ein geführter Test misst Anlaufspannung, Leerlaufstrom und gefühlte Höchstgeschwindigkeit des konkreten Exemplars und speichert daraus ein eigenes Modellprofil. Besonders für alte, ausgeleierte Louies oder Bastler mit Fremdmotor. *Hinweis: Nutzt Motorstrommessung; Höchstgeschwindigkeit muss der Mensch per Augenmaß bestätigen.*
-  <br>`besitzer-37` · Profile & Grenzen · Aufwand mittel · HW ja · ★ 2 · V1 0/4
-- **Eigene Texte und Sprachpakete** — Besitzer kann Ansagen und Beschriftungen überschreiben (Familienwitze, Dialekt, Hochzeitsparty-Motto) oder eine andere Sprache einspielen. Texte liegen zentral als JSON und lassen sich exportieren und teilen. *Hinweis: Flash-Platz für Sprachpakete begrenzt.*
-  <br>`besitzer-39` · Personalisierung · Aufwand mittel · HW ja · ★ 2 · V1 0/4
-- **Mehrere Heim-WLANs mit Ortsprofilen** — Zu jedem gespeicherten WLAN gehört ein Ortsprofil: Zuhause = Kinderprofil, Ferienhaus = Familie, WG-Party = Erwachsene. Verbindet sich Louie mit dem Netz, ist automatisch das passende Profil aktiv. Ohne bekanntes Netz (Hotspot) gilt das vorsichtigste Profil. *Hinweis: Gute Sicherheitsvoreinstellung: unbekannter Ort = streng.*
-  <br>`besitzer-12` · WLAN & Netzwerk · Aufwand mittel · HW ja · ★ 1 · V1 0/4
-- **Turnier über mehrere Spiele** — Bei mehreren Geräten auf einer Party (Louie und Chewie) verknüpft ein Admin sie zu einem Turnier: gleiche Profile und Grenzen auf allen, gemeinsame Startfreigabe, Rangliste über alle Tische. Ein Gerät ist Chef, die anderen folgen. *Hinweis: Erfordert Gerät-zu-Gerät-Kommunikation (WLAN oder ESP-NOW); im Hotspot-Betrieb schwierig. Eher spätere Version.*
-  <br>`besitzer-17` · Mehrere Geräte · Aufwand groß · HW eingeschränkt · ★ 1 · V1 0/4
-- **Zweiter Admin / Mit-Besitzer** — Neben dem Haupt-Admin kann ein eingeschränkter "Gastgeber" mit eigener PIN angelegt werden: darf Profile wechseln, Party-Hotspot erzeugen und Rundenzeiten setzen, aber keine Grenzwerte, WLANs oder Updates ändern. Ideal, wenn ein Teenager die Party leitet. *Hinweis: Entspricht Stufe 3 aus dem Konzept; Klartext-Passwort-Problem ohne HTTPS bleibt.*
-  <br>`besitzer-31` · Rechte & Rollen · Aufwand mittel · HW ja · ★ 1 · V1 0/4
-- **Modus-Tauschbörse zwischen Geräten** — Stehen zwei Louies im selben WLAN, findet einer den anderen per mDNS und bietet an: "Modi von Louie-Dachboden übernehmen?". Auf Familientreffen oder in Spielecafés können Lieblingsmodi so ohne Internet wandern. Der empfangende Admin bestätigt jede Übernahme. *Hinweis: ESP muss als HTTP-Client zu anderem ESP gehen; RAM knapp. Einfachere Variante: über das Handy als Zwischenspeicher.*
-  <br>`besitzer-16` · Mehrere Geräte · Aufwand groß · HW eingeschränkt · ★ 0 · V1 0/4
-- **Bastler-Modus mit Rohwerten** — Ein verstecktes Experten-Menü (nach Admin-Login und Warnung) zeigt Live-Graphen von Strom, Spannung und PWM und erlaubt eigene Grenzen über den Standardrahmen hinaus, z. B. für Umbauten mit stärkerem Motor. Danach erscheint im normalen UI dauerhaft ein Hinweis "Experteneinstellungen aktiv". *Hinweis: Absolute Hardware-Grenzen (Treiberstrom, Akku) dürfen nie überschreitbar sein.*
-  <br>`besitzer-38` · Bastler · Aufwand mittel · HW eingeschränkt · ★ 0 · V1 0/4
+- **Speed cap as a large slider** — A single, prominent slider "At most this fast" with a preview animation of the plane, which caps everything else (modes, boosts, turbo). Below it a sentence in plain language, e.g. "Louie goes at most as fast as the original". Parents understand this immediately, without volts or percent. *Note: Technically just a conversion to the existing limits; calibration per model needed.*
+  <br>`besitzer-3` · Profiles & limits · effort small · HW yes · ★ 8 · V1 3/4
+- **QR code wall: share the invitation on the phone** — An admin or game master screen shows the two QR codes (join Wi-Fi, open control) huge plus a short guide, so you can simply put the phone in the middle of the table. Optionally with a seat-choice link that directly reserves seat 3. *Note: QR generation in the browser via a small JS library, offline in flash.*
+  <br>`besitzer-14` · Wi-Fi & network · effort small · HW yes · ★ 7 · V1 2/4
+- **Profile quick pick: Kids / Family / Party / Adults** — Four large tiles in the admin area change a whole package with one tap: speed range, reverse limits, rewind allowance, allowed modes and whether drinking game content is visible. The owner does not need to know 30 sliders but just picks "The nieces are coming today". Individual values can still be adjusted afterwards and the package saved as a custom profile. *Note: Builds on the existing admin limits; needs a clear rule on what a profile overrides and what not.*
+  <br>`besitzer-1` · Profiles & limits · effort medium · HW yes · ★ 7 · V1 1/4
+- **Block protection with adjustable sensitivity** — If the motor current rises sharply (finger, arm wedged, child holds the plane), the motor stops immediately and reports it in the UI. The owner sets the sensitivity and whether it continues automatically afterwards or waits for release. Always strict in the kids profile. *Note: Also important against overheating of motor and H-bridge; reverse kicks and start-up also produce current spikes, the threshold must distinguish these.*
+  <br>`besitzer-23` · Hardware safety · effort medium · HW yes · ★ 7 · V1 1/4
+- **Battery protection settings** — The admin sees the battery state with a charge cycle estimate and sets the undervoltage warning, soft round end and cut-off threshold. Option "battery-friendly": turbo only above a minimum voltage, so the battery is not drained and no brownout restarts the ESP. *Note: Hard lower bound on the cut-off threshold, so LiPos cannot be deep-discharged.*
+  <br>`besitzer-24` · Hardware safety · effort small · HW yes · ★ 6 · V1 1/4
+- **Emergency stop button on every phone** — The admin can enable that every connected phone (not just the game master) has a red stop button. Abuse is logged, and after a stop the round only restarts via the lever. On by default in the kids profile. *Note: The lever stays the real, software-independent emergency stop.*
+  <br>`besitzer-26` · Hardware safety · effort small · HW yes · ★ 6 · V1 1/4
+- **Drinking game unlock with age confirmation** — Drinking game content (rules, penalty announcements, mode texts) is invisible by default. The admin deliberately unlocks it, confirms "all participants are of legal age" and can bind it to a location profile or time window. Unlocking is not possible in the kids profile. *Note: Pure self-declaration, no real proof of age; communicate it honestly as such.*
+  <br>`besitzer-27` · Youth protection · effort small · HW yes · ★ 6 · V1 1/4
+- **Block or kick players** — The admin or game master sees all connected phones (nickname, seat, connection time) and can disconnect individual sessions, mute them (no boosts/rewinds) or block them for the evening. Helps against the one guest who only trolls from the sofa. *Note: Block only per token, can be bypassed by deleting the cookie; sufficient for a toy.*
+  <br>`besitzer-32` · Permissions & roles · effort medium · HW yes · ★ 5 · V1 0/4
+- **Device name and personality** — The owner gives the device a name ("Louie from the attic", "Chewie the Second"), an emoji and a main color for the UI. Hotspot name, mDNS name (louie-dachboden.local) and greeting text are derived from it. With several devices at a party you immediately see which is which. *Note: Restrict names for SSID/hostname to allowed characters.*
+  <br>`besitzer-10` · Personalization · effort small · HW yes · ★ 4 · V1 1/4
+- **Reverse budget as a visible account** — Instead of three abstract limits (duration, interval, share), the owner sees a "reverse account per round", e.g. 6 seconds, which mode randomness and all rewinds use up together. In the game a small bar shows how much is left. This makes the limit understandable and fair for everyone. *Note: Variant: separate accounts for mode and players.*
+  <br>`besitzer-4` · Reverse & rewind · effort medium · HW yes · ★ 4 · V1 0/4
+- **Rewind fine-tuning for hosts** — A separate admin page just for the rewind: allowance per player, cooldown per player and global, kick length (0.3–1 s), whether eliminated players may rewind, whether you can protect yourself briefly after a rewind (immunity), and whether two simultaneous rewinds cancel each other. As templates: "gentle", "mean", "chaos". *Note: Direction changes always need a ramp; very short kicks (<0.3 s) may be hardly perceptible mechanically, test on the prototype.*
+  <br>`besitzer-5` · Reverse & rewind · effort medium · HW yes · ★ 4 · V1 0/4
+- **Last-round button for parents** — An admin or game master button "This is the last round" announces the end prominently on all phones and then blocks new starts for an adjustable time. Saves discussions in the evening, because the game and not the parents says it's over.
+  <br>`besitzer-7` · Time & quiet · effort small · HW yes · ★ 4 · V1 0/4
+- **Safe update with fallback** — Updates go into a second partition; if the new firmware does not start cleanly or the admin does not report "works" within 5 minutes, the device automatically reverts to the old version. Additionally, update only with sufficient battery and lever off. *Note: 4 MB flash is only just enough for two partitions plus file system; define partitioning early.*
+  <br>`besitzer-20` · Updates & maintenance · effort medium · HW yes · ★ 4 · V1 0/4
+- **Alcohol-free switch and substitute tasks** — In drinking game mode each player can choose "alcohol-free" for themselves; penalties then become water, juice, squats or funny tasks. The owner can define that alcohol-free is the default and alcohol must be actively chosen per person.
+  <br>`besitzer-28` · Youth protection · effort small · HW yes · ★ 4 · V1 0/4
+- **Lock settings until the end of the game** — Option that during a running round not even the admin can change limits or profiles, except emergency stop. Prevents someone from secretly turning up the turbo for themselves. Changes are queued and become active after the round.
+  <br>`besitzer-33` · Profiles & limits · effort small · HW yes · ★ 4 · V1 0/4
+- **Backup as a file and as a QR code** — Download the complete configuration (without passwords, optionally with Wi-Fi networks) as a JSON file and restore it. Additionally: individual modes as a compact QR code or text snippet that you can photograph, send via messenger or feed to another device. *Note: Downloading in an insecure context works via a blob link; QR only for small modes (length limit).*
+  <br>`besitzer-15` · Backup & sharing · effort medium · HW yes · ★ 3 · V1 1/4
+- **Noise level and sounds on the phones** — The device itself has no speaker, but the phones can play effects (motor hum, chicken clucking, rewind sound). The owner sets: sounds on/off, only on the game master phone, volume recommendation, "whisper mode" without sounds and with a slower motor (the motor itself is quieter at low speed). *Note: No buzzer on the board; sound only via the browser. Audio files cost flash (4 MB), so few, short, compressed clips. iOS only plays audio after user interaction.*
+  <br>`besitzer-8` · Volume & atmosphere · effort medium · HW limited · ★ 3 · V1 0/4
+- **Quieter motor noise by PWM choice** — Admin option that selects the PWM frequency (e.g. 20 kHz inaudible vs. lower for more torque) and the ramp steepness. A "quiet" preset uses soft ramps and no abrupt direction changes, so nobody wakes up in the next room at night. *Note: Only as an expert setting; gear noise remains.*
+  <br>`besitzer-9` · Volume & atmosphere · effort small · HW yes · ★ 3 · V1 0/4
+- **Rename chicken colors and seat names** — The four seats can be freely named and given colors, matching the real chips or own stickers (e.g. "Seat by the window", "Grandma"). Other default names for Chewie to match the theme. Optionally fixed regular players per seat.
+  <br>`besitzer-11` · Personalization · effort small · HW yes · ★ 3 · V1 0/4
+- **Guest hotspot with disposable password** — For parties the admin creates a party password for the hotspot that automatically expires after the evening (or after X hours) and reverts to the sticker password. A matching QR code is shown large on the admin phone so guests can scan it. *Note: Solve expiry without a clock via uptime/restart; recovery via lever gesture remains.*
+  <br>`besitzer-13` · Wi-Fi & network · effort medium · HW yes · ★ 3 · V1 0/4
+- **Factory reset in stages** — Three reset stages instead of one: delete statistics only, settings to default (modes and Wi-Fi networks remain), delete everything. Each stage with plain text on what is lost, and lever confirmation. Before the full reset a backup is automatically offered for download.
+  <br>`besitzer-35` · Updates & maintenance · effort small · HW yes · ★ 3 · V1 0/4
+- **Sleep and wake behavior** — Settings for how quickly Louie falls asleep, whether he wakes via lever gesture or only by switching on, and whether after waking he automatically goes to the last profile or to the safe kids profile. Plus a transport mode that keeps Wi-Fi completely off until actively woken. *Note: GPIO wake from deep sleep on the C3 still to be confirmed per the concept.*
+  <br>`besitzer-40` · Time & quiet · effort medium · HW limited · ★ 3 · V1 0/4
+- **Party report at the end of the evening** — After a party the UI creates a summary to share (image or text): number of rounds, wildest rewind, champion of the evening, longest survival time. The owner sets whether names appear in it or everything stays anonymous. *Note: Image can be generated via canvas in the browser; observe privacy for names.*
+  <br>`besitzer-41` · Statistics · effort medium · HW yes · ★ 3 · V1 0/4
+- **Child lock with lever seal** — In the kids profile all turbo and reverse functions are hard-locked, and releasing the lock requires, besides the admin password, flipping the lever in a certain rhythm. So a child who happens to know the password cannot unlock anything from the children's room without being at the game. *Note: As with first setup: physical access counts as proof of ownership.*
+  <br>`besitzer-2` · Youth protection · effort small · HW yes · ★ 2 · V1 0/4
+- **Round time and play time limit** — The owner defines: maximum duration of a round, maximum play time per day or per session ("after 45 minutes it's over"), and optionally fixed quiet times (e.g. after 19:30 only relaxed mode or not at all). Shortly before expiry a friendly hint appears in the UI ("One last round!"). *Note: Time of day is only reliable with home Wi-Fi via NTP; on the hotspot the phone can supply the time when connecting (can be manipulated).*
+  <br>`besitzer-6` · Time & quiet · effort medium · HW limited · ★ 2 · V1 0/4
+- **Clone configuration to other devices** — A button "Transfer these settings to another Louie" creates a package (limits, profiles, modes, permissions) that you import on the second device. Model-dependent values (old/new Louie, Chewie) are not blindly copied but converted via the percentage logic. *Note: Easily doable via file/phone as a bridge.*
+  <br>`besitzer-18` · Multiple devices · effort medium · HW yes · ★ 2 · V1 0/4
+- **Update channel and update reminder** — The admin chooses "stable" or "experimental". On home Wi-Fi the UI (the phone has internet) can check whether newer firmware exists and point it out to the admin. The phone does the download; the upload to the device runs locally. *Note: The device itself stays without cloud; check only in the browser. Verify the file's origin via signature/checksum.*
+  <br>`besitzer-19` · Updates & maintenance · effort medium · HW yes · ★ 2 · V1 0/4
+- **Game statistics for owners** — A statistics area shows: number of rounds, total play time, favorite mode, longest round, how often the rewind was pressed and by whom, most frequent winner (if elimination was marked). Can be reset or switched off completely. *Note: The device does not detect elimination itself; winner statistics are only as good as the inputs. Spare flash write cycles (save in batches).*
+  <br>`besitzer-21` · Statistics · effort medium · HW limited · ★ 2 · V1 0/4
+- **Maintenance indicator for motor and gearbox** — From runtime and motor current the device calculates a "health value" and reports e.g. "Motor needs more current than before, check gearbox or clean flight arm". Plus an operating hours counter and a counter for blockings. *Note: Motor current measurement exists, but its significance must first be calibrated on the prototype.*
+  <br>`besitzer-22` · Statistics · effort medium · HW limited · ★ 2 · V1 0/4
+- **Heat estimate and forced break** — Without a temperature sensor the firmware estimates the heating of motor and driver from current times time. After long turbo phases it forces a short cool-down break ("Louie needs to refuel") and lowers the top speed until the value has recovered. *Note: Only a model, not a measurement; the DRV8213 itself has over-temperature shutdown as the last line.*
+  <br>`besitzer-25` · Hardware safety · effort medium · HW limited · ★ 2 · V1 0/4
+- **Responsibility brake in the drinking game** — Admin settings for the maximum number of penalty sips per person and hour, mandatory breaks after a number of rounds and an automatic water round. If someone reaches the limit, the UI switches to substitute tasks for that person. Optionally a clear notice "No driving after the game". *Note: The device can only count what is entered via the phones.*
+  <br>`besitzer-29` · Youth protection · effort medium · HW yes · ★ 2 · V1 0/4
+- **Tap-to-edit permission matrix** — Instead of individual switches, a table of roles × permissions (guest, player, game master, profile) with checkmarks: save modes, rewind, boost, become game master, emergency stop, see statistics. Below it the templates "open", "normal", "strict". *Note: Fits directly with the planned permission list in the configuration.*
+  <br>`besitzer-30` · Permissions & roles · effort medium · HW yes · ★ 2 · V1 0/4
+- **Change log** — A short logbook in the admin area: who (session/profile) changed what when, when updates were installed, when locks or blockings were triggered. The last 50 entries in a ring buffer, exportable as a file. *Note: Timestamps without NTP only relative (since start).*
+  <br>`besitzer-34` · Updates & maintenance · effort small · HW yes · ★ 2 · V1 0/4
+- **Status LED options** — The owner chooses what the status LED shows: network mode, battery level, rewind cooldown, or nothing at all ("dark" for night parties or so that children are not distracted by it). Brightness adjustable via PWM. *Note: Only one single-color LED in the battery compartment, probably poorly visible.*
+  <br>`besitzer-36` · Personalization · effort small · HW yes · ★ 2 · V1 0/4
+- **Model profile calibration via wizard** — A guided test measures start-up voltage, idle current and perceived top speed of the specific unit and stores its own model profile from that. Especially for old, worn-out Louies or makers with a third-party motor. *Note: Uses motor current measurement; a human must confirm the top speed by eye.*
+  <br>`besitzer-37` · Profiles & limits · effort medium · HW yes · ★ 2 · V1 0/4
+- **Custom texts and language packs** — The owner can override announcements and labels (family jokes, dialect, wedding party theme) or install another language. Texts are stored centrally as JSON and can be exported and shared. *Note: Flash space for language packs is limited.*
+  <br>`besitzer-39` · Personalization · effort medium · HW yes · ★ 2 · V1 0/4
+- **Several home Wi-Fi networks with location profiles** — Each saved Wi-Fi network has a location profile: home = kids profile, holiday house = family, shared-flat party = adults. When Louie connects to the network, the matching profile is active automatically. Without a known network (hotspot) the most cautious profile applies. *Note: Good safety default: unknown location = strict.*
+  <br>`besitzer-12` · Wi-Fi & network · effort medium · HW yes · ★ 1 · V1 0/4
+- **Tournament across several games** — With several devices at a party (Louie and Chewie), an admin links them into a tournament: same profiles and limits on all, shared start release, ranking across all tables. One device is the leader, the others follow. *Note: Requires device-to-device communication (Wi-Fi or ESP-NOW); difficult in hotspot operation. Rather a later version.*
+  <br>`besitzer-17` · Multiple devices · effort large · HW limited · ★ 1 · V1 0/4
+- **Second admin / co-owner** — Besides the main admin, a restricted "host" with its own PIN can be created: may switch profiles, create a party hotspot and set round times, but not change limits, Wi-Fi networks or updates. Ideal when a teenager runs the party. *Note: Corresponds to stage 3 from the concept; the plain-text password problem without HTTPS remains.*
+  <br>`besitzer-31` · Permissions & roles · effort medium · HW yes · ★ 1 · V1 0/4
+- **Mode exchange between devices** — If two Louies are on the same Wi-Fi, one finds the other via mDNS and offers: "Take over modes from Louie-Dachboden?". At family gatherings or in game cafés, favorite modes can travel this way without internet. The receiving admin confirms every transfer. *Note: The ESP must act as an HTTP client to the other ESP; RAM is tight. Simpler variant: via the phone as intermediate storage.*
+  <br>`besitzer-16` · Multiple devices · effort large · HW limited · ★ 0 · V1 0/4
+- **Maker mode with raw values** — A hidden expert menu (after admin login and a warning) shows live graphs of current, voltage and PWM and allows custom limits beyond the standard range, e.g. for modifications with a stronger motor. Afterwards the normal UI permanently shows a hint "Expert settings active". *Note: Absolute hardware limits (driver current, battery) must never be exceedable.*
+  <br>`besitzer-38` · Maker · effort medium · HW limited · ★ 0 · V1 0/4
 
-### 5.5 Hardware, Sicherheit & Robustheit (59)
+### 5.5 Hardware, safety & robustness (59)
 
-- **Rückspuler-Sperrkreis** — Der Rückspuler wird global entprellt: Nach jedem Rückwärtsstoß gibt es eine globale Schutzzeit, in der niemand einen neuen auslösen kann, egal wie viele Spieler Kontingent haben. Zusätzlich ein Anteil-Deckel pro Runde. So können vier Handys zusammen keinen Dauer-Rückwärtslauf erzeugen. *Hinweis: Baut auf den Server-Grenzen aus dem Software-Konzept auf; wichtig ist die globale statt nur pro-Spieler-Abklingzeit.*
-  <br>`technik-29` · Missbrauchsschutz · Aufwand klein · HW ja · ★ 10 · V1 4/4
-- **Blockier-Erkennung mit Sofort-Stopp** — Steigt der Motorstrom über eine Schwelle und bleibt dort länger als ca. 200–300 ms (Louie hängt an einer Wippe, Finger im Arm), schaltet die Firmware auf Bremsen und dann aus. Im UI erscheint "Louie steckt fest", weiter geht es erst nach Hebel aus/an. Ergänzt die feste 2-A-Grenze des DRV8833, die nur begrenzt und nicht abschaltet. *Hinweis: Schwelle hängt vom Modell ab und muss gelernt werden (siehe Kalibrierfahrt); kurze Stromspitzen beim Anlauf ausblenden.*
-  <br>`technik-1` · Motorschutz · Aufwand klein · HW ja · ★ 9 · V1 4/4
-- **Spielleiter-Notaus im UI** — Auf jedem Spielleiter- und Admin-Bildschirm ein immer sichtbarer roter Stopp-Knopf, der sofort bremst, unabhängig vom Modus. Optional auch für Spieler-Handys freischaltbar ("jeder darf stoppen"), z. B. bei kleinen Kindern. *Hinweis: Ersetzt nicht den Hebel, der hardwareseitig trennt.*
-  <br>`technik-32` · Kindersicherheit · Aufwand klein · HW ja · ★ 9 · V1 4/4
-- **Richtungswechsel immer über Null mit Totzeit** — Vorwärts nach rückwärts geht nie direkt: Rampe auf 0, kurz bremsen, 50–150 ms Pause, dann Rampe in die Gegenrichtung. Gilt in der untersten Motorschicht, auch für Rückspuler-Stöße. So wird der Rückwärtsstoß gefühlt kurz, belastet aber Akku und Getriebe kaum. *Hinweis: Die Rampe frisst von einem 0,5-s-Stoß spürbar Zeit ab; Stoßdauer als Netto-Rückwärtszeit definieren.*
-  <br>`technik-3` · Motorschutz · Aufwand klein · HW ja · ★ 8 · V1 4/4
-- **Sichere Standardwerte bei unbekanntem Modell** — Solange kein Modellprofil gewählt ist, gilt das vorsichtigste Profil (1,5-V-Louie alt, kein Turbo, kein Rückwärts). Ein frisch verschenkter Bausatz kann so den alten 1,5-V-Motor nie mit 4,2 V überfahren.
-  <br>`technik-48` · Motorschutz · Aufwand klein · HW ja · ★ 8 · V1 4/4
-- **Sitzplatz-Diebstahl verhindern** — Ein belegter Platz kann nur übernommen werden, wenn der bisherige Client 60 s weg ist oder der Spielleiter freigibt. Verhindert, dass ein Gast den Platz eines Spielers kapert und dessen Boosts oder Rückspuler verbraucht. Neue Sitzungen pro Gerät begrenzen (Zweithandy-Trick).
-  <br>`technik-30` · Missbrauchsschutz · Aufwand klein · HW ja · ★ 8 · V1 3/4
-- **Mehrstufiger Watchdog** — Ebene 1: Motor-Task stoppt ohne frische Sollwerte nach 500 ms. Ebene 2: Hardware-Watchdog startet bei hängendem Hauptprogramm neu. Ebene 3: nach drei Abstürzen in Folge startet die Firmware im "sicheren Modus" ohne eigene Modi und ohne Updates, nur Klassisch plus Admin-Seite. *Hinweis: Sicherer Modus braucht eine unveränderliche Rückfall-Logik in den frozen modules.*
-  <br>`technik-16` · Robustheit · Aufwand mittel · HW ja · ★ 7 · V1 4/4
-- **Anlauf-Ausblendung und Soft-Start** — Beim Anfahren und bei jedem Richtungswechsel ist der Strom kurz hoch. Die Blockier-Erkennung wird dann für ein Zeitfenster ausgesetzt; gleichzeitig startet der Motor über eine Rampe statt mit vollem Tastgrad. Das verhindert Fehlalarme und Spannungseinbrüche.
-  <br>`technik-2` · Motorschutz · Aufwand klein · HW ja · ★ 7 · V1 3/4
-- **Unterspannung in drei Stufen** — Stufe 1 (z. B. 3,5 V unter Last): Warnung im UI und LED-Muster. Stufe 2 (3,4 V): Turbo und Rückwärts gesperrt, Höchstgeschwindigkeit sinkt. Stufe 3 (3,3 V): Runde endet sauber mit Hinweis, Motor aus, nur noch WLAN. Unter 3,2 V Deep Sleep, bevor die Akkuschutzschaltung hart abschaltet. *Hinweis: Spannung unter Last messen und mit Innenwiderstand korrigieren, sonst Fehlwarnungen bei Boosts.*
-  <br>`technik-11` · Akkuschutz · Aufwand klein · HW ja · ★ 7 · V1 3/4
-- **Hebel-Gesten mit Zeitfenster und Bestätigung** — Gesten (Hotspot erzwingen, Admin-Reset, Werksreset) gelten nur in den ersten 10 s nach dem Aufwecken und werden durch ein LED-/Piepsmuster quittiert; eine zweite Geste bestätigt. So löst kein Kind beim wilden Hebeln versehentlich einen Werksreset aus.
-  <br>`technik-25` · Sicherheit · Aufwand klein · HW ja · ★ 7 · V1 2/4
-- **Turbo-Zeitbudget** — Oberhalb der Nennspannung darf der Motor nur begrenzt laufen, z. B. max. 10 s am Stück und max. 20 % der Runde. Danach automatisch zurück auf 100 %. Admin stellt die Werte ein, Modi und Boosts können sie nicht überschreiben.
-  <br>`technik-5` · Motorschutz · Aufwand klein · HW ja · ★ 6 · V1 3/4
-- **Rate-Limit pro Sitzung und pro Gerät** — Der Server nimmt pro Sitzung nur eine begrenzte Zahl Aktionen pro Sekunde an (z. B. 5 Nachrichten/s, Boost-Taste nach Abklingzeit sonst ignoriert). Wer per Skript oder Dauerdrücken spammt, wird gedrosselt und im Spielleiter-Bildschirm markiert. Schützt auch den knappen RAM.
-  <br>`technik-28` · Missbrauchsschutz · Aufwand klein · HW ja · ★ 6 · V1 3/4
-- **Update mit Rücksprung und Probelauf** — Nach einem Update startet die neue Version im Probelauf. Erst wenn Selbsttest und Webserver laufen und der Admin "bestätigen" drückt (oder 3 Starts ohne Absturz), wird sie fest. Sonst automatisch zurück zur Vorversion. Updates nie während einer Runde und nur bei ausreichend Akku.
-  <br>`technik-46` · Update-Sicherheit · Aufwand mittel · HW ja · ★ 6 · V1 2/4
-- **Konfiguration mit Prüfsumme und Rückfallkopie** — config.json und Kalibrierung werden mit Prüfsumme gespeichert, zusätzlich eine letzte gute Kopie. Ist die Hauptdatei beschädigt (Stromausfall beim Schreiben), lädt die Firmware die Kopie bzw. sichere Standardwerte statt mit kaputten Grenzen zu fahren.
-  <br>`technik-47` · Robustheit · Aufwand klein · HW ja · ★ 6 · V1 2/4
-- **Hebel-Erkennung über Strom absichern** — Während der Fahrt wird "Hebel aus" am Strom-Null erkannt. Damit das nicht durch einen kurzen Stromnull bei Rampen oder Bremsen fehlinterpretiert wird, gilt ein Mindest-Tastgrad beim Prüfen und eine Bestätigung über SENSE nach kurzem Treiber-Sleep. Ergebnis: Rundenende wird zuverlässig erkannt.
-  <br>`technik-49` · Robustheit · Aufwand klein · HW ja · ★ 6 · V1 2/4
-- **Verbindungs-Limit und Gast-Kick** — Maximal z. B. 8 Clients; ist das Limit voll, werden reine Gäste ohne Platz zuerst getrennt. Spielleiter kann einzelne Geräte für die Partie sperren. Schützt den ESP vor zu vielen offenen WebSockets.
-  <br>`technik-31` · Missbrauchsschutz · Aufwand klein · HW ja · ★ 6 · V1 1/4
-- **Keine Telemetrie, sichtbar zugesichert** — Die Firmware baut nie eine Verbindung ins Internet auf (außer optional NTP und Update-Prüfung, beides abschaltbar und standardmäßig aus). Im Info-Bildschirm steht klar, was gespeichert wird. Wichtig, weil Kinder mitspielen und das Gerät verschenkt wird.
-  <br>`technik-44` · Datenschutz · Aufwand klein · HW ja · ★ 5 · V1 2/4
-- **Motor aus bei Verbindungsverlust des Spielleiters (optional)** — In Modi, die stark vom Handy abhängen (z. B. Spielleiter regelt live), fährt Louie auf eine sichere Grundgeschwindigkeit zurück, wenn der steuernde Client 3 s nichts sendet. Der Hebel funktioniert unabhängig weiter.
-  <br>`technik-17` · Robustheit · Aufwand klein · HW ja · ★ 5 · V1 1/4
-- **Selbsttest beim Start** — Nach dem Aufwecken prüft die Firmware in unter einer Sekunde: Motor angeschlossen (SENSE), Akkuspannung plausibel, Shunt-Nullpunkt, nFAULT inaktiv. Ergebnis als LED-Muster und als Ampel in der Diagnose. Hilft beim Nachbau, falsch eingelegte Platinen oder schlechte Kontakte zu finden.
-  <br>`technik-20` · Diagnose · Aufwand klein · HW ja · ★ 5 · V1 1/4
-- **Physischer Besitznachweis per Hebel** — Kritische Aktionen (Admin-Passwort setzen, Firmware-Update, Grenzwerte über Standard, Hotspot öffnen) müssen zusätzlich innerhalb von 30 s durch Hebel an/aus bestätigt werden. Wer nur im WLAN ist, aber nicht am Tisch sitzt, kann so nichts Wichtiges ändern.
-  <br>`technik-27` · Zugangssicherheit · Aufwand klein · HW ja · ★ 5 · V1 1/4
-- **Kindermodus mit Strom-Feingefühl** — Eine Admin-Voreinstellung: kein Turbo, kein Rückwärts, niedrigere Höchstgeschwindigkeit und deutlich empfindlichere Blockier-Erkennung, sodass Louie schon bei leichtem Gegenhalten mit dem Finger stoppt. Für Kleinkinder, die gern in den Arm greifen. *Hinweis: Empfindlichkeit durch das Strommessen begrenzt; leichtes Berühren erzeugt evtl. kaum Stromanstieg.*
-  <br>`technik-33` · Kindersicherheit · Aufwand klein · HW ja · ★ 5 · V1 1/4
-- **Sicherheitsgrenzen nur nach oben mit Hinweis** — Wenn der Admin Turbo-Grenze, Rückwärtsdauer oder Rampe über die Projekt-Empfehlung stellt, zeigt das UI einen klaren Hinweis zu Risiken (Motorverschleiß, Frust, Brownout) und verlangt Hebel-Bestätigung. Absolute Hartgrenzen (z. B. nie über 4,2 V Akku, nie über 2 A) sind fest im Code.
-  <br>`technik-59` · Sicherheit · Aufwand klein · HW ja · ★ 5 · V1 1/4
-- **Thermisches Motormodell (I²t)** — Die Firmware integriert den gemessenen Strom über die Zeit und schätzt so die Erwärmung von Motor und Treiber. Wird lange im Turbo gespielt oder oft blockiert, sinkt die erlaubte Höchstgeschwindigkeit sanft ("Louie ist erschöpft"), bis er sich abgekühlt hat. Schützt den kleinen Original-Motor, für den es kein Datenblatt gibt. *Hinweis: Modellparameter nur grob schätzbar; konservativ starten.*
-  <br>`technik-4` · Motorschutz · Aufwand mittel · HW ja · ★ 5 · V1 0/4
-- **Finger-Klemmschutz durch Rückweichen** — Wird eine Blockade erkannt, stoppt Louie nicht nur, sondern fährt einen winzigen Ruck zurück (z. B. 100 ms bei geringer Spannung), um einen eingeklemmten Finger oder ein verkeiltes Huhn freizugeben, und bleibt dann stehen. *Hinweis: Nur sehr kurz und schwach, sonst wird es selbst zur Gefahr; als Option.*
-  <br>`technik-34` · Kindersicherheit · Aufwand klein · HW ja · ★ 5 · V1 0/4
-- **Datensparsame Profile** — Profile enthalten nur Spitzname, Farbe und Emoji, keine echten Namen, keine Fotos, keine Geräte-IDs außer dem Zufallstoken. Statistik ist lokal und mit einem Knopf löschbar; nach x Tagen ohne Nutzung verfallen Profile automatisch.
-  <br>`technik-43` · Datenschutz · Aufwand klein · HW ja · ★ 5 · V1 0/4
-- **Brownout-Detektor und Ursachenspeicher** — Nach jedem Neustart liest die Firmware den Reset-Grund (Brownout, Watchdog, Absturz, normal) und speichert die letzten 10 mit Zeitstempel relativ zur Laufzeit und letzter Motorstufe. Häufen sich Brownouts bei Richtungswechseln, wird die Rampe automatisch flacher.
-  <br>`technik-15` · Robustheit · Aufwand klein · HW ja · ★ 4 · V1 1/4
-- **Sitzungs-Token härten** — Token sind zufällig (Hardware-RNG des ESP), laufen ab, werden bei Admin-Login neu erzeugt und sind an den Platz gebunden. Admin-Rechte nur per HttpOnly-Cookie, nie im localStorage. Ohne HTTPS bleibt ein Restrisiko, aber Kopieren eines Spieler-Tokens bringt keine Admin-Rechte.
-  <br>`technik-40` · Netzsicherheit · Aufwand klein · HW ja · ★ 4 · V1 1/4
-- **Restspielzeit-Anzeige** — Aus Ladezustand (Spannungskurve) und typischem Verbrauch pro Runde zeigt die Lobby "reicht noch für ca. 12 Runden" statt nur eines Prozentwerts. Für Partys verständlicher als Volt. *Hinweis: Ladezustand über Spannung bei LiPo nur grob; Lernwerte aus vergangenen Runden verbessern die Schätzung.*
-  <br>`technik-13` · Akkuschutz · Aufwand mittel · HW ja · ★ 4 · V1 0/4
-- **Ladeerkennung und Spielen beim Laden** — Wenn USB-Spannung anliegt (über das Kabel indirekt an steigender Akkuspannung erkennbar oder über einen VBUS-Teiler), zeigt das UI "lädt" und hält den Schlafmodus an. Optional Turbo beim Laden sperren, damit Power-Path und Laderegler nicht überlastet werden. *Hinweis: Ohne eigenen VBUS-Pin nur indirekt erkennbar; ein freier GPIO (IO2/IO8 sind Strapping-Pins) bräuchte Platinenänderung.*
-  <br>`technik-14` · Akkuschutz · Aufwand mittel · HW eingeschränkt · ★ 4 · V1 0/4
-- **Chip-Temperatur und Treiber-Übertemperatur** — Der ESP32-C3 hat einen internen Temperatursensor; zusammen mit nFAULT des DRV8833 (Übertemperatur, Überstrom) ergibt das eine einfache Hitzewarnung im Batteriefach. Bei Grenzwert: Turbo sperren, dann Pause mit Hinweis "Louie braucht eine Pause". *Hinweis: Interner Sensor misst den Chip, nicht Motor oder Akku; LiPo-Temperatur ist ohne NTC nicht messbar. NTC auf der Ladeplatine wäre eine Hardware-Erweiterung.*
-  <br>`technik-18` · Robustheit · Aufwand klein · HW eingeschränkt · ★ 4 · V1 0/4
-- **Getrenntes Gäste-Netz statt Heim-WLAN** — Im Heim-WLAN sieht jeder Partygast die Steuerung nur, wenn er im Heimnetz ist. Empfehlung im UI: Für Partys den eigenen Hotspot nutzen, damit Gäste nicht ins Heimnetz müssen. Louie bietet dafür einen Ein-Tipp-Umschalter "Party-Hotspot" an.
-  <br>`technik-37` · Netzsicherheit · Aufwand klein · HW ja · ★ 4 · V1 0/4
-- **nFAULT-Auswertung mit Klartext** — nFAULT wird nicht nur als "Fehler" gemeldet, sondern zusammen mit Strom und Spannung zum Zeitpunkt interpretiert: "Kurzschluss/Blockade", "Unterspannung am Treiber", "zu heiß". Fehlerprotokoll mit den letzten Ereignissen im Diagnose-Bereich. *Hinweis: DRV8833 unterscheidet die Ursachen nicht selbst; Interpretation ist Heuristik.*
-  <br>`technik-19` · Diagnose · Aufwand klein · HW eingeschränkt · ★ 3 · V1 1/4
-- **Diagnose-Export für Bastler** — Ein Knopf erzeugt eine JSON-Datei mit Firmware-Version, Modellprofil, Kalibrierwerten, Zählern, Fehlerlog und Reset-Gründen, ohne WLAN-Passwörter und Spielernamen. Kann man ins GitHub-Issue hängen, wenn man den Bausatz verschenkt hat und der Beschenkte Probleme hat.
-  <br>`technik-22` · Diagnose · Aufwand klein · HW ja · ★ 3 · V1 1/4
-- **Kalibrierfahrt beim Einrichten** — Im Einrichtungsassistenten fährt Louie 10–15 s mit mehreren Geschwindigkeiten in beide Richtungen. Gemessen werden Anlaufspannung (ab wann dreht er überhaupt), Leerlaufstrom je Stufe und Stromspitze beim Anlauf. Daraus setzt die Firmware Mindestspannung, Blockierschwelle und Hebel-Erkennungsschwelle automatisch. *Hinweis: Ersetzt teilweise das manuelle Messen der Turbo-Grenze; Turbo selbst nicht automatisch hochdrehen.*
-  <br>`technik-8` · Kalibrierung · Aufwand mittel · HW ja · ★ 3 · V1 0/4
-- **Kontaktqualität im Batteriefach messen** — Springt der Motorstrom im Lauf kurz auf null, ohne dass der Hebel bewegt wurde, deutet das auf Wackelkontakt an Feder oder Blech. Die Diagnose zählt diese Aussetzer und zeigt "Kontakte prüfen". Wichtig, weil die Platine ohne Löten nur eingeklemmt ist. *Hinweis: Schwer zu unterscheiden von sehr kurzem Hebel-Wackeln; Dauer als Kriterium.*
-  <br>`technik-21` · Diagnose · Aufwand klein · HW ja · ★ 3 · V1 0/4
-- **Werksreset in Stufen** — Stufe 1: nur Admin-Passwort und WLANs zurücksetzen. Stufe 2: zusätzlich Konfiguration und Kalibrierung. Stufe 3: alles inklusive eigener Modi und Statistik. Per Admin-Seite oder lange Hebel-Geste; die Firmware selbst bleibt immer erhalten.
-  <br>`technik-26` · Sicherheit · Aufwand klein · HW ja · ★ 3 · V1 0/4
-- **Lautstärke-Grenzen für Handy-Sounds** — Admin legt eine maximale Lautstärke für Soundeffekte im Web-UI fest und kann eine Ruhezeit einstellen (z. B. ab 20 Uhr keine Sounds, keine Vibration). Für Partymodus abschaltbar. *Hinweis: Browser erlaubt keine echte Systemlautstärke; es geht nur um die Lautstärke der eigenen Audio-Elemente.*
-  <br>`technik-35` · Kindersicherheit · Aufwand klein · HW ja · ★ 3 · V1 0/4
-- **Partie-Code statt offenem Zugang** — Im Heim-WLAN erscheint auf dem Spielleiter-Handy ein vierstelliger Code oder QR-Code; nur wer ihn eingibt, kann einen Platz belegen. Verhindert, dass Mitbewohner oder Nachbarn im selben Netz heimlich Rückspuler drücken.
-  <br>`technik-38` · Netzsicherheit · Aufwand klein · HW ja · ★ 3 · V1 0/4
-- **Hotspot-Passwort rotieren** — Neben dem festen Aufkleber-Passwort kann der Admin ein temporäres Party-Passwort erzeugen, das nach dem Schlafmodus wieder verfällt. Der QR-Code wird dann auf dem Spielleiter-Handy angezeigt statt vom Aufkleber gescannt. *Hinweis: Gäste müssen sich nach jedem Wecken neu verbinden.*
-  <br>`technik-39` · Netzsicherheit · Aufwand mittel · HW ja · ★ 3 · V1 0/4
-- **Kraftmesser: Wer bremst Louie?** — Der Motorstrom steigt, wenn eine Wippe Louie stark anhebt oder ein Spieler das Flugzeug mechanisch bremst. Das UI zeigt live eine "Louie-Belastung"-Anzeige; Treffer mit hoher Last erscheinen als Effekt ("Bumm!"). Wer welcher Spieler war, sieht die Elektronik nicht, aber die Stimmung wird hörbar und sichtbar. *Hinweis: Ob Wippen-Treffer im Strom überhaupt messbar sind, muss am echten Spiel getestet werden; Rauschen durch PWM und Bürsten.*
-  <br>`technik-50` · Motorstrom-Spielfunktion · Aufwand mittel · HW eingeschränkt · ★ 3 · V1 0/4
-- **Überlast als Spielereignis "Louie wird sauer"** — Wird Louie wiederholt stark gebremst, reagiert der Modus: kurze Pause, dann ein Rachestoß nach vorne (innerhalb der Grenzen). Die Strommessung wird so vom Schutz zur Spielmechanik, und das Gegenhalten bekommt eine Konsequenz. *Hinweis: Nur sinnvoll, wenn Bremsen zuverlässig erkennbar ist; darf nie die Blockier-Abschaltung aushebeln.*
-  <br>`technik-54` · Motorstrom-Spielfunktion · Aufwand mittel · HW eingeschränkt · ★ 3 · V1 0/4
-- **Status-LED als Sicherheits-Ampel** — Neben dem Netzmodus zeigt die LED auch Sicherheitszustände: Doppelblitz = Blockade erkannt, Dauerflackern = Akku fast leer, langsames Pulsieren = Abkühlpause. So versteht man ohne Handy, warum Louie gerade nicht fliegt. *Hinweis: LED sitzt im Batteriefach; Sichtbarkeit von außen hängt vom Modell ab (altes Modell offen, neues mit Deckel).*
-  <br>`technik-56` · Kindersicherheit · Aufwand klein · HW ja · ★ 3 · V1 0/4
-- **Transport- und Lagermodus** — Admin oder Hebel-Geste schickt Louie in einen Tiefschlaf ohne Hebel-Wecken (nur per USB-Strom aufweckbar). Verhindert, dass Louie in der Spielekiste durch Rütteln am Hebel ständig aufwacht und den Akku leert. Ergänzt den optionalen Schiebeschalter. *Hinweis: Aufwecken nur per USB setzt eine VBUS-Erkennung oder Reset per USB voraus; sonst Wecken über langes Hebel-an halten.*
-  <br>`technik-57` · Akkuschutz · Aufwand klein · HW eingeschränkt · ★ 3 · V1 0/4
-- **Selbstentladungs-Wächter im Schlaf** — Der ESP wacht im Deep Sleep z. B. einmal am Tag per Timer auf, misst die Akkuspannung und geht bei kritischem Stand in einen noch tieferen Schlaf ohne weitere Timer. Beim nächsten Wecken warnt das UI: "Akku war lange leer, bitte laden."
-  <br>`technik-58` · Akkuschutz · Aufwand klein · HW ja · ★ 3 · V1 0/4
-- **Getriebe-Verschleißzähler** — Gesamtlaufzeit, Anzahl Starts, Richtungswechsel, Blockaden und Turbo-Sekunden werden selten (z. B. am Rundenende) ins Flash geschrieben. Im Diagnose-Bereich sieht der Besitzer, wie viel Louie schon hinter sich hat; optional Hinweis "Getriebe mal prüfen". *Hinweis: Flash-Schreibzyklen beachten: nur am Rundenende speichern.*
-  <br>`technik-6` · Diagnose · Aufwand klein · HW ja · ★ 2 · V1 0/4
-- **Leerlaufstrom-Trend als Verschleiß-Indikator** — Bei jeder Runde wird der mittlere Strom bei 100 % in den ersten Sekunden gespeichert. Steigt er über Wochen, ist das Getriebe schwergängig (Staub, Haare, ausgeleierter Arm). Die Diagnose zeigt eine kleine Kurve und schlägt Reinigen vor. *Hinweis: Streut mit Akkuspannung und Temperatur; nur grober Trend.*
-  <br>`technik-7` · Diagnose · Aufwand mittel · HW ja · ★ 2 · V1 0/4
-- **Akku-Innenwiderstand schätzen** — Akkuspannung kurz vor und während einer Motorstufe plus gemessener Strom ergeben den Innenwiderstand. Steigt er stark, ist der LiPo gealtert oder zu klein; Diagnose zeigt "Akku schwach, Ersatz empfohlen". Hilft auch, eine echte Restlaufzeit-Anzeige zu rechnen.
-  <br>`technik-12` · Akkuschutz · Aufwand mittel · HW ja · ★ 2 · V1 0/4
-- **Live-Oszilloskop für Strom und Spannung** — Admin-Ansicht mit einer scrollenden Kurve von Motorstrom, Akkuspannung und Sollwert (ca. 20 Werte/s über WebSocket). Praktisch zum Festlegen der Turbo-Grenze und um Blockier-Schwellen sichtbar zu machen. *Hinweis: Nur für Admin und nur außerhalb von Runden mit vielen Clients, sonst WebSocket-Last.*
-  <br>`technik-23` · Diagnose · Aufwand mittel · HW ja · ★ 2 · V1 0/4
-- **Motor als Lautsprecher (Piepsen)** — Mit kurzer PWM im hörbaren Bereich (z. B. 1–3 kHz, kleiner Tastgrad) gibt der Motor leise Töne von sich, ohne sich zu drehen. Damit kann Louie ohne Handy quittieren: Startton, Countdown, Fehlercode, "Akku leer". Leise genug, um nicht zu stören. *Hinweis: Lautstärke und Klang modellabhängig, im Spiel kaum hörbar; nicht bei laufendem Motor. Tastgrad klein halten, damit sich nichts bewegt.*
-  <br>`technik-24` · Hardware-Trick · Aufwand klein · HW eingeschränkt · ★ 2 · V1 0/4
-- **Spielzeit-Limit für Eltern** — Admin-Einstellung: max. Spielzeit pro Tag oder Anzahl Runden, danach nur noch Klassisch per Hebel oder gar nichts. Ohne echte Uhr zählt die Firmware ab Aufwecken; mit Heim-WLAN kann sie per NTP die Uhrzeit holen. *Hinweis: Im Hotspot-Betrieb keine Uhrzeit; Zeit vom ersten verbundenen Handy übernehmen wäre eine Alternative.*
-  <br>`technik-36` · Kindersicherheit · Aufwand mittel · HW eingeschränkt · ★ 2 · V1 0/4
-- **Treffer-Zähler aus Stromspitzen** — Jede kurze Stromspitze im Lauf wird als "Kontakt" gezählt (Louie trifft Wippe oder Chip). Am Rundenende gibt es eine Statistik: "Louie wurde 37-mal abgewehrt". Für Trinkspiel-Varianten: alle 10 Treffer ein Schluck für alle. *Hinweis: Unklar, ob einzelne Treffer sauber vom Rauschen trennbar sind; vorher mit dem Oszilloskop-Ansicht prüfen.*
-  <br>`technik-51` · Motorstrom-Spielfunktion · Aufwand mittel · HW eingeschränkt · ★ 2 · V1 0/4
-- **Automatische Modellerkennung** — Über den Wicklungswiderstand (SENSE-Teiler bei stehendem Motor) und den Leerlaufstrom bei kleiner Spannung schlägt die Firmware das passende Modellprofil vor (Louie alt 1,5 V vs. neu/Chewie 3 V). Der Nutzer bestätigt nur noch. *Hinweis: Unterscheidung neu vs. Chewie vermutlich nicht möglich; Auflösung des SENSE-Teilers bei wenigen Ohm sehr grob. Falsch erkanntes 1,5-V-Modell mit 3 V betreiben wäre schädlich, daher nur Vorschlag mit konservativem Default.*
-  <br>`technik-9` · Kalibrierung · Aufwand mittel · HW eingeschränkt · ★ 1 · V1 0/4
-- **Drehrichtung automatisch erkennen** — Statt "Dreht Louie richtig herum?" zu fragen, könnte eine Asymmetrie im Strombild (Getriebe/Arm läuft in eine Richtung leichter) die Richtung verraten. Realistischer: Richtung per Frage festlegen, aber per Hebel-Geste umschaltbar, falls das Handy fehlt. *Hinweis: Automatische Erkennung unsicher; Hebel-Geste als Fallback ist sicher machbar.*
-  <br>`technik-10` · Kalibrierung · Aufwand klein · HW eingeschränkt · ★ 1 · V1 0/4
-- **Admin-Funktionen nur im Hotspot oder per USB** — Option: Kritische Admin-Seiten (Update, WLAN-Passwörter, Werksreset) sind nur erreichbar, wenn man direkt mit dem Louie-Hotspot verbunden ist oder per USB-Konsole. Im Heim-WLAN bleibt nur das Spiel erreichbar. *Hinweis: Komfortverlust; als Admin-Option, nicht als Standard.*
-  <br>`technik-41` · Netzsicherheit · Aufwand mittel · HW ja · ★ 1 · V1 0/4
-- **WLAN-Zugangsdaten nie zurücklesbar** — Gespeicherte WLAN-Passwörter kann man im UI nur überschreiben oder löschen, nie anzeigen. Konfigurations-Export enthält sie standardmäßig nicht. Optional Verschlüsselung mit dem eFuse-Schlüssel des ESP32-C3 (Flash-Verschlüsselung). *Hinweis: Flash-Verschlüsselung erschwert Bastler-Zugriff per USB erheblich; eher nicht als Default.*
-  <br>`technik-42` · Datenschutz · Aufwand mittel · HW eingeschränkt · ★ 1 · V1 0/4
-- **Signierte Update-Pakete** — Update-Pakete (Python-Dateien, Web-UI) tragen eine Ed25519-Signatur des Projekts; die Firmware prüft sie vor dem Einspielen. Wer eigene Firmware will, kann per Admin-Option eigene Schlüssel hinterlegen oder die Prüfung bewusst abschalten (mit Hebel-Bestätigung). *Hinweis: Signaturprüfung in MicroPython ohne Web Crypto im Browser machbar (Prüfung auf dem ESP), aber Rechenzeit und Bibliothek klären; SHA-256-Prüfsumme als einfache Vorstufe.*
-  <br>`technik-45` · Update-Sicherheit · Aufwand mittel · HW eingeschränkt · ★ 1 · V1 0/4
-- **Rundenzeit-Messung ohne Sensor** — Der Bürstenmotor erzeugt im Strom eine Welligkeit pro Kommutierung; daraus ließe sich die Drehzahl schätzen (sensorlose Drehzahlmessung). Damit könnte die Firmware echte Umdrehungen zählen und die Geschwindigkeit bei Last nachregeln. *Hinweis: Ripple-Counting braucht schnelle ADC-Abtastung und gute Filterung; mit 20-kHz-PWM und RC-Filter am ADC fraglich. Alternative: Gegen-EMK in kurzen PWM-Pausen messen.*
-  <br>`technik-52` · Motorstrom-Spielfunktion · Aufwand groß · HW eingeschränkt · ★ 0 · V1 0/4
-- **Gegen-EMK-Drehzahlmessung in Pausen** — In kurzen Freilaufmomenten (einige ms) misst die Firmware die Spannung, die der drehende Motor selbst erzeugt. Das ergibt eine Drehzahl, mit der eine echte Drehzahlregelung möglich wird: Louie fliegt gleich schnell, egal wie stark gebremst wird, oder Spielmodi in Umdrehungen statt Sekunden. *Hinweis: SENSE-Pfad über 100k ist nur bei Treiber-Sleep nutzbar und eher langsam; Machbarkeit am Steckbrett prüfen.*
-  <br>`technik-53` · Motorstrom-Spielfunktion · Aufwand groß · HW eingeschränkt · ★ 0 · V1 0/4
-- **Erkennen, ob ein Chip auf Louie liegt** — Wildere Idee: Ein im Arm verkeilter Chip oder ein abgerissenes Flugzeug ändern das Lastprofil dauerhaft. Weicht der Leerlaufstrom stark vom kalibrierten Wert ab, fragt das UI "Ist Louie noch ganz?". *Hinweis: Chips sind sehr leicht; vermutlich nur grobe Defekte erkennbar.*
-  <br>`technik-55` · Motorstrom-Spielfunktion · Aufwand mittel · HW eingeschränkt · ★ 0 · V1 0/4
+- **Rewind lock circuit** — The rewind is debounced globally: after each reverse kick there is a global protection time in which nobody can trigger a new one, no matter how many players have allowance left. Plus a share cap per round. So four phones together cannot produce continuous reverse travel. *Note: Builds on the server limits from the software concept; what matters is the global cooldown instead of only per player.*
+  <br>`technik-29` · Abuse protection · effort small · HW yes · ★ 10 · V1 4/4
+- **Block detection with immediate stop** — If the motor current rises above a threshold and stays there longer than approx. 200–300 ms (Louie hangs on a paddle, finger in the arm), the firmware switches to braking and then off. The UI shows "Louie is stuck"; it only continues after lever off/on. Complements the 2 A current limit of the DRV8213 (ITRIP via R_IPROPI), which only limits and does not switch off. *Note: The threshold depends on the model and must be learned (see calibration run); mask short current spikes at start-up.*
+  <br>`technik-1` · Motor protection · effort small · HW yes · ★ 9 · V1 4/4
+- **Game master emergency stop in the UI** — On every game master and admin screen an always visible red stop button that brakes immediately, regardless of the mode. Optionally also enabled for player phones ("anyone may stop"), e.g. with small children. *Note: Does not replace the lever, which disconnects in hardware.*
+  <br>`technik-32` · Child safety · effort small · HW yes · ★ 9 · V1 4/4
+- **Direction change always through zero with dead time** — Forward to reverse never happens directly: ramp to 0, brake briefly, 50–150 ms pause, then ramp in the opposite direction. Applies in the lowest motor layer, also for rewind kicks. This makes the reverse kick feel short but hardly stresses battery and gearbox. *Note: The ramp noticeably eats time from a 0.5 s kick; define the kick duration as net reverse time.*
+  <br>`technik-3` · Motor protection · effort small · HW yes · ★ 8 · V1 4/4
+- **Safe defaults for an unknown model** — As long as no model profile is selected, the most cautious profile applies (1.5 V old Louie, no turbo, no reverse). So a freshly gifted kit can never overdrive the old 1.5 V motor with 4.2 V.
+  <br>`technik-48` · Motor protection · effort small · HW yes · ★ 8 · V1 4/4
+- **Prevent seat theft** — An occupied seat can only be taken over if the previous client has been gone for 60 s or the game master releases it. Prevents a guest from hijacking a player's seat and using up their boosts or rewinds. Limit new sessions per device (second phone trick).
+  <br>`technik-30` · Abuse protection · effort small · HW yes · ★ 8 · V1 3/4
+- **Multi-stage watchdog** — Level 1: the motor task stops after 500 ms without fresh setpoints. Level 2: the hardware watchdog restarts if the main program hangs. Level 3: after three crashes in a row the firmware starts in "safe mode" without custom modes and without updates, only Classic plus the admin page. *Note: Safe mode needs immutable fallback logic in the frozen modules.*
+  <br>`technik-16` · Robustness · effort medium · HW yes · ★ 7 · V1 4/4
+- **Start-up masking and soft start** — When starting and at every direction change, the current is briefly high. Block detection is then suspended for a time window; at the same time the motor starts via a ramp instead of at full duty cycle. This prevents false alarms and voltage dips.
+  <br>`technik-2` · Motor protection · effort small · HW yes · ★ 7 · V1 3/4
+- **Undervoltage in three stages** — Stage 1 (e.g. 3.5 V under load): warning in the UI and LED pattern. Stage 2 (3.4 V): turbo and reverse locked, top speed drops. Stage 3 (3.3 V): round ends cleanly with a hint, motor off, Wi-Fi only. Below 3.2 V deep sleep, before the battery protection circuit cuts off hard. *Note: Measure voltage under load and correct for internal resistance, otherwise false warnings on boosts.*
+  <br>`technik-11` · Battery protection · effort small · HW yes · ★ 7 · V1 3/4
+- **Lever gestures with time window and confirmation** — Gestures (force hotspot, admin reset, factory reset) only apply in the first 10 s after waking and are acknowledged by an LED/beep pattern; a second gesture confirms. So no child accidentally triggers a factory reset while wildly flipping the lever.
+  <br>`technik-25` · Safety · effort small · HW yes · ★ 7 · V1 2/4
+- **Turbo time budget** — Above the nominal voltage the motor may only run for a limited time, e.g. max. 10 s at a time and max. 20 % of the round. Afterwards automatically back to 100 %. The admin sets the values; modes and boosts cannot override them.
+  <br>`technik-5` · Motor protection · effort small · HW yes · ★ 6 · V1 3/4
+- **Rate limit per session and per device** — The server accepts only a limited number of actions per second per session (e.g. 5 messages/s, boost key otherwise ignored after cooldown). Whoever spams via script or constant pressing is throttled and marked on the game master screen. Also protects the scarce RAM.
+  <br>`technik-28` · Abuse protection · effort small · HW yes · ★ 6 · V1 3/4
+- **Update with rollback and trial run** — After an update the new version starts in a trial run. Only when the self-test and web server run and the admin presses "confirm" (or 3 starts without a crash) does it become permanent. Otherwise automatically back to the previous version. Never update during a round and only with sufficient battery.
+  <br>`technik-46` · Update safety · effort medium · HW yes · ★ 6 · V1 2/4
+- **Configuration with checksum and fallback copy** — config.json and calibration are stored with a checksum, plus a last good copy. If the main file is damaged (power failure while writing), the firmware loads the copy or safe defaults instead of running with broken limits.
+  <br>`technik-47` · Robustness · effort small · HW yes · ★ 6 · V1 2/4
+- **Secure lever detection via current** — While running, "lever off" is detected by zero current. So that this is not misinterpreted due to a brief zero current during ramps or braking, a minimum duty cycle applies when checking, plus a confirmation via SENSE after a short driver sleep. Result: round end is detected reliably.
+  <br>`technik-49` · Robustness · effort small · HW yes · ★ 6 · V1 2/4
+- **Connection limit and guest kick** — Maximum e.g. 8 clients; if the limit is reached, pure guests without a seat are disconnected first. The game master can block individual devices for the game. Protects the ESP from too many open WebSockets.
+  <br>`technik-31` · Abuse protection · effort small · HW yes · ★ 6 · V1 1/4
+- **No telemetry, visibly assured** — The firmware never connects to the internet (except optional NTP and update check, both switchable and off by default). The info screen clearly states what is stored. Important because children play and the device is given away.
+  <br>`technik-44` · Privacy · effort small · HW yes · ★ 5 · V1 2/4
+- **Motor off when the game master loses connection (optional)** — In modes that depend heavily on the phone (e.g. game master controls live), Louie drops back to a safe base speed if the controlling client sends nothing for 3 s. The lever keeps working independently.
+  <br>`technik-17` · Robustness · effort small · HW yes · ★ 5 · V1 1/4
+- **Self-test at start** — After waking, the firmware checks in under a second: motor connected (SENSE), battery voltage plausible, zero point of the current measurement (IPROPI). Result as an LED pattern and as a traffic light in diagnostics. Helps builders find wrongly inserted boards or bad contacts.
+  <br>`technik-20` · Diagnostics · effort small · HW yes · ★ 5 · V1 1/4
+- **Physical proof of ownership via lever** — Critical actions (set admin password, firmware update, limits above default, open hotspot) must additionally be confirmed within 30 s by lever on/off. Whoever is only on the Wi-Fi but not sitting at the table cannot change anything important.
+  <br>`technik-27` · Access security · effort small · HW yes · ★ 5 · V1 1/4
+- **Kids mode with current sensitivity** — An admin preset: no turbo, no reverse, lower top speed and much more sensitive block detection, so that Louie stops even with light finger resistance. For toddlers who like to reach into the arm. *Note: Sensitivity is limited by the current measurement; light touching may produce hardly any current rise.*
+  <br>`technik-33` · Child safety · effort small · HW yes · ★ 5 · V1 1/4
+- **Safety limits only upwards with a warning** — If the admin sets the turbo limit, reverse duration or ramp above the project recommendation, the UI shows a clear warning about risks (motor wear, frustration, brownout) and requires lever confirmation. Absolute hard limits (e.g. never above 4.2 V battery, never above 2 A) are fixed in the code.
+  <br>`technik-59` · Safety · effort small · HW yes · ★ 5 · V1 1/4
+- **Thermal motor model (I²t)** — The firmware integrates the measured current over time and so estimates the heating of motor and driver. If turbo is played for a long time or blocking happens often, the allowed top speed drops gently ("Louie is exhausted") until he has cooled down. Protects the small original motor, for which there is no datasheet. *Note: Model parameters can only be roughly estimated; start conservatively.*
+  <br>`technik-4` · Motor protection · effort medium · HW yes · ★ 5 · V1 0/4
+- **Finger pinch protection by backing off** — When a blockage is detected, Louie not only stops but makes a tiny jolt backwards (e.g. 100 ms at low voltage) to release a trapped finger or a wedged chicken, and then stays put. *Note: Only very short and weak, otherwise it becomes a hazard itself; as an option.*
+  <br>`technik-34` · Child safety · effort small · HW yes · ★ 5 · V1 0/4
+- **Data-minimal profiles** — Profiles contain only nickname, color and emoji, no real names, no photos, no device IDs other than the random token. Statistics are local and can be deleted with one button; profiles expire automatically after x days without use.
+  <br>`technik-43` · Privacy · effort small · HW yes · ★ 5 · V1 0/4
+- **Brownout detector and cause memory** — After every restart the firmware reads the reset reason (brownout, watchdog, crash, normal) and stores the last 10 with a timestamp relative to uptime and the last motor level. If brownouts pile up at direction changes, the ramp automatically becomes flatter.
+  <br>`technik-15` · Robustness · effort small · HW yes · ★ 4 · V1 1/4
+- **Harden session tokens** — Tokens are random (hardware RNG of the ESP), expire, are regenerated at admin login and are bound to the seat. Admin rights only via HttpOnly cookie, never in localStorage. Without HTTPS a residual risk remains, but copying a player token does not give admin rights.
+  <br>`technik-40` · Network security · effort small · HW yes · ★ 4 · V1 1/4
+- **Remaining play time display** — From the state of charge (voltage curve) and typical consumption per round, the lobby shows "enough for about 12 more rounds" instead of just a percentage. More understandable than volts for parties. *Note: State of charge via voltage is only rough for LiPo; learned values from past rounds improve the estimate.*
+  <br>`technik-13` · Battery protection · effort medium · HW yes · ★ 4 · V1 0/4
+- **Charge detection and playing while charging** — When USB voltage is present (indirectly detectable via rising battery voltage over the cable, or via a VBUS divider), the UI shows "charging" and pauses sleep mode. Optionally lock turbo while charging so that power path and charge controller are not overloaded. *Note: Without a dedicated VBUS pin only indirectly detectable; a free GPIO (IO2/IO8 are strapping pins) would need a board change.*
+  <br>`technik-14` · Battery protection · effort medium · HW limited · ★ 4 · V1 0/4
+- **Chip temperature and driver over-temperature** — The ESP32-C6 has an internal temperature sensor; together with the current trace at IPROPI (the DRV8213 switches off by itself at over-temperature; a fault pin is not connected) this gives a simple heat warning in the battery compartment. At the limit: lock turbo, then pause with the hint "Louie needs a break". *Note: The internal sensor measures the chip, not motor or battery; LiPo temperature cannot be measured without an NTC. An NTC on the charger board would be a hardware extension.*
+  <br>`technik-18` · Robustness · effort small · HW limited · ★ 4 · V1 0/4
+- **Separate guest network instead of home Wi-Fi** — On the home Wi-Fi every party guest only sees the control if they are on the home network. Recommendation in the UI: for parties use the own hotspot, so guests do not have to join the home network. Louie offers a one-tap toggle "Party hotspot" for this.
+  <br>`technik-37` · Network security · effort small · HW yes · ★ 4 · V1 0/4
+- **Fault analysis in plain language** — Driver faults are not just reported as "error" but interpreted from current (IPROPI), SENSE and voltage at the time: "short circuit/blockage", "undervoltage at the driver", "too hot". Fault log with the latest events in the diagnostics area. *Note: The DRV8213 has no fault pin on the board (no nFAULT connected); interpretation is heuristic.*
+  <br>`technik-19` · Diagnostics · effort small · HW limited · ★ 3 · V1 1/4
+- **Diagnostics export for makers** — A button creates a JSON file with firmware version, model profile, calibration values, counters, fault log and reset reasons, without Wi-Fi passwords and player names. Can be attached to a GitHub issue if you gave the kit away and the recipient has problems.
+  <br>`technik-22` · Diagnostics · effort small · HW yes · ★ 3 · V1 1/4
+- **Calibration run during setup** — In the setup wizard Louie runs for 10–15 s at several speeds in both directions. Measured are start-up voltage (from when does it turn at all), idle current per level and current spike at start-up. From this the firmware sets minimum voltage, block threshold and lever detection threshold automatically. *Note: Partly replaces manual measurement of the turbo limit; do not ramp up turbo itself automatically.*
+  <br>`technik-8` · Calibration · effort medium · HW yes · ★ 3 · V1 0/4
+- **Measure contact quality in the battery compartment** — If the motor current briefly jumps to zero while running without the lever being moved, this indicates a loose contact at spring or plate. Diagnostics count these dropouts and show "Check contacts". Important because the board is only clamped in without soldering. *Note: Hard to distinguish from very short lever wobbling; use duration as criterion.*
+  <br>`technik-21` · Diagnostics · effort small · HW yes · ★ 3 · V1 0/4
+- **Factory reset in stages** — Stage 1: reset only admin password and Wi-Fi networks. Stage 2: additionally configuration and calibration. Stage 3: everything including custom modes and statistics. Via admin page or long lever gesture; the firmware itself is always kept.
+  <br>`technik-26` · Safety · effort small · HW yes · ★ 3 · V1 0/4
+- **Volume limits for phone sounds** — The admin sets a maximum volume for sound effects in the web UI and can set a quiet time (e.g. from 20:00 no sounds, no vibration). Can be switched off for party mode. *Note: The browser does not allow real system volume; this only concerns the volume of the page's own audio elements.*
+  <br>`technik-35` · Child safety · effort small · HW yes · ★ 3 · V1 0/4
+- **Game code instead of open access** — On the home Wi-Fi a four-digit code or QR code appears on the game master phone; only whoever enters it can take a seat. Prevents flatmates or neighbors on the same network from secretly pressing rewinds.
+  <br>`technik-38` · Network security · effort small · HW yes · ★ 3 · V1 0/4
+- **Rotate hotspot password** — Besides the fixed sticker password, the admin can create a temporary party password that expires again after sleep mode. The QR code is then shown on the game master phone instead of being scanned from the sticker. *Note: Guests must reconnect after every wake-up.*
+  <br>`technik-39` · Network security · effort medium · HW yes · ★ 3 · V1 0/4
+- **Force meter: who is braking Louie?** — The motor current rises when a paddle lifts Louie strongly or a player mechanically brakes the plane. The UI shows a live "Louie load" indicator; hits with high load appear as an effect ("Boom!"). The electronics cannot see which player it was, but the mood becomes audible and visible. *Note: Whether paddle hits are measurable in the current at all must be tested on the real game; noise from PWM and brushes.*
+  <br>`technik-50` · Motor current game feature · effort medium · HW limited · ★ 3 · V1 0/4
+- **Overload as game event "Louie gets angry"** — If Louie is repeatedly braked hard, the mode reacts: short pause, then a revenge kick forwards (within the limits). The current measurement thus turns from protection into game mechanics, and holding against it has a consequence. *Note: Only useful if braking is reliably detectable; must never override the block shutdown.*
+  <br>`technik-54` · Motor current game feature · effort medium · HW limited · ★ 3 · V1 0/4
+- **Status LED as safety traffic light** — Besides the network mode, the LED also shows safety states: double flash = blockage detected, constant flicker = battery almost empty, slow pulsing = cool-down break. So you understand without a phone why Louie is not flying. *Note: The LED sits in the battery compartment; visibility from outside depends on the model (old model open, new one with lid).*
+  <br>`technik-56` · Child safety · effort small · HW yes · ★ 3 · V1 0/4
+- **Transport and storage mode** — Admin or lever gesture sends Louie into a deep sleep without lever wake-up (only wakeable via USB power). Prevents Louie from constantly waking up in the games box through jostling of the lever and draining the battery. Complements the optional slide switch. *Note: Wake-up only via USB requires VBUS detection or reset via USB; otherwise wake by holding lever on for a long time.*
+  <br>`technik-57` · Battery protection · effort small · HW limited · ★ 3 · V1 0/4
+- **Self-discharge guard during sleep** — The ESP wakes up from deep sleep e.g. once a day via timer, measures the battery voltage and at a critical level goes into an even deeper sleep without further timers. At the next wake-up the UI warns: "Battery was empty for a long time, please charge."
+  <br>`technik-58` · Battery protection · effort small · HW yes · ★ 3 · V1 0/4
+- **Gearbox wear counter** — Total runtime, number of starts, direction changes, blockages and turbo seconds are written to flash rarely (e.g. at round end). In the diagnostics area the owner sees how much Louie has already been through; optionally a hint "check the gearbox". *Note: Observe flash write cycles: save only at round end.*
+  <br>`technik-6` · Diagnostics · effort small · HW yes · ★ 2 · V1 0/4
+- **Idle current trend as wear indicator** — In each round the average current at 100 % during the first seconds is stored. If it rises over weeks, the gearbox is stiff (dust, hair, worn arm). Diagnostics show a small curve and suggest cleaning. *Note: Varies with battery voltage and temperature; only a rough trend.*
+  <br>`technik-7` · Diagnostics · effort medium · HW yes · ★ 2 · V1 0/4
+- **Estimate battery internal resistance** — Battery voltage shortly before and during a motor step plus the measured current give the internal resistance. If it rises sharply, the LiPo has aged or is too small; diagnostics show "Battery weak, replacement recommended". Also helps to compute a real remaining runtime display.
+  <br>`technik-12` · Battery protection · effort medium · HW yes · ★ 2 · V1 0/4
+- **Live oscilloscope for current and voltage** — Admin view with a scrolling curve of motor current, battery voltage and setpoint (approx. 20 values/s via WebSocket). Useful for setting the turbo limit and for making block thresholds visible. *Note: Only for admin and only outside rounds with many clients, otherwise WebSocket load.*
+  <br>`technik-23` · Diagnostics · effort medium · HW yes · ★ 2 · V1 0/4
+- **Motor as speaker (beeping)** — With short PWM in the audible range (e.g. 1–3 kHz, small duty cycle) the motor emits quiet tones without turning. This lets Louie acknowledge without a phone: start tone, countdown, error code, "battery empty". Quiet enough not to disturb. *Note: Volume and sound depend on the model, hardly audible in the game; not while the motor is running. Keep the duty cycle small so nothing moves.*
+  <br>`technik-24` · Hardware trick · effort small · HW limited · ★ 2 · V1 0/4
+- **Play time limit for parents** — Admin setting: max. play time per day or number of rounds, after that only Classic via lever or nothing at all. Without a real clock the firmware counts from wake-up; with home Wi-Fi it can get the time via NTP. *Note: No time of day in hotspot operation; taking the time from the first connected phone would be an alternative.*
+  <br>`technik-36` · Child safety · effort medium · HW limited · ★ 2 · V1 0/4
+- **Hit counter from current spikes** — Each short current spike while running is counted as a "contact" (Louie hits a paddle or chip). At round end there is a statistic: "Louie was fended off 37 times". For drinking game variants: every 10 hits a sip for everyone. *Note: Unclear whether individual hits can be cleanly separated from noise; check beforehand with the oscilloscope view.*
+  <br>`technik-51` · Motor current game feature · effort medium · HW limited · ★ 2 · V1 0/4
+- **Automatic model detection** — Via the winding resistance (SENSE divider with the motor stopped) and the idle current at low voltage, the firmware suggests the matching model profile (old Louie 1.5 V vs. new/Chewie 3 V). The user only confirms. *Note: Distinguishing new vs. Chewie is probably not possible; resolution of the SENSE divider at a few ohms is very coarse. Running a wrongly detected 1.5 V model at 3 V would be harmful, so only a suggestion with a conservative default.*
+  <br>`technik-9` · Calibration · effort medium · HW limited · ★ 1 · V1 0/4
+- **Detect direction automatically** — Instead of asking "Is Louie turning the right way?", an asymmetry in the current pattern (gearbox/arm runs more easily in one direction) could reveal the direction. More realistic: set the direction by question, but switchable via lever gesture if the phone is missing. *Note: Automatic detection is uncertain; a lever gesture as fallback is reliably feasible.*
+  <br>`technik-10` · Calibration · effort small · HW limited · ★ 1 · V1 0/4
+- **Admin functions only on the hotspot or via USB** — Option: critical admin pages (update, Wi-Fi passwords, factory reset) are only reachable when connected directly to the Louie hotspot or via USB console. On the home Wi-Fi only the game remains reachable. *Note: Loss of convenience; as an admin option, not as default.*
+  <br>`technik-41` · Network security · effort medium · HW yes · ★ 1 · V1 0/4
+- **Wi-Fi credentials never readable** — Saved Wi-Fi passwords can only be overwritten or deleted in the UI, never displayed. The configuration export does not contain them by default. Optional encryption with the eFuse key of the ESP32-C6 (flash encryption). *Note: Flash encryption makes maker access via USB considerably harder; rather not as default.*
+  <br>`technik-42` · Privacy · effort medium · HW limited · ★ 1 · V1 0/4
+- **Signed update packages** — Update packages (firmware image, web UI) carry an Ed25519 signature of the project; the firmware verifies it before installing. Whoever wants their own firmware can store their own keys via an admin option or deliberately switch off the check (with lever confirmation). *Note: Verification on the ESP in the firmware (Rust library or Secure Boot of ESP-IDF) is feasible, path still to be clarified; SHA-256 checksum as a simple first step.*
+  <br>`technik-45` · Update safety · effort medium · HW limited · ★ 1 · V1 0/4
+- **Round time measurement without a sensor** — The brushed motor produces a ripple in the current per commutation; the speed could be estimated from it (sensorless speed measurement). The firmware could then count real revolutions and readjust the speed under load. *Note: Ripple counting needs fast ADC sampling and good filtering; questionable with 20 kHz PWM and the RC filter at IPROPI. Alternative: measure back-EMF in short PWM pauses.*
+  <br>`technik-52` · Motor current game feature · effort large · HW limited · ★ 0 · V1 0/4
+- **Back-EMF speed measurement in pauses** — In short freewheeling moments (a few ms) the firmware measures the voltage that the turning motor generates itself. This gives a speed that makes real speed control possible: Louie flies equally fast no matter how hard he is braked, or game modes in revolutions instead of seconds. *Note: The SENSE path via 100k is only usable during driver sleep and rather slow; check feasibility on the breadboard.*
+  <br>`technik-53` · Motor current game feature · effort large · HW limited · ★ 0 · V1 0/4
+- **Detect whether a chip is lying on Louie** — Wilder idea: a chip wedged in the arm or a torn-off plane changes the load profile permanently. If the idle current deviates strongly from the calibrated value, the UI asks "Is Louie still in one piece?". *Note: Chips are very light; probably only gross defects are detectable.*
+  <br>`technik-55` · Motor current game feature · effort medium · HW limited · ★ 0 · V1 0/4

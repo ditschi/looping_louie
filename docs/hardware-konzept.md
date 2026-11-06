@@ -1,351 +1,339 @@
-# Hardware-Konzept: Looping Louie WLAN-Upgrade
+# Hardware concept: Looping Louie Wi-Fi upgrade
 
-Stand: 2026-10-31 · Status: Entwurf, Projektgerüst und Bauteilauswahl stehen
+Status: 2026-11-06 · Part selection and main board (4 layers) are fixed, routing with the optional pads is in
+progress. Main board details: [hauptplatine-c6.md](hauptplatine-c6.md). Rejected variants:
+[decision-history.md](decision-history.md).
 
-## 1. Ziel
+## 1. Goal
 
-Ein Nachrüst-Bausatz, der **ohne Löten** in das Batteriefach von Looping Louie (und Loopin' Chewie)
-eingesetzt wird und das Spiel per **Web-UI vom Handy** steuerbar macht.
+A retrofit kit that goes into the battery compartment of Looping Louie (and Loopin' Chewie) **without soldering**
+and makes the game controllable through a **web UI on a phone**.
 
-Anforderungen:
+Requirements:
 
-- **Original-Hebel bleibt** und ist der einzige Bedienknopf am Spiel: Start/Stopp der Runde
-  (und Aufwecken der Elektronik, siehe 5.3).
-- Elektronik ist nach dem Aufwecken **dauerhaft aktiv** und liefert einen Webserver aus,
-  unabhängig davon, ob gerade gespielt wird.
-- Spielmodus kann **nicht während einer laufenden Runde** gewechselt werden.
-- Mehrere Clients gleichzeitig: Spielleiter + Spieler (Boosts von ausgeschiedenen Spielern usw.).
-- Eigene Spielmodi anlegen und unter einem Namen speichern.
-- Versorgung über **1S-LiPo mit USB-C-Ladung** statt 9-V-Block.
-- **Eine Hauptplatine im AA-Format für alle Modelle**, nur der mechanische Adapter unterscheidet sich.
-- Offen (KiCad), nachbaubar, bei JLCPCB o. Ä. bestückt bestellbar → verschenkbar.
+- **The original lever stays** and is the only control on the game: start/stop of the round
+  (and wake-up of the electronics, see 5.3).
+- After wake-up the electronics stay **permanently active** and serve a web server,
+  whether a game is running or not.
+- The game mode **cannot be changed during a running round**.
+- Several clients at once: game master + players (boosts from eliminated players etc.).
+- Create custom game modes and save them under a name.
+- Power from a **1S LiPo with USB-C charging** instead of a 9 V block.
+- **One main board in AA format for all models**; only the mechanical adapter differs.
+- Open (KiCad), reproducible, orderable assembled from JLCPCB or similar → can be given away.
 
-## 2. Unterstützte Modelle
+## 2. Supported models
 
-| Modell | Batteriefach | Nennspannung Motor | Spieler |
+| Model | Battery compartment | Motor rated voltage | Players |
 |---|---|---|---|
-| Looping Louie alt (Milton Bradley) | 1× Baby (C), offenes Fach ohne Deckel, Blech auf einer Seite, Feder auf der anderen | 1,5 V | 4 |
-| Looping Louie neu (Hasbro, kleiner) | 2× AA, zwei getrennte Kammern | 3 V | 4 |
-| Loopin' Chewie | 2× AA (Annahme; falls nicht, wird Chewie nicht unterstützt) | 3 V | 3 |
+| Looping Louie old (Milton Bradley) | 1× C (baby), open compartment without lid, metal plate on one side, spring on the other | 1.5 V | 4 |
+| Looping Louie new (Hasbro, smaller) | 2× AA, two separate chambers | 3 V | 4 |
+| Loopin' Chewie | 2× AA (assumption; if not, Chewie is not supported) | 3 V | 3 |
 
-Original-Schaltung: Batteriefach → Hebel → Motor. Im alten Modell nachweislich **nur Leitungen**,
-kein Kondensator, keine Diode. Kein Regler, kein Rückwärtslauf.
+Original circuit: battery compartment → lever → motor. In the old model it is verifiably **only wires**,
+no capacitor, no diode. No regulator, no reverse operation.
 
-## 3. Systemübersicht
+## 3. System overview
 
 ```
-        ┌──────────────────── Looping Louie (unverändert) ────────────────────┐
-        │   Kontakt 1 ──── Hebel ──── Motor ──── Kontakt 2                    │
+        ┌──────────────────── Looping Louie (unchanged) ──────────────────────┐
+        │   Contact 1 ──── lever ──── motor ──── Contact 2                    │
         └──────┬───────────────────────────────────────┬──────────────────────┘
                │                                       │
-   ┌───────────┴───────────────┐            (2× AA: über Fachbrücke
-   │ Platine A  (AA-Format)    │             und Platine B = Brücke)
-   │  ESP32-C6 + Antenne       │                       │
-   │  H-Brücke DRV8833         │───────────────────────┘
-   │  3,3-V-Regler             │
-   │  Hebel-Erkennung          │
-   │  Puffer-Kondensator       │
+   ┌───────────┴───────────────┐            (2× AA: via compartment bridge
+   │ Board A  (AA format)      │             and board B = bridge)
+   │  ESP32-C6 + antenna       │                       │
+   │  H-bridge DRV8213         │───────────────────────┘
+   │  USB-C J4 + power path    │
+   │  3.3 V regulator          │
+   │  lever detection          │
+   │  buffer capacitors        │
    └───────────┬───────────────┘
-               │ Kabel: VSYS, D+, D−, GND (4 Adern, siehe ladeplatine.md)
+               │ cable: BAT_IN, GND (2 wires to J1, see ladeplatine.md)
    ┌───────────┴───────────────┐
-   │ Ladeplatine (AA / Basis)  │
-   │  USB-C, Laderegler,       │
-   │  Power-Path, Akkuschutz   │──── JST ──── 1S-LiPo
+   │ Charger board (AA / base) │
+   │  USB-C, charge controller,│
+   │  power path, cell protect.│──── JST ──── 1S LiPo
    └───────────────────────────┘
 ```
 
-## 4. Baugruppen
+## 4. Assemblies
 
-### 4.1 Platine A: Hauptplatine im AA-Format
+### 4.1 Board A: main board in AA format
 
-**Vorgabe ist allein die Größe einer AA-Zelle** (Ø 14,5 × 50,5 mm). Dass das ins Fach passt, ist
-bekannt; der *Salto Sammy* zeigt, dass Elektronik in diese Form passt.
+**The only constraint is the size of an AA cell** (Ø 14.5 × 50.5 mm). It is known that this fits into the
+compartment; the *Salto Sammy* shows that electronics fit into this form.
 
-- Platine **46 × 13,5 mm, 0,8 mm dick, 4 Lagen** (Entscheidung 2026-11-03): Lagenaufbau JLC-Standard
-  **JLC04081H-3313** (0,8 mm, außen 1 oz, innen 0,5 oz); L1 Bauteile/Signale, L2 (In1) durchgehende GND-Lage,
-  L3 (In2) Signale, L4 Lötpads/Signale; Regeln 0,15/0,15 mm, Via 0,3/0,5 mm. Vollständig geroutet (0 offen);
-  die 2-Lagen-Variante blieb bei 13 offenen Verbindungen und ist verworfen (Details:
-  [hauptplatine-c6.md](hauptplatine-c6.md) Kapitel 11). Maße in `hardware/scripts/board_outline.py`.
-  Die Breite gibt das ESP32-C3-MINI-1 vor (13,2 mm). An den Enden bleiben je ca. 2 mm für die
-  Kontakte (Mechanik offen).
-- **Bauhöhe bei einseitiger Bestückung**: Die Platine liegt leicht unter der Mitte der AA-Hülle
-  (Oberseite ca. 0,5 mm über der Mitte). Dann passt das Modul (13,2 × 2,4 mm) mit ca. 0,1 mm Luft
-  an den Ecken. Schmale Bauteile (≤ 4 mm breit) dürfen bis ca. 6 mm hoch sein. Die Höhe ist also
-  kein Problem, **knapp ist die Fläche**.
+- Board **46 × 13.5 mm, 0.8 mm thick, 4 layers** (decision 2026-11-03): JLC standard stackup
+  **JLC04081H-3313** (0.8 mm, outer 1 oz, inner 0.5 oz); L1 components/signals, L2 (In1) solid GND layer,
+  L3 (In2) signals, L4 solder pads/signals; rules 0.15/0.15 mm, via 0.3/0.5 mm (details:
+  [hauptplatine-c6.md](hauptplatine-c6.md) chapter 11). Dimensions in `hardware/scripts/board_outline.py`.
+  The width is set by the ESP32-C6-MINI-1 (13.2 mm). About 2 mm remain at each end for the
+  contacts (mechanics open).
+- **Height with single-sided assembly**: The board sits slightly below the center of the AA sleeve
+  (top side about 0.5 mm above the center). Then the module (13.2 × 2.4 mm) fits with about 0.1 mm clearance
+  at the corners. Narrow parts (≤ 4 mm wide) may be up to about 6 mm high. So height is
+  not a problem; **area is the tight constraint**.
 
-#### Bestückungsstrategie (in dieser Reihenfolge versuchen)
+#### Assembly
 
-1. **Einseitig bestückt**: alle Bauteile oben, Platine vom Hersteller fertig bestückt.
-2. **Oben bestückt, unten Handlöten**: Hersteller bestückt die Oberseite; auf der Unterseite liegen
-   nur gut von Hand lötbare Teile (0603 und größer, keine Fine-Pitch-ICs, keine Pads unter dem
-   Bauteil). Die Platine wird trotzdem beidseitig gefertigt, nur einseitig bestückt.
-3. **Beidseitig bestückt**: letzter Ausweg (teurer, nicht bei jedem Hersteller günstig).
+**Single-sided machine assembly with 0402 passives** (top); the bottom has only solder pads, test points and
+unassembled footprints (DNP), no connectors. Board B stays a pure bridge. Common parts from several
+manufacturers (see `hardware/bom/teile.csv`).
 
-**Ergebnis (2026-11-01):** Mit 0603 passt Weg 1 nicht, Weg 2 passt. Aus Kostengründen gewählt:
-**Weg 1b – einseitig mit 0402-Passiven und Lötpads statt Stecker** (passt; auf 4 Lagen vollständig geroutet).
-Platine B bleibt eine reine Brücke. Details und Zahlen: [offene-punkte.md](offene-punkte.md).
+- **The two ends are the H-bridge outputs directly** (OUT1 / OUT2). Therefore the
+  mounting direction does not matter; "forward" is calibrated once in software.
+- Contents (part list in 5.5): ESP32-C6-MINI-1, DRV8213, 3.3 V LDO, USB-C with ESD and
+  power path, 2 × 47 µF buffer, lever detection, voltage divider, status LED, LIS2DH12 (optional),
+  solder pads for cable, cell, I²C, service, player inputs and LED connection.
+- Layout: H-bridge and buffer at one end, ESP module with antenna at the other, no copper under the antenna
+  on any of the four layers.
 
-Bauteile sind so gewählt, dass alle drei Wege gehen: kleinste Bauform 0603, ICs mit Beinchen
-(SOT-23, HTSSOP), gängige Teile mehrerer Hersteller (siehe `hardware/bom/teile.csv`).
-- **Die beiden Enden sind direkt die H-Brücken-Ausgänge** (OUT1 / OUT2). Deshalb ist die
-  Einbaurichtung egal; „vorwärts“ wird einmalig in der Software kalibriert.
-- Inhalt (Stand C6-Umbau, Bauteilliste in 5.5): ESP32-C6-MINI-1, DRV8213, 3,3-V-LDO, USB-C mit ESD und
-  Power-Path, 2 × 47 µF Puffer, Hebel-Erkennung, Spannungsteiler, Status-LED, LIS2DH12 (optional),
-  Lötpads für Kabel, Zelle, I²C und Service.
-- Layout: H-Brücke und Puffer am einen Ende, ESP-Modul mit Antenne am anderen, auf keiner der vier Lagen
-  Kupfer unter der Antenne.
+### 4.2 Board B: bridge (2× AA only)
 
-### 4.2 Platine B: Brücke (nur bei 2× AA)
+- Pure copper bridge top ↔ bottom end in AA format, no components, very cheap.
+- **Not needed if the charger board stands upright in compartment 2** – it has the same bridge built in.
+- Motor current flows `Contact 1 → A → compartment bridge → B → Contact 2`.
+- A later board B with electronics (e.g. "charger + sensor") is possible
+  ([hauptplatine-c6.md](hauptplatine-c6.md) 5.3); in the old model **both boards then go into the
+  C-cell adapter** (see 6).
 
-- Reine Kupferbrücke oberes ↔ unteres Ende im AA-Format, keine Bauteile, sehr billig.
-- **Entfällt, wenn die Ladeplatine hochkant in Fach 2 steckt** – sie hat dieselbe Brücke eingebaut.
-- Motorstrom läuft `Kontakt 1 → A → Fachbrücke → B → Kontakt 2`.
-- **Reserve:** Reicht auch die beidseitige Bestückung von A nicht, ziehen Puffer-Kondensator und
-  Kabelanschluss auf B um. Dann braucht es 2–3 Adern zwischen A und B über die Trennwand der
-  Kammern; notfalls dafür etwas Plastik an der Trennwand wegschneiden (akzeptabel).
-- Im Reservefall kommen beim alten Modell **beide Platinen in die C-Hülse** (siehe 6).
-  Verworfen: eine breitere Sondervariante von A für die C-Hülse. Das wäre ein zweites
-  Platinendesign ohne Vorteil, da A und B ohnehin in die Hülse passen.
+### 4.3 Charger board
 
-### 4.3 Ladeplatine
+Worked out in [ladeplatine.md](ladeplatine.md) (circuit, layout, holder, **wiring diagram**).
 
-Ausgearbeitet in [ladeplatine.md](ladeplatine.md) (Schaltung, Layout, Halter, **Verdrahtungsbild**).
+- **AA format** (46 × 12.5 × 1.6 mm). Stands **upright** in the second AA compartment and takes over the
+  bridge there; the horizontal USB-C socket on the long edge then points up out of the compartment.
+  Alternatively flat in a holder in the base, socket through a hole in the wall.
+- MCP73831 (500 mA) with **load sharing** (Schottky + P-MOSFET, Microchip AN1149): play while charging.
+- ESD protection USBLC6-2SC6, charge indicator LED, JST-PH and solder pads for the battery.
+- Flashing only via J4 on A; the USB socket of the charger board is for charging only (hauptplatine-c6.md 2.4).
+- Cable to A: 2 wires (VSYS → J1-1 BAT_IN, GND → J1-4); J1-2/3 have no net.
+- The battery sits in the base.
 
-- **AA-Format** (46 × 12,5 × 1,6 mm). Steckt **hochkant** im zweiten AA-Fach und übernimmt dort die
-  Brücke; die liegende USB-C-Buchse an der Längskante zeigt dann nach oben aus dem Fach.
-  Alternativ flach in einem Halter in der Basis, Buchse durch ein Loch in der Wand.
-- MCP73831 (500 mA) mit **Load-Sharing** (Schottky + P-MOSFET, Microchip AN1149): spielen beim Laden.
-- ESD-Schutz USBLC6-2SC6, Ladeanzeige-LED, JST-PH und Lötpads für den Akku.
-- ~~USB D+/D− werden zur Platine A durchgereicht~~ – entfällt mit der C6-Hauptplatine: Flashen nur über J4
-  auf A, die USB-Buchse der Ladeplatine dient nur zum Laden (hauptplatine-c6.md, Kapitel 8).
-- Kabel zu A: 2 Adern (VSYS → J1-1 BAT_IN, GND → J1-4); J1-2/3 sind ohne Netz.
-- Der Akku sitzt in der Basis.
+## 5. Circuit details
 
-## 5. Schaltungsdetails
+### 5.1 Motor stage
 
-### 5.1 Motorstufe
+- **DRV8213DSG** (1.65–11 V, 4 A peak), details in [hauptplatine-c6.md](hauptplatine-c6.md) chapter 3.
+- **Current sensing and limiting via IPROPI:** R1 1.24 k limits to about 2 A and protects motor, battery
+  and board. The IPROPI voltage goes through an RC filter (1 k / 100 n) to the ADC (255 mV/A):
+  motor current for start-up, stall and lever detection while running.
+- **Autosleep** at IN1 = IN2 = 0 (< 60 nA), outputs then high-impedance; no nSLEEP pin.
+- Supply VM directly from VSYS (3.0–5.5 V: battery or USB).
+- **PWM about 20 kHz** (LEDC) so nothing whines. The old code used 1 kHz, which is audible.
+- Reverse operation and active braking possible.
+- Ramps in the firmware against voltage dips (lesson from *MADXhh/LoopingLouieAdvanced*:
+  otherwise brownout and reboot on direction change).
+- **Currents do not need to be measured for the layout:** At 20 kHz the motor winding smooths
+  the current; the mean follows the effective voltage. With duty cycle limiting and ramps
+  the motor sees roughly the currents it sees at its rated voltage. Design with margin
+  (2 A limit, wide traces on bridge and contacts). A measurement later only serves
+  to set the turbo limit and battery size.
 
-- **DRV8833** (2,7–10,8 V), beide H-Brücken parallel: laut Datenblatt bis ca. 3 A RMS / 4 A Spitze.
-- **Shunt 0,1 Ω an AISEN/BISEN**: Der DRV8833 begrenzt damit selbst auf ca. 2 A (200 mV / 0,1 Ω),
-  schützt also Motor, Akku und Platine. Gleichzeitig wird die Shunt-Spannung über ein RC-Filter
-  vom ADC gemessen: Motorstrom für Anlauf-Erkennung und Hebel-Erkennung während der Fahrt.
-- Versorgung VM direkt aus VSYS (LiPo 3,0–4,2 V).
-- **PWM ca. 20 kHz**, damit nichts pfeift. Der alte Code nutzte 1 kHz, das ist hörbar.
-- Rückwärtslauf und aktives Bremsen möglich.
-- Rampen in der Firmware gegen Spannungseinbrüche (Lehre aus *MADXhh/LoopingLouieAdvanced*:
-  sonst Brownout und Neustart bei Richtungswechsel).
-- **Ströme müssen für das Layout nicht gemessen werden:** Bei 20 kHz glättet die Motorwicklung
-  den Strom; der Mittelwert folgt der effektiven Spannung. Mit Tastgrad-Begrenzung und Rampen
-  sieht der Motor etwa die Ströme wie an seiner Nennspannung. Auslegung mit Reserve
-  (DRV8833 parallel, breite Bahnen auf Brücke und Kontakten). Eine Messung dient später nur
-  zum Festlegen von Turbo-Grenze und Akkugröße.
+### 5.2 Lever detection via the motor circuit
 
-### 5.2 Hebel-Erkennung über den Motorstromkreis
-
-Der Original-Hebel liegt in Reihe mit dem Motor. Ist die H-Brücke im Sleep (Ausgänge hochohmig):
+The original lever is in series with the motor. When the H-bridge is in autosleep (outputs high-impedance):
 
 ```
-3,3 V ──[100k]──┬── OUT1 ── Kontakt 1 ── Hebel ── Motor (wenige Ω) ── Kontakt 2 ── OUT2 ──[10k]── GND
-                │
-           SENSE (GPIO, über Schutzwiderstand)
+GND ──[100k R3]──┬── OUT_A ── Contact 1 ── lever ── motor (few Ω) ── Contact 2 ── OUT_B ──[10k R4]── 3.3 V
+                 │
+            SENSE (IO3, via protection resistor R5 100k)
 ```
 
-- Hebel **offen**: SENSE ≈ 3,3 V → „Stopp“
-- Hebel **zu**: SENSE ≈ 0,3 V (Teiler 100k/10k über die Motorwicklung) → „Start“
-- Liefert gleichzeitig: „Motor angeschlossen?“
-- Während der Motor läuft, ist SENSE nicht aussagekräftig. Dann wird der Hebel per **Strom**
-  erkannt: Bei offenem Hebel fließt trotz PWM kein Strom durch den Shunt (siehe 5.1).
-- SENSE geht über einen Schutzwiderstand (100k) an den GPIO, weil OUT1 beim Fahren bis zur
-  Akkuspannung (4,2 V) hochgeht.
-- 10k nach GND an OUT2 kosten beim Rückwärtsfahren ca. 0,4 mA, vernachlässigbar.
-- Altes Modell hat keine Entstörbauteile und keine Diode → Prinzip ohne Einschränkung nutzbar.
-  Beim neuen Modell mögliche Entstörbauteile stören die DC-Messung nicht; eine Diode in Reihe
-  wäre ein Problem (beim ersten neuen Modell prüfen).
+- Lever **open**: SENSE ≈ 0 V → "stop"
+- Lever **closed**: SENSE ≈ 3.0 V (divider 10k/100k across the motor winding) → "start", wakes from deep sleep
+- Also tells: "motor connected?"
+- While the motor runs, SENSE is not meaningful. Then the lever is detected by **current**:
+  with the lever open, no current flows despite PWM (IPROPI, see 5.1).
+- SENSE goes to the GPIO through a protection resistor (100k) because OUT_A rises up to the
+  supply voltage (up to 5.5 V) while driving.
+- R4 on OUT_B costs about 0.3 mA while driving, or feeds about 0.2 mA back into 3V3 at 5.5 V; not critical
+  (hauptplatine-c6.md 2.5).
+- The old model has no suppression components and no diode → principle usable without restriction.
+  Possible suppression components in the new model do not disturb the DC measurement; a diode in series
+  would be a problem (check on the first new model).
 
-Dass dieses Prinzip funktioniert, zeigt der *Salto Sammy Pro*: Dort wählt man den Modus durch
-mehrfaches Umlegen des Original-Hebels.
+The *Salto Sammy Pro* shows that this principle works: there the mode is selected by
+flipping the original lever several times.
 
-### 5.3 Energiesparen und Aufwecken (kein extra Hauptschalter)
+### 5.3 Power saving and wake-up (no extra main switch)
 
-- Nach einstellbarer Leerlaufzeit (z. B. 15 min ohne Spiel und ohne Client): **Deep Sleep**.
-  DRV8833 in Sleep, LDO mit geringem Ruhestrom → einige µA bis wenige zehn µA.
-- **Aufwecken durch Umlegen des Louie-Hebels**: SENSE liegt auf einem Pin, der den ESP32-C3 aus
-  dem Deep Sleep weckt (GPIO0–5).
-- Nach dem Aufwecken startet zuerst das WLAN, die Runde erst beim nächsten Umlegen bzw. per
-  Web-UI-Freigabe. Wie genau, entscheiden wir beim Software-Konzept.
+- After a configurable idle time (e.g. 15 min without game and without client): **deep sleep**.
+  DRV8213 in autosleep, LDO with low quiescent current → a few µA to a few tens of µA.
+- **Wake-up by flipping the Louie lever**: SENSE is on IO3 (LP GPIO) and wakes the ESP32-C6
+  from deep sleep with ANY_HIGH. Further wake sources: INT (IO2), VBUS_DET (IO4), S1 (IO5).
+- After wake-up Wi-Fi starts first; the round starts only on the next lever flip or on
+  release from the web UI. The details are decided in the software concept.
 
-### 5.4 Stromversorgung
+### 5.4 Power supply
 
-- **1S-LiPo** 3,0–4,2 V mit Schutzschaltung, Größe nach Platz (z. B. 1000–2000 mAh).
-- **Akkuspannung messen** (Spannungsteiler an ADC). Damit wird die Motorspannung unabhängig
-  vom Ladezustand konstant geregelt: `duty = U_soll / U_akku`.
-- Unterspannung: Spiel stoppen und im Web-UI warnen, bevor der Akkuschutz abschaltet.
+- **1S LiPo** 3.0–4.2 V with protection circuit, size depending on space (e.g. 1000–2000 mAh).
+- **Inputs on A (3.0–5.5 V):** USB-C J4 via Schottky D2 to VSYS; battery or charger board (BAT_IN, J1/J5) via
+  P-FET Q1 (blocks when USB is present, reverse polarity protection). IO4 (VBUS_DET) detects USB plugged in.
+- **Measure supply voltage** (divider 470k/470k on IO0). This keeps the motor voltage constant
+  regardless of the state of charge: `duty = U_soll / U_akku`.
+- Undervoltage: stop the game and warn in the web UI before the cell protection cuts off.
 
-### 5.5 Mikrocontroller: ESP32-C3 → **Wechsel auf ESP32-C6** (Entscheidung 2026-11-02)
+### 5.5 Microcontroller: ESP32-C6
 
-> **Der ESP32-C3 ist verworfen.** Neu ist das **ESP32-C6-MINI-1** (gleiche Größe 13,2 × 16,6 mm, integrierte
-> Antenne). Gründe: etwa doppelt so viel freier RAM mit WLAN + BLE (BTHome-Taster in V1), 22 statt 15 GPIOs
-> (8 frei statt keinem), ADC bis 3,3 V, Wecken aus LP-GPIOs, 802.15.4 (Zigbee/Thread) als Option für später;
-> der C3-MINI-1-N4 ist bei LCSC als NRND markiert. Mehrkosten ca. +1 USD pro Board. Details:
-> [analyse-funk-controller.md](analyse-funk-controller.md) (3b) und [hauptplatine-c6.md](hauptplatine-c6.md)
-> (Umbau, Pinbelegung, Flash, Motoransteuerung, Zigbee). Die Angaben unten beschreiben den Stand nach dem
-> C6-Umbau (Probeplatzierung, Routing noch nicht vollständig, siehe hauptplatine-c6.md Kapitel 8).
+The **ESP32-C6-MINI-1** (13.2 × 16.6 mm, integrated antenna) offers enough free RAM for Wi-Fi + BLE
+(BTHome buttons), 22 GPIOs, ADC up to 3.3 V, wake from LP GPIOs and 802.15.4 (Zigbee/Thread) as an option. Analysis:
+[analyse-funk-controller.md](analyse-funk-controller.md) 3b; board: [hauptplatine-c6.md](hauptplatine-c6.md).
 
-- **ESP32-C6-MINI-1-H8** (8 MB Flash, C42403058), Rückfall **-N4** (4 MB, C5736265) ohne Layoutänderung:
-  13,2 × 16,6 × 2,4 mm, Antenne integriert. Footprint `lcsc:WIFIM-SMD_ESP32-C6-MINI-1` (Pads wie C3, 3D-Modell
-  des C6; der KiCad-Footprint `RF_Module:ESP32-C6-MINI-1` wird wegen seiner Antennen-Sperrzone nicht genutzt).
-- **Native USB** (IO12/IO13) über die **USB-C-Buchse J4 auf der Platine** (Variante E): Flashen, Debug und
-  5-V-Betrieb inkl. Motor. Power-Path: VBUS über Schottky D2 auf VSYS, Akku/Ladeplatine (BAT_IN) über P-FET Q1.
-- Updates später per WLAN (OTA).
-- Pinbelegung (Stand Schaltplan `hardware/main-board/louie-main.kicad_sch`, Umbau 2026-11-02, Details und
-  Begründungen in [hauptplatine-c6.md](hauptplatine-c6.md) 2.3):
+- **ESP32-C6-MINI-1-H8** (8 MB flash, C42403058), fallback **-N4** (4 MB, C5736265) without layout change.
+  Footprint `lcsc:WIFIM-SMD_ESP32-C6-MINI-1` (the KiCad footprint `RF_Module:ESP32-C6-MINI-1` is not used because of its
+  antenna keep-out zone).
+- **Native USB** (IO12/IO13) via the **USB-C socket J4 on the board**: flashing, debug and 5 V operation incl.
+  motor. Power path see 5.4.
+- Updates later via Wi-Fi (OTA, with 8 MB flash).
+- **Pin assignment:** [hauptplatine-c6.md](hauptplatine-c6.md) 2.3 is authoritative. In short:
 
-| GPIO (Pad) | Netz | Funktion |
+| Group | GPIOs |
+|---|---|
+| ADC | IO0 VBAT_ADC (divider 470k/470k), IO1 ISEN_ADC (IPROPI, 255 mV/A), IO4 VBUS_DET |
+| Wake (LP GPIO) | IO3 SENSE (lever, ANY_HIGH), IO2 INT (LIS2DH12/J2), IO4 VBUS_DET, IO5 S1 |
+| Motor | IO18 MOT_IN1, IO19 MOT_IN2 (LEDC PWM) |
+| I²C | IO6 SDA, IO7 SCL (LIS2DH12, pads J2, pull-ups R16/R10) |
+| USB, service | IO12/IO13 USB (J4), IO9 BOOT, IO16 TXD, IO17 RXD (pads J3) |
+| Player inputs J6 | S1 IO5, S2 IO20, S3 IO21, S4 IO8 (strapping, 10k pull-up R11) |
+| LED | IO14 status LED, IO23 data J7, IO15 enable load switch U6 (VLED on J7) |
+| free | IO22 (reserve) |
+
+**All GPIOs except IO22 (reserve) are in use**; IO5, IO8, IO15, IO20, IO21 and IO23 go to optional pads and
+unassembled footprints on the bottom (hauptplatine-c6.md 11.7, [idee-optionale-hardware.md](idee-optionale-hardware.md) 0b.4).
+
+Components of board A (source of truth: `hardware/bom/teile.csv`):
+
+| Ref | Part | Function |
 |---|---|---|
-| IO0 (12) | VBAT_ADC | ADC VSYS (Teiler 470k/470k, bis 5,5 V → 2,75 V) |
-| IO1 (13) | ISEN_ADC | ADC Motorstrom: IPROPI des DRV8213 über R1 1,24 k, RC 1 k/100 n (255 mV/A) |
-| IO2 (5) | INT | INT1 des LIS2DH12 (bestückungsoptional) und Pad J2; LP-GPIO, weckt aus Deep Sleep |
-| IO3 (6) | SENSE | Hebel-Erkennung, „Hebel zu“ = HIGH, Wecken mit `WAKEUP_ANY_HIGH` |
-| IO4 (9) | VBUS_DET | VBUS-Teiler 100k/100k (USB gesteckt), ADC + LP-Wecken |
-| IO5 (10) | IO5 | Reserve, Pad J3-5 (zweiter Taster) |
-| IO6 (15) | SDA | I²C-Daten (LIS2DH12, Pad J2), 10k Pull-up R16 |
-| IO7 (16) | SCL | I²C-Takt (LIS2DH12, Pad J2), 10k Pull-up R10 |
-| IO8 (22) | IO8 | Strapping-Pin, 10k Pull-up R11 (beim Download 1) |
-| IO9 (23) | BOOT | Pad J3-3, Taster gegen GND; beim Reset gedrückt = Download-Modus |
-| IO12 / IO13 (17/18) | USB_D− / USB_D+ | USB-C J4 (ESD U5); J1-2/3 bleiben frei |
-| IO14 (19) | LED | Status-LED über 1k |
-| IO18 (24) | MOT_IN1 | DRV8213 IN1 (PWM) |
-| IO19 (25) | MOT_IN2 | DRV8213 IN2 (PWM) |
-| TXD0 / IO16 (31) | TXD | Pad J3-2 (serielle Konsole, ROM-Log) |
-| IO15, IO17, IO20–IO23 | – | frei (IO20 = nSLEEP nur beim Rückfall DRV8833) |
-
-Bauteile von Platine A (Stand Umbau, Quelle der Wahrheit: `hardware/bom/teile.csv`):
-
-| Ref | Bauteil | Aufgabe |
-|---|---|---|
-| U1 | ESP32-C6-MINI-1-H8 (Rückfall -N4) | MCU, WLAN/BLE/802.15.4 |
-| U2 | DRV8213DSGR (WSON-8 2 × 2) | H-Brücke mit IPROPI-Strommessung, Strombegrenzung 2 A (R1 1,24 k), Autosleep |
-| U3 | AP2112K-3.3 | LDO 3,3 V |
-| U4 + C15 | LIS2DH12 + 100 n | Beschleunigungssensor, **bestückungsoptional** (DNP möglich) |
+| U1 | ESP32-C6-MINI-1-H8 (fallback -N4) | MCU, Wi-Fi/BLE/802.15.4 |
+| U2 | DRV8213DSGR (WSON-8 2 × 2) | H-bridge with IPROPI current sensing, current limit 2 A (R1 1.24 k), autosleep |
+| U3 | AP2112K-3.3 | LDO 3.3 V |
+| U4 + C15 | LIS2DH12 + 100 n | accelerometer, **assembly optional** (DNP possible) |
 | U5 | USBLC6-2SC6 | ESD USB |
-| J4 | HRO TYPE-C-31-M-12 | USB-C an der Längskante +y, Öffnung 0,7 mm zurückgesetzt |
-| D2, Q1 | SS34F (SMAF), AO3401A | Power-Path VBUS → VSYS bzw. BAT_IN → VSYS (Verpolschutz) |
-| R12/R13, R14/R15 | 5,1 k, 100 k/100 k | CC-Senke, VBUS_DET-Teiler (zugleich Gate-Pull-down Q1) |
-| C1, C2 | 47 µF 1206 | Puffer VSYS (C3 entfällt) |
-| C4, C8–C14 | 0402/0603 | Abblock, EN-RC, ADC-Filter |
-| R1–R11, R16 | 0402 | IPROPI, EN, Hebel-Erkennung (R3 OUT_A → GND, R4 OUT_B → 3V3, R5), Teiler, LED, Pull-ups |
-| D1 | LED grün 0402 | Status |
-| J1, J2, J3, J5 | Lötpads unten | Kabel Ladeplatine (BAT_IN, –, –, GND), I²C/INT, Service (EN, TXD, BOOT, GND, IO5), Zelle |
-| BT1, BT2 | Pads unten | Endkontakte OUT_A / OUT_B |
+| J4 | HRO TYPE-C-31-M-12 | USB-C on the long edge +y, opening set back 0.7 mm |
+| D2, Q1 | SS34F (SMAF), AO3401A | power path VBUS → VSYS or BAT_IN → VSYS (reverse polarity protection) |
+| R12/R13, R14/R15 | 5.1 k, 100 k/100 k | CC sink, VBUS_DET divider (also gate pull-down Q1) |
+| C1, C2 | 47 µF 1206 | buffer VSYS |
+| C4, C8–C14 | 0402/0603 | decoupling, EN RC, ADC filter |
+| R1–R11, R16 | 0402 | IPROPI, EN, lever detection (R3 OUT_A → GND, R4 OUT_B → 3V3, R5), dividers, LED, pull-ups |
+| D1 | LED green 0402 | status |
+| J1, J2, J3, J5 | solder pads bottom | cable to charger board (BAT_IN, –, –, GND), I²C/INT, service (EN, TXD, BOOT, GND, RXD), cell |
+| J6, J7 | solder pads bottom | player inputs (3V3, S1 IO5, S2 IO20, S3 IO21, S4 IO8, GND), LED (VLED, IO23, GND) |
+| U6, F1, C17, R22, JP1 | bottom, **DNP** | load switch TPS22918 (IO15), PTC 0.5 A, 10 µF, pull-down; solder jumper VSYS → VLED (open) |
+| R19, R20, C16 | bottom, **DNP** | circuit for IO5 (S1): 10 k to 3V3, 1 M and 10 n to GND |
+| TP1, TP2 | test points bottom | VSYS, VBUS (measure ISEN at R1, SENSE at R5 on top) |
+| BT1, BT2 | pads bottom | end contacts OUT_A / OUT_B |
 
-## 6. Mechanik und Adapter
+## 6. Mechanics and adapters
 
-| Modell | Platine A | Platine B | Adapter |
+| Model | Board A | Board B | Adapter |
 |---|---|---|---|
-| 2× AA (neu, Chewie) | direkt in Kammer 1 | Kammer 2: **Ladeplatine hochkant** (übernimmt die Brücke); Platine B nur, wenn die Ladeplatine in der Basis sitzt | AA-Einsatz der Ladeplatine; Kabel am Deckel vorbei |
-| 1× C (alt) | in 3D-gedruckter C-Hülse | entfällt (im Reservefall ebenfalls in der Hülse, Brücke ungenutzt) | Hülse Ø 26 × 50 mm |
+| 2× AA (new, Chewie) | directly in chamber 1 | chamber 2: **charger board upright** (takes over the bridge); board B only if the charger board sits in the base | AA insert of the charger board; cable past the lid |
+| 1× C (old) | in 3D-printed C-cell adapter | not needed (in the fallback case also in the adapter, bridge unused) | adapter Ø 26 × 50 mm |
 
-- Reservefall A + B in der C-Hülse: beide Platinen übereinander mit ca. 10 mm Abstand
-  (je ±5 mm von der Mitte). Dort ist die Hülse noch ca. 24 mm breit, je Platine 4–5 mm
-  Bauhöhe → passt mit Reserve. Gleiche Platinen und gleiches Kabel wie bei 2× AA.
+- Fallback case A + B in the C-cell adapter: both boards stacked about 10 mm apart
+  (each ±5 mm from the center). There the adapter is still about 24 mm wide, 4–5 mm
+  height per board → fits with margin. Same boards and same cable as with 2× AA.
 
-- C-Hülse: Platine A sitzt mittig, an den Enden flache Kontaktflächen. Gegenüber liegen im Fach
-  ein flaches Blech und eine Feder; der Pluspol-Nippel muss nicht nachgebildet werden, sofern das
-  Blech flach anliegt. C-Zelle und AA-Zelle sind fast gleich lang (50 vs. 50,5 mm), es braucht
-  also keine Längenüberbrückung.
-- Altes Modell hat keinen Deckel → Kabel kommt einfach oben aus dem Fach.
+- C-cell adapter: board A sits in the center, flat contact surfaces at the ends. Opposite them in the compartment
+  are a flat metal plate and a spring; the positive terminal nub does not need to be replicated as long as the
+  plate lies flat. C cell and AA cell are almost the same length (50 vs. 50.5 mm), so
+  no length extension is needed.
+- The old model has no lid → the cable simply comes out of the top of the compartment.
 
-### 6.1 Druckteile (`hardware/mechanik/huelle.scad`, Export: `just stl`)
+### 6.1 Printed parts (`hardware/mechanik/huelle.scad`, export: `just stl`)
 
-Alle Teile drucken **ohne Stützmaterial**; Montage nur durch Stecken, kein Werkzeug.
+All parts print **without support material**; assembly only by plugging together, no tools.
 
-| Teil | Anzahl | Druckausrichtung | Aufgabe |
+| Part | Count | Print orientation | Function |
 |---|---|---|---|
-| AA-Schale | 1 | aufrecht (gleicher Querschnitt über die Länge) | trägt die Platine von unten, Tasche für Lötpads und Kabel, Kabelfenster seitlich an J1 |
-| Kappe plus / minus | je 1 | Innenseite auf dem Bett | halten die Platinenenden in einem Schlitz (0,8 mm Überdeckung), Pluspol-Nippel optional |
-| C-Hülse | 1 (nur altes Modell) | aufrecht | AA→C-Adapter, Längsschlitz für das Kabel |
+| AA shell | 1 | upright (same cross-section along the length) | carries the board from below, pocket for solder pads and cable, cable window on the side at J1 |
+| Cap plus / minus | 1 each | inner side on the bed | hold the board ends in a slot (0.8 mm overlap), positive terminal nub optional |
+| C-cell adapter | 1 (old model only) | upright | AA→C adapter, longitudinal slot for the cable |
 
-- **Oberseite im AA-Format offen:** Die Platine (13,5 mm) ist fast so breit wie die AA-Hülle
-  (14,5 mm), über dem Modul bleibt am Rand keine Wandstärke. Das Fach selbst umschließt den
-  Einsatz; beim C-Adapter ist er vollständig eingeschlossen.
-- **Endkontakte:** Nickelband 4 × 0,15 mm auf BT1/BT2 löten, unter der Platine durch den
-  Schlitz der Kappe führen und außen über die Mitte umbiegen (beantwortet F3 vorläufig).
-- **Dübel:** 4 Stücke 1,75-mm-Filament à ca. 6 mm (Loch 1,95 mm), bei Bedarf mit einem Tropfen Kleber.
-- Montage: Bänder anlöten → Kabel an J1 löten und durchs Fenster führen → Platine in die Schale
-  → Kappen mit Dübeln aufstecken, Bänder umbiegen → (C) in die Hülse schieben, Kabel im Schlitz.
+- **Top side open in AA format:** The board (13.5 mm) is almost as wide as the AA sleeve
+  (14.5 mm); above the module no wall thickness remains at the edge. The compartment itself encloses the
+  insert; with the C-cell adapter it is fully enclosed.
+- **End contacts:** Solder nickel strip 4 × 0.15 mm onto BT1/BT2, route it under the board through the
+  slot of the cap and bend it over the center on the outside (answers F3 provisionally).
+- **Dowels:** 4 pieces of 1.75 mm filament, about 6 mm each (hole 1.95 mm), with a drop of glue if needed.
+- Assembly: solder on strips → solder cable to J1 and route it through the window → board into the shell
+  → push on caps with dowels, bend strips → (C) slide into the adapter, cable in the slot.
 
-## 7. Software (Kurzüberblick, Details in [software-konzept.md](software-konzept.md))
+## 7. Software (short overview, details in [software-konzept.md](software-konzept.md))
 
-- Firmware: **MicroPython + Microdot** (asynchroner Webserver, WebSockets) als Empfehlung,
-  da das bestehende Projekt MicroPython nutzt. Alternative: Arduino/PlatformIO mit
-  ESPAsyncWebServer. Entscheidung offen.
-- WLAN: bekanntes Netz, sonst eigener Access Point (vorhanden in `hardware/wifi.py`),
-  dazu Captive Portal.
-- Rollen: Spielleiter (wählt Modus, startet Freigabe, markiert ausgeschiedene Spieler),
-  Spieler (Boosts usw.).
-- Spielmodi als JSON im Flash, eigene Modi anlegen und benennen.
-- Modus-Wechsel gesperrt, solange der Hebel auf „an“ steht bzw. eine Runde läuft.
-- **Modellprofile**:
+- Firmware: **Rust, std on ESP-IDF** (esp-idf-svc / esp-idf-hal); game logic as a hardware-free crate that also
+  runs in the browser (WebAssembly) and in PC tests. Architecture: [firmware-architecture.md](firmware-architecture.md).
+- Wi-Fi: known network, otherwise own access point with captive portal.
+- External buttons: BLE BTHome passive (e.g. Shelly BLU Button).
+- Roles: game master (selects mode, starts release, marks eliminated players),
+  players (boosts etc.).
+- Game modes as JSON in flash; create and name custom modes.
+- Mode change locked while the lever is "on" or a round is running.
+- **Model profiles**:
 
-| Profil | U_nenn | 100 % entspricht | Turbo-Grenze (Vorschlag) | Spieler |
+| Profile | U_nom | 100 % equals | Turbo limit (proposal) | Players |
 |---|---|---|---|---|
-| Louie alt | 1,5 V | 1,5 V Motorspannung | 2,5 V | 4 |
-| Louie neu | 3,0 V | 3,0 V | 4,0 V | 4 |
-| Chewie | 3,0 V | 3,0 V | 4,0 V | 3 |
+| Louie old | 1.5 V | 1.5 V motor voltage | 2.5 V | 4 |
+| Louie new | 3.0 V | 3.0 V | 4.0 V | 4 |
+| Chewie | 3.0 V | 3.0 V | 4.0 V | 3 |
 
-Die Turbo-Grenzen sind Schätzwerte und werden im Betrieb festgelegt.
+The turbo limits are estimates and will be set during operation.
 
-## 8. Offene Punkte
+## 8. Open items
 
-- [ ] Funktest: ESP32-C3-Board mit Metallfeder vor der Antenne ins Fach legen, RSSI prüfen
-- [ ] Neues Modell: prüfen, ob eine Diode in Reihe liegt (Hebel-Erkennung)
-- [ ] Kontakte an den Platinenenden und Halt der Platine im AA-Fach (Halbschale?)
-- [x] Teile der Ladeplatine in `teile.csv` geprüft (LCSC-Nummern verifiziert, 2026-11-01)
-- [ ] Offene Punkte der Ladeplatine L1–L6 ([ladeplatine.md](ladeplatine.md))
-- [ ] Lizenz für Hardware und Firmware festlegen
-- [ ] Strapping-Pins IO2/IO8/IO9 gegen das ESP32-C3-Datenblatt prüfen (Pull-ups nötig?)
-- [ ] AP2112K bei leerem Akku: Dropout ca. 250 mV bei 600 mA → unter ca. 3,5 V Akku sinkt 3V3 leicht; ESP32-C3 läuft ab 3,0 V
-- [ ] Optional: Motorstrom messen (Turbo-Grenze, Akkugröße)
-- [ ] Optional: *Salto Sammy Pro* als Referenz kaufen (Kontaktmechanik)
+- [ ] Radio test: put a prototype board with a metal spring in front of the antenna into the compartment, check RSSI (offene-punkte.md T4)
+- [ ] New model: check whether a diode is in series (lever detection)
+- [ ] Contacts at the board ends and retention of the board in the AA compartment (half shell?)
+- [ ] Open items of the charger board L1–L6 ([ladeplatine.md](ladeplatine.md))
+- [ ] AP2112K with an empty battery: dropout about 250 mV at 600 mA → below about 3.5 V battery 3V3 drops slightly; ESP32-C6 runs from 3.0 V
+- [ ] Checks before ordering the main board ([hauptplatine-c6.md](hauptplatine-c6.md) chapter 7)
+- [ ] Optional: measure motor current (turbo limit, battery size)
+- [ ] Optional: buy a *Salto Sammy Pro* as reference (contact mechanics)
 
-## 9. Nächste Schritte
+## 9. Next steps
 
-1. Steckbrett-Prototyp: fertiges ESP32-C3-Board (z. B. Seeed XIAO ESP32-C3) + DRV8833-Modul +
-   LiPo, inklusive Hebel-Erkennung und Deep-Sleep-Wake, am alten Modell.
-2. Software-Konzept und neues Firmware-Gerüst auf dem Prototyp.
-3. KiCad: Schaltplan und Layout von Platine A, Platine B, Ladeplatine; 3D-Modell der C-Hülse.
+1. Pre-order checks with an ESP32-C6 dev board, the lab supply and the real Louie (motor current, lever network,
+   strapping, deep-sleep wake, ADC dividers); no motor driver on the breadboard, stall tests on the prototype
+   ([test-hardware.md](test-hardware.md) 4).
+2. Firmware skeleton in Rust on the test setup ([firmware-architecture.md](firmware-architecture.md)).
+3. Finish routing the main board (hauptplatine-c6.md 11.7) and order it; charger board; printed parts.
 
-## Anhang A: Marktrecherche (Stand 2026-10)
+## Appendix A: Market research (status 2026-10)
 
-Kommerzielle Module für das Batteriefach (alle ohne WLAN/App, nicht programmierbar):
+Commercial modules for the battery compartment (all without Wi-Fi/app, not programmable):
 
-- [Salto Sammy](https://www.saltosammy.de/produkt/salto-sammy-tuning-modul/): zwei Platinen in
-  AA-Form (eine Brücke, eine Elektronik), 9-V-Block extern, zufällige Flugprofile, ca. 13,50 €.
-- [Salto Sammy Pro](https://www.saltosammy.de/produkt/salto-sammy-pro/): zusätzlich rückwärts,
-  Modus-Wahl über den Original-Hebel (1×/2×/3× schalten), ca. 17–25 €.
-- Loopomator (Blasterparts): passt laut Hersteller für Louie und Chewie, 4× AA, ca. 15–19 €.
-- CrazyLoops: eBay, Details unbekannt.
+- [Salto Sammy](https://www.saltosammy.de/produkt/salto-sammy-tuning-modul/): two boards in
+  AA form (one bridge, one electronics), external 9 V block, random flight profiles, about €13.50.
+- [Salto Sammy Pro](https://www.saltosammy.de/produkt/salto-sammy-pro/): additionally reverse,
+  mode selection via the original lever (switch 1×/2×/3×), about €17–25.
+- Loopomator (Blasterparts): according to the manufacturer fits Louie and Chewie, 4× AA, about €15–19.
+- CrazyLoops: eBay, details unknown.
 
-Open-Source-Projekte (Auswahl):
+Open source projects (selection):
 
 - [KevinSwayzee/looping_louie](https://github.com/KevinSwayzee/looping_louie): ESP32 + L293D,
-  Web-UI über Raspberry Pi und MQTT, gute Sicherheitslogik (Watchdog, Rampen).
+  web UI via Raspberry Pi and MQTT, good safety logic (watchdog, ramps).
 - [MADXhh/LoopingLouieAdvanced](https://github.com/MADXhh/LoopingLouieAdvanced) (MIT):
-  ESP32, zufällige Zustände, Rampen gegen Brownout.
+  ESP32, random states, ramps against brownout.
 - [AimoLeffers/looping_louie_plus](https://github.com/AimoLeffers/looping_louie_plus) (GPL-3):
-  ATtiny85 + MOSFET, alles in der Basis, Original-Schalter bleibt.
+  ATtiny85 + MOSFET, everything in the base, original switch stays.
 - [XPerianer/Looping_Louie_EV](https://github.com/XPerianer/Looping_Louie_EV) (GPL-3):
-  Boost-Knöpfe pro Spieler, Spielmodi als Plugins.
+  boost buttons per player, game modes as plugins.
 
-Gefunden wurde **kein** Projekt mit WLAN-Web-UI direkt auf dem ESP (ohne Pi), mehreren
-Rollen/Clients, eigenen Spielmodi und offenen KiCad-Daten für einen Batteriefach-Einsatz.
+**No** project was found with a Wi-Fi web UI directly on the ESP (without a Pi), several
+roles/clients, custom game modes and open KiCad data for a battery compartment insert.
 
-## Anhang B: Alter Projektstand (Tag `v1-legacy`)
+## Appendix B: Legacy project state v1 (tag `v1-legacy`)
 
-- Hardware (Fritzing, `pcb/LoopingLouie-pcb.fzz`): Wemos D1 mini (ESP8266), N-MOSFET als
-  Low-Side-Schalter + Freilaufdiode (nur vorwärts), 5-V-Schaltregler, 2 Schalter, 2 LEDs, Poti.
-  Versorgung 9-V-Block. KiCad-Projekt praktisch leer.
-- Software (MicroPython): WLAN mit AP-Fallback, Motor-PWM mit Rampe, Taster, LED, Timer
-  funktionieren. Spiellogik (`game/`) und Web-UI (`webinterface/`) unfertig.
-- PWM-Begrenzung für den 1,5-V-Motor am 9-V-Block: `MIN_SPEED = 100`, `MAX_SPEED = 200`
-  (von 1023) in `looping_louie/webinterface/chatgpt.py` (im Tag `v1-legacy`).
+Legacy: describes the old v1 (MicroPython on ESP8266), not the current design.
+
+- Hardware (Fritzing, `pcb/LoopingLouie-pcb.fzz`): Wemos D1 mini (ESP8266), N-MOSFET as
+  low-side switch + freewheeling diode (forward only), 5 V switching regulator, 2 switches, 2 LEDs, potentiometer.
+  Supply 9 V block. KiCad project practically empty.
+- Software (MicroPython): Wi-Fi with AP fallback, motor PWM with ramp, buttons, LED, timer
+  work. Game logic (`game/`) and web UI (`webinterface/`) unfinished.
+- PWM limit for the 1.5 V motor on the 9 V block: `MIN_SPEED = 100`, `MAX_SPEED = 200`
+  (of 1023) in `looping_louie/webinterface/chatgpt.py` (in tag `v1-legacy`).

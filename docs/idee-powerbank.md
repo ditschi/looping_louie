@@ -1,145 +1,158 @@
-# Idee: Versorgung über eine kleine USB-C-Powerbank in der Basis
+# Idea: Power from a small USB-C power bank in the base
 
-Stand: 2026-11-02 · Status: Recherche, nichts beschlossen. Ergänzt [hardware-konzept.md](hardware-konzept.md),
-[ladeplatine.md](ladeplatine.md) und [idee-usb-c-hauptplatine.md](idee-usb-c-hauptplatine.md).
+Status: 2026-11-06 · Research; the only decision so far: **no hardware load pulse, keep-alive via firmware**
+(2026-11-05, section 5). Complements [hardware-konzept.md](hardware-konzept.md),
+[ladeplatine.md](ladeplatine.md) and [idee-usb-c-hauptplatine.md](idee-usb-c-hauptplatine.md).
 
-Markierungen: **(geprüft)** = mit Quelle oder an den Projektdateien nachgerechnet · **(unsicher)** = Sekundärquelle,
-Gedächtnis oder Annahme, vor einer Entscheidung am Gerät prüfen.
+Markers: **(verified)** = with a source or recalculated against the project files · **(unverified)** = secondary source,
+memory or assumption; check on the device before a decision.
 
-## Kurzfazit
+## Summary
 
-- **Ja, es gibt passend kleine Powerbanks**, z. B. die Anker Nano 5000 mAh mit ca. 76 × 36 × 25 mm für ca. 19–28 €.
-  Ob sie in die Basis passt, ist offen: Für den Hohlraum gibt es keine veröffentlichten Maße. Man muss nachmessen.
-- **Das eigentliche Problem ist die Auto-Abschaltung**, nicht die Größe. Fast alle Powerbanks schalten unter
-  ca. 45–150 mA nach 10–60 s ab. Im Deep Sleep ist dann die Versorgung weg, und der Hebel weckt nichts mehr.
-- **Echte Always-on-Powerbanks** (Voltaic V25) sind zu groß und teuer und nur am USB-A-Port always-on. Die
-  „Trickle“- bzw. „Low-Current“-Modi von Anker und Xiaomi enden nach 2 h und taugen nicht für einen Bereitschaftsbetrieb.
-- **Empfehlung:** Die Powerbank ist eine **Fallback-Versorgung für die Spielzeit, ohne Bereitschaft**. Im
-  Powerbank-Betrieb schläft der Louie nicht, sondern bleibt mit WLAN an (ca. 100 mA, hält die Powerbank wach).
-  Nach der Leerlaufzeit schaltet er sich ganz ab. Zum Wecken steckt man neu ein oder drückt den Powerbank-Knopf.
-  Mit eingebautem LiPo (Ladeplatine) entsteht das Problem gar nicht: Die Powerbank lädt dann nur, und den
-  Bereitschaftsbetrieb übernimmt der LiPo.
-- **Besser als jede Powerbank:** eine **18650-Zelle im Halter in der Basis an der vorhandenen Ladeplatine**. Sie ist
-  1S Li-Ion wie der LiPo, braucht keinen Aufwärtswandler und schaltet nie ab.
+- **Yes, there are suitably small power banks**, e.g. the Anker Nano 5000 mAh at about 76 × 36 × 25 mm for about €19–28.
+  Whether it fits into the base is open: there are no published dimensions for the cavity. It has to be measured.
+- **The real problem is auto shut-off**, not the size. Almost all power banks switch off below
+  about 45–150 mA after 10–60 s. In deep sleep the supply is then gone, and the lever no longer wakes anything.
+- **True always-on power banks** (Voltaic V25) are too large and expensive and always-on only on the USB-A port. The
+  "trickle" or "low-current" modes of Anker and Xiaomi end after 2 h and are useless for standby operation.
+- **Recommendation:** The power bank is a **fallback supply for play time, without standby**. In
+  power bank operation the Louie does not sleep but stays on with Wi-Fi (about 100 mA, keeps the power bank awake).
+  After the idle time it switches off completely. To wake it, re-plug the cable or press the power bank button.
+  With a built-in LiPo (charger board) the problem does not arise at all: the power bank then only charges, and the
+  LiPo handles standby.
+- **Better than any power bank:** an **18650 cell in a holder in the base on the existing charger board**. It is
+  1S Li-ion like the LiPo, needs no boost converter and never switches off.
 
 ---
 
-## 1. Platz in der Basis
+## 1. Space in the base
 
-| Modell | Bekannt | Quelle / Status |
+| Model | Known | Source / status |
 |---|---|---|
-| Louie neu (Hasbro, 2× AA) | Spiel gesamt **26,7 × 26,7 × 9,5 cm**, ca. 1 kg | Händlerangabe [Galaxus][galaxus-ll] **(geprüft, Außenmaß)** |
-| Louie alt (Milton Bradley, 1× C) | größer als das neue Modell, offenes C-Fach | hardware-konzept.md; Maße der Basis **unbekannt** |
-| Loopin' Chewie | 2× AA (Annahme im Projekt) | keine Maße gefunden **(unsicher)** |
-| Hohlraum unter bzw. in der Basis | keine Teardown-Fotos mit Maßen gefunden. CDTM hat beim alten Louie für einen 9-V-Block (48 × 26 × 17 mm) „etwas Platz schaffen“ müssen | [CDTM][cdtm] **(unsicher, nur qualitativ)** |
+| Louie new (Hasbro, 2× AA) | whole game **26.7 × 26.7 × 9.5 cm**, about 1 kg | retailer data [Galaxus][galaxus-ll] **(verified, outer dimensions)** |
+| Louie old (Milton Bradley, 1× C) | larger than the new model, open C compartment | hardware-konzept.md; base dimensions **unknown** |
+| Loopin' Chewie | 2× AA (assumption in the project) | no dimensions found **(unverified)** |
+| Cavity under or in the base | no teardown photos with dimensions found. CDTM had to "make some room" in the old Louie for a 9 V block (48 × 26 × 17 mm) | [CDTM][cdtm] **(unverified, qualitative only)** |
 
-**Annahmen (unsicher, am Spiel messen):**
+**Assumptions (unverified, measure on the game):**
 
-- Das Projekt plant schon einen **1S-LiPo mit 1000–2000 mAh in der Basis** (hardware-konzept.md 5.4). Ein flacher
-  Beutel-Akku dieser Größe hat ca. 50 × 34 × 8 mm bis 60 × 40 × 10 mm. Mindestens so viel Platz wird also
-  angenommen.
-- Eine **Powerbank mit 5000 mAh ist 3- bis 5-mal so groß** (ca. 65–70 cm³). Ob es in der Basis eine Kammer von
-  ca. 80 × 40 × 26 mm gibt, die nicht vom Motor, vom Getriebe oder von den Schraubdomen belegt ist, ist **offen**.
-- Fallback ohne Platz: Die Powerbank liegt **neben dem Spiel**, und das Kabel läuft durch das Loch des
-  Basis-Halters (13,5 × 7,5 mm, ladeplatine.md 4B) oder von oben ins Fach.
+- The project already plans a **1S LiPo with 1000–2000 mAh in the base** (hardware-konzept.md 5.4). A flat
+  pouch battery of this size is about 50 × 34 × 8 mm to 60 × 40 × 10 mm. At least this much space is therefore
+  assumed.
+- A **power bank with 5000 mAh is 3 to 5 times as large** (about 65–70 cm³). Whether the base has a chamber of
+  about 80 × 40 × 26 mm that is not occupied by the motor, the gearbox or the screw bosses is **open**.
+- Fallback without space: the power bank lies **next to the game**, and the cable runs through the hole of the
+  base holder (13.5 × 7.5 mm, ladeplatine.md 4B) or from above into the compartment.
 
-Neuer offener Punkt **P1**: Basis öffnen, freie Kammern messen (L × B × H), Fotos in `docs/bilder/`.
+New open item **P1**: open the base, measure free chambers (L × W × H), photos in `docs/bilder/`.
 
-## 2. Kandidaten (kleine Powerbanks mit USB-C)
+## 2. Candidates (small power banks with USB-C)
 
-| Modell | Kapazität | Maße (mm) | Ausgang | Preis DE/EU | Low-Current / Always-on | Quelle |
+| Model | Capacity | Dimensions (mm) | Output | Price DE/EU | Low-current / always-on | Source |
 |---|---|---|---|---|---|---|
-| **Anker Nano Power Bank 22,5 W** (A1653, Stecker klappbar) | 5000 mAh | 76 × 35,5 × 25,4, 100 g | USB-C-Buchse + Stecker, 5 V/3 A | ca. 19 € (Amazon-Aktion) bis 28 € (MediaMarkt AT) | Trickle-Modus (Doppeldruck, **max. 2 h**). Ob genau dieses Modell ihn hat, ist **unsicher** | [Galaxus][anker-dim], [GIGA][giga], [MediaMarkt][mm-anker], [Anker FAQ][anker-trickle] |
-| Forcell F-Energy Mini Power Watch | 1200 mAh | 70,5 × 40 × 15,9, 48 g | USB-C-Kabel fest | ca. 10–15 € **(unsicher)** | nicht bekannt | [MediaMarkt AT][forcell] |
-| INIU Schlüsselanhänger-Powerbank | bis 5000 mAh **(unsicher)** | ca. 80 × 38 × 29 | USB-C | ca. 12 € (Aktion) | nicht bekannt | [china-gadgets][iniu] |
-| Typische „Lippenstift“-Powerbank (1× 18650) | 2600–3350 mAh | ca. Ø 22–25 × 90–100 | oft nur USB-A **(unsicher)** | 8–15 € | selten | – |
-| **Voltaic V25** | 6700 mAh | 80 × 82 × 24, 230 g | 2× USB-A (always-on), USB-C PD (**nicht** always-on) | 45 $ (≈ 50–55 € in EU-Shops) | **ja**, nur USB-A, Eigenverbrauch ca. 7 mA | [Voltaic][v25] **(geprüft)** |
-| Voltaic V15 | 4000 mAh | 102 × 65 × 16 | USB-A 1 A | auslaufend | ja | [Modern Outpost][v15] |
-| Xiaomi Powerbanks (diverse) | – | – | – | – | Low-Current-Modus per Doppeldruck, **endet nach 2 h** | [Xiaomi FAQ][xiaomi] |
+| **Anker Nano Power Bank 22.5 W** (A1653, foldable plug) | 5000 mAh | 76 × 35.5 × 25.4, 100 g | USB-C socket + plug, 5 V/3 A | about €19 (Amazon deal) to €28 (MediaMarkt AT) | trickle mode (double press, **max. 2 h**). Whether exactly this model has it is **unverified** | [Galaxus][anker-dim], [GIGA][giga], [MediaMarkt][mm-anker], [Anker FAQ][anker-trickle] |
+| Forcell F-Energy Mini Power Watch | 1200 mAh | 70.5 × 40 × 15.9, 48 g | fixed USB-C cable | about €10–15 **(unverified)** | not known | [MediaMarkt AT][forcell] |
+| INIU keychain power bank | up to 5000 mAh **(unverified)** | about 80 × 38 × 29 | USB-C | about €12 (deal) | not known | [china-gadgets][iniu] |
+| Typical "lipstick" power bank (1× 18650) | 2600–3350 mAh | about Ø 22–25 × 90–100 | often USB-A only **(unverified)** | €8–15 | rarely | – |
+| **Voltaic V25** | 6700 mAh | 80 × 82 × 24, 230 g | 2× USB-A (always-on), USB-C PD (**not** always-on) | $45 (≈ €50–55 in EU shops) | **yes**, USB-A only, self-consumption about 7 mA | [Voltaic][v25] **(verified)** |
+| Voltaic V15 | 4000 mAh | 102 × 65 × 16 | USB-A 1 A | being discontinued | yes | [Modern Outpost][v15] |
+| Xiaomi power banks (various) | – | – | – | – | low-current mode via double press, **ends after 2 h** | [Xiaomi FAQ][xiaomi] |
 
-Strom: Der Motor zieht bis ca. 1 A Spitze, der DRV8833 begrenzt auf ca. 2 A. Eine USB-C-Quelle mit 5 V/3 A reicht.
-Kleine 1000-mAh-Anhänger liefern oft nur 1–1,5 A. Beim Anlauf kann ihr Überstromschutz auslösen, die
-Firmware-Rampen (hardware-konzept.md 5.1) helfen dagegen **(unsicher)**.
+Current: the motor draws up to about 1 A peak; the DRV8213 limits to 2 A (ITRIP). A USB-C source with 5 V/3 A is enough.
+Small 1000 mAh keychain banks often deliver only 1–1.5 A. Their overcurrent protection can trip at start-up; the
+firmware ramps (hardware-konzept.md 5.1) help against this **(unverified)**.
 
-## 3. Kernproblem: Auto-Abschaltung
+## 3. Core problem: auto shut-off
 
-Typische Schwellen: **IP5306 unter 45 mA für 32 s** [Datenblatt-Zusammenfassung][ip5306] **(geprüft)**. Andere
-Powerbanks schalten unter 50–200 mA ab, gemessen z. B. 150 mA [0110.be][0110] oder 100 mA nach ca. 10 s (Voltcraft)
-[ESP32_KeepPowerbankAlive][kpa]. Ob ein USB-C-Port mit gestecktem 5,1-k-Widerstand (Rd, Ladeplatine R101/R102)
-länger an bleibt, hängt vom Hersteller ab. Darauf kann man sich nicht verlassen **(unsicher)**.
+Typical thresholds: **IP5306 below 45 mA for 32 s** [datasheet summary][ip5306] **(verified)**. Other
+power banks switch off below 50–200 mA, measured e.g. 150 mA [0110.be][0110] or 100 mA after about 10 s (Voltcraft)
+[ESP32_KeepPowerbankAlive][kpa]. Whether a USB-C port with a 5.1 k resistor attached (Rd: main board R12/R13 on J4, charger board R101/R102)
+stays on longer depends on the manufacturer. You cannot rely on it **(unverified)**.
 
-Verbrauch des Louie an 5 V: Über den LDO (AP2112K) ist der Eingangsstrom gleich dem 3,3-V-Strom.
+Consumption of the Louie at 5 V: through the LDO (AP2112K) the input current equals the 3.3 V current.
 
-| Zustand | Strom | Powerbank bleibt an? |
+| State | Current | Power bank stays on? |
 |---|---|---|
-| WLAN verbunden, Modem-Sleep aus (`WIFI_PS_NONE`) | ca. 80–120 mA | meist ja, knapp über der Schwelle **(unsicher)** |
-| WLAN mit Modem-Sleep (Standard) | Mittel ca. 20–40 mA | **nein**, nach 10–60 s aus |
-| Light Sleep, WLAN aus | ca. 0,5–2 mA | nein |
-| Deep Sleep | µA | nein |
+| Wi-Fi connected, modem sleep off (`WIFI_PS_NONE`) | about 80–120 mA | mostly yes, just above the threshold **(unverified)** |
+| Wi-Fi with modem sleep (default) | average about 20–40 mA | **no**, off after 10–60 s |
+| Light sleep, Wi-Fi off | about 0.5–2 mA | no |
+| Deep sleep | µA | no |
 
-### Lösungen im Vergleich
+### Solutions compared
 
-| Lösung | Wie | Energie (Powerbank 5000 mAh ≈ 15 Wh nutzbar an 5 V) | Aufwand | Bewertung |
+| Solution | How | Energy (power bank 5000 mAh ≈ 15 Wh usable at 5 V) | Effort | Rating |
 |---|---|---|---|---|
-| **A: Always-on-Powerbank** | Voltaic V25 an USB-A → C-Kabel | Eigenverbrauch 7 mA → ca. 3 Wochen Bereitschaft | keiner | ✓ technisch sauber, ✗ 80 × 82 mm, 230 g, ca. 50 €. Passt vermutlich nicht in die Basis |
-| **B: Trickle-/Low-Current-Modus** (Anker, Xiaomi) | Doppeldruck | – | keiner | ✗ endet nach 2 h, als Bereitschaft nutzlos |
-| **C: Grundlast-Puls in Hardware** | MOSFET + 47 Ω an VBUS, 555/RC-Takt, z. B. **100 mA für 50 ms alle 8–9 s** (Muster aus [ESP32_KeepPowerbankAlive][kpa], fertige Module: [Pi Hut KeepAlive][pihut], ca. 100 mA bei 50 % Tastgrad, das ist verschwenderisch) | Puls: 100 mA × 50 ms / 9 s ≈ 0,6 mA → 3 mW. Dazu Leerlauf der Powerbank, Schätzung 1–5 mA aus der Zelle **(unsicher)** → ca. 2–6 Wochen | ca. 6 Bauteile auf der **Ladeplatine** (nur aktiv, wenn VBUS da ist). Auf A ist **kein GPIO frei** | ○ funktioniert mit den meisten Powerbanks, Takt je Modell abstimmen. Manche mitteln über längere Fenster |
-| **D: Puls per Firmware** | Light Sleep, alle ca. 8 s per Timer aufwachen und 0,2–0,5 s WLAN/RF an (80–120 mA) | Mittel ca. 3–5 mA → ca. 4–6 Tage Bereitschaft | nur Firmware | ○ ohne Hardware testbar. Ob ein so kurzer Puls die Powerbank wach hält, ist **unsicher** und modellabhängig |
-| **E: Kein Schlaf an USB** | an USB WLAN verbunden halten, `WIFI_PS_NONE` | ca. 0,5 W → ca. 30 h | nur Firmware | ✓ für einen Spieleabend ideal, ✗ keine Bereitschaft über Tage |
-| **F: Abschaltung akzeptieren** | Leerlaufzeit → Deep Sleep → Powerbank aus. Wecken: Powerbank-Knopf drücken oder Kabel neu stecken | 0 | keiner | ✓ ehrlich und einfach. Der Hebel weckt dann nicht, das muss das Web-UI erklären |
-| Motor als Last | – | – | – | ✗ geht nicht: Bei Hebel „aus“ ist der Motorkreis offen |
+| **A: Always-on power bank** | Voltaic V25 via USB-A → C cable | self-consumption 7 mA → about 3 weeks standby | none | ✓ technically clean, ✗ 80 × 82 mm, 230 g, about €50. Probably does not fit into the base |
+| **B: Trickle/low-current mode** (Anker, Xiaomi) | double press | – | none | ✗ ends after 2 h, useless as standby |
+| **C: Base-load pulse in hardware** | MOSFET + 47 Ω on VBUS, 555/RC clock, e.g. **100 mA for 50 ms every 8–9 s** (pattern from [ESP32_KeepPowerbankAlive][kpa], ready-made modules: [Pi Hut KeepAlive][pihut], about 100 mA at 50 % duty cycle, which is wasteful) | pulse: 100 mA × 50 ms / 9 s ≈ 0.6 mA → 3 mW. Plus power bank idle consumption, estimate 1–5 mA from the cell **(unverified)** → about 2–6 weeks | about 6 components on the **charger board** (only active when VBUS is present). Not planned on the main board (decision 2026-11-05, section 5) | ○ works with most power banks, tune the timing per model. Some average over longer windows |
+| **D: Pulse via firmware** | light sleep, wake by timer about every 8 s and turn Wi-Fi/RF on for 0.2–0.5 s (80–120 mA) | average about 3–5 mA → about 4–6 days standby | firmware only | ○ testable without hardware. Whether such a short pulse keeps the power bank awake is **unverified** and model-dependent |
+| **E: No sleep on USB** | on USB keep Wi-Fi connected, `WIFI_PS_NONE` | about 0.5 W → about 30 h | firmware only | ✓ ideal for a game night, ✗ no standby over days |
+| **F: Accept the shut-off** | idle time → deep sleep → power bank off. Wake: press the power bank button or re-plug the cable | 0 | none | ✓ honest and simple. The lever then does not wake; the web UI has to explain this |
+| Motor as load | – | – | – | ✗ does not work: with the lever "off" the motor circuit is open |
 
-## 4. Alternativen ohne fertige Powerbank
+## 4. Alternatives without a ready-made power bank
 
-| Alternative | Spannung | Bewertung |
+| Alternative | Voltage | Rating |
 |---|---|---|
-| **18650 (oder großer LiPo) im Halter an der Ladeplatine** | 3,0–4,2 V direkt auf VSYS | ✓ **beste Lösung**: kein Wandler, keine Abschaltung, Laden über die vorhandene USB-C-Buchse. 18650: Ø 18 × 65 mm, ca. 2500–3500 mAh, Halter ca. 77 × 21 × 19 mm **(unsicher)** |
-| Powerbank-Modul (IP5306) + 18650 | 5 V | ✗ Der IP5306 hat dieselbe Abschaltung (45 mA/32 s). Nur Module mit „HOLD“ oder gebrückter Taste bleiben an **(unsicher)**. Doppelte Wandlung 3,7 → 5 → 3,3 V verschenkt ca. 10–15 % |
-| 2× AA + Boost auf 5 V | 5 V | ✗ Das Fach ist durch Platine A belegt. Kein Vorteil gegenüber 1S Li-Ion |
-| **14500 Li-Ion mit USB-C-Ladebuchse** (z. B. Acebeam ARC14500-920, Nextorch 880 mAh, JetBeam JR145) | 3,7 V (kein 1,5-V-Regler!) | ○ anders als I1 (1,5-V-Zellen, verworfen) passt die Spannung **ohne Wandler**. Aber: nur ca. 3 Wh. Die Fächer sind über den Motorkreis verbunden, also müsste neu verdrahtet werden (Fach 2 wird Versorgung statt Brücke). Geschützte Zellen sind oft 52–53 mm lang statt 50,5 mm **(unsicher)**. Zum Laden muss man sie herausnehmen. [Battery Junction][bj14500] |
+| **18650 (or large LiPo) in a holder on the charger board** | 3.0–4.2 V directly on VSYS | ✓ **best solution**: no converter, no shut-off, charging via the existing USB-C socket. 18650: Ø 18 × 65 mm, about 2500–3500 mAh, holder about 77 × 21 × 19 mm **(unverified)** |
+| Power bank module (IP5306) + 18650 | 5 V | ✗ The IP5306 has the same shut-off (45 mA/32 s). Only modules with "HOLD" or a bridged button stay on **(unverified)**. Double conversion 3.7 → 5 → 3.3 V wastes about 10–15 % |
+| 2× AA + boost to 5 V | 5 V | ✗ The compartment is occupied by board A. No advantage over 1S Li-ion |
+| **14500 Li-ion with USB-C charging socket** (e.g. Acebeam ARC14500-920, Nextorch 880 mAh, JetBeam JR145) | 3.7 V (no 1.5 V regulator!) | ○ unlike I1 (1.5 V cells, rejected) the voltage fits **without a converter**. But: only about 3 Wh. The compartments are connected via the motor circuit, so rewiring would be needed (compartment 2 becomes supply instead of bridge). Protected cells are often 52–53 mm long instead of 50.5 mm **(unverified)**. They must be removed for charging. [Battery Junction][bj14500] |
 
-## 5. Empfehlung
+## 5. Recommendation
 
-| Rang | Bauform | Maße | Preis | Always-on | Nötig |
+| Rank | Type | Dimensions | Price | Always-on | Needed |
 |---|---|---|---|---|---|
-| 1 | **18650 im Halter an der Ladeplatine** (statt Powerbank) | ca. 77 × 21 × 19 mm | ca. 8–12 € (Zelle + Halter) **(unsicher)** | ja | nichts Neues, Akku-Anschluss J102/TP101 |
-| 2 | **Anker Nano 5000 mAh** als Fallback per C-auf-C-Kabel | 76 × 35,5 × 25,4 mm | ca. 19–28 € | nein (Trickle max. 2 h) | Firmware: Lösung E + F |
-| 3 | Voltaic V25, wenn echte Bereitschaft mit Powerbank Pflicht ist | 80 × 82 × 24 mm | ca. 45 $ | ja (USB-A) | USB-A-auf-C-Kabel, Platz außerhalb der Basis |
+| 1 | **18650 in a holder on the charger board** (instead of a power bank) | about 77 × 21 × 19 mm | about €8–12 (cell + holder) **(unverified)** | yes | nothing new, battery connection J102/TP101 |
+| 2 | **Anker Nano 5000 mAh** as fallback via C-to-C cable | 76 × 35.5 × 25.4 mm | about €19–28 | no (trickle max. 2 h) | firmware: solution E + F |
+| 3 | Voltaic V25, if true standby with a power bank is mandatory | 80 × 82 × 24 mm | about $45 | yes (USB-A) | USB-A-to-C cable, space outside the base |
 
 **Firmware:**
 
-- USB-Erkennung über die vorhandene VSYS-Messung (VBAT_ADC): **VSYS > 4,4 V ⇒ „Versorgung über USB“**
-  (ladeplatine.md: VSYS ≈ 4,6 V über die Schottky-Diode). Kein zusätzlicher GPIO nötig.
-- An USB: `WIFI_PS_NONE`, kein Deep Sleep. Nach der Leerlaufzeit **Deep Sleep mit Hinweis**, dass der Hebel bei
-  Powerbank-Betrieb nicht weckt.
-- Ist ein LiPo vorhanden (VSYS fällt beim Abziehen nur auf die Akkuspannung), gilt der normale Ablauf. Das Abschalten
-  der Powerbank ist dann harmlos.
-- Motor-Sollwert wie bisher `duty = U_soll / VSYS`, an 5 V ergibt sich automatisch ein kleinerer Tastgrad.
-- Optional Lösung D als Versuch (Testmodus „Powerbank wach halten“), Ergebnis je Modell notieren.
+- USB detection: USB-C on the main board (J4) via **VBUS_DET (IO4)**, which also wakes on plug-in
+  (hauptplatine-c6.md 2.3). USB on the charger board via the VSYS measurement (VBAT_ADC): **VSYS > 4.4 V ⇒
+  "powered via USB"** (ladeplatine.md: VSYS ≈ 4.6 V via the Schottky diode).
+- On USB: `WIFI_PS_NONE`, no deep sleep. After the idle time **deep sleep with a notice** that the lever does not wake
+  in power bank operation.
+- If a LiPo is present (VSYS drops only to battery voltage on unplugging), the normal flow applies. The power bank
+  switching off is then harmless.
+- Motor setpoint `duty = U_soll / VSYS`; at 5 V a smaller duty cycle results automatically.
+- Solution D (timer wake plus radio burst) as setting "keep power bank awake"; test and note per model
+  whether it works (P3).
 
-**Hardware:** Für Rang 1 und 2 nichts. Lösung C nur, wenn sich D als unzuverlässig erweist: Pulslast auf der
-Ladeplatine (nur VBUS-seitig, unabhängig vom ESP).
+**Hardware:** nothing for rank 1 and 2.
 
-**Web-UI ([web-ui-konzept.md](web-ui-konzept.md)):**
+**Decision 2026-11-05: no hardware load pulse on the main board.** The firmware handles keep-alive:
+timer wake plus short radio burst (solution D). Reasons:
+- 47 Ω at 5 V draws about 105 mA; a Wi-Fi burst of the C6 draws about 80–120 mA. For the power bank's shut-off detection
+  this is the same stimulus, just without an extra component (unverified per model, P3).
+- Using the motor as a load via PWM does not work: the lever disconnects the motor circuit at rest.
+- A cell in a holder on BAT_IN (3.0–4.2 V, already covered by the power path 3.0–5.5 V) never sleeps; it is the
+  safe solution if the power bank switches off despite the radio burst.
 
-- Statusanzeige **„Versorgung über USB“** statt Akku-Prozent. Die Ladung der Powerbank ist nicht lesbar.
-- Ob ein LiPo geladen wird oder eine Powerbank ohne Akku speist, ist an VSYS allein nicht unterscheidbar. Die
-  Anzeige also neutral halten („USB“) oder in den Einstellungen „Akku verbaut: ja/nein“ abfragen.
-- Ohne Akku: Vor dem Schlafen einen Hinweis zeigen: „Louie schaltet ab. Zum Wecken Powerbank-Knopf drücken oder
-  Kabel neu stecken. Der Hebel weckt im Powerbank-Betrieb nicht.“
-- Bricht VSYS während einer Runde ein (Powerbank aus oder leer), gibt es beim nächsten Start eine Statuskarte
-  „Versorgung unterbrochen“ (Reset-Grund Brownout).
+IO22 stays free (reserve). Solution C on the charger board remains an idea. The DNP load pulse formerly planned
+on the main board: see [decision-history.md](decision-history.md).
 
-## 6. Offene Punkte
+**Web UI ([web-ui-konzept.md](web-ui-konzept.md)):**
 
-| # | Punkt | Vorschlag |
+- Status display **"powered via USB"** instead of battery percent. The power bank charge level cannot be read.
+- Whether a LiPo is being charged or a power bank without battery is supplying cannot be distinguished from VSYS alone. So
+  keep the display neutral ("USB") or ask "battery installed: yes/no" in the settings.
+- Without battery: show a notice before sleeping: "Louie is switching off. To wake it, press the power bank button or
+  re-plug the cable. The lever does not wake it in power bank operation."
+- If VSYS collapses during a round (power bank off or empty), the next start shows a status card
+  "power interrupted" (reset reason brownout).
+
+## 6. Open items
+
+| # | Item | Proposal |
 |---|---|---|
-| P1 | Freie Kammern in der Basis (alle drei Modelle) | Basis öffnen, messen, fotografieren |
-| P2 | Hält die Anker Nano bei 80–120 mA dauerhaft? Bleibt der C-Port mit Rd an? | mit USB-Messgerät testen |
-| P3 | Hält ein Firmware-Puls (Lösung D) die Powerbank wach? | Versuch mit 2–3 Powerbanks |
-| P4 | Motoranlauf an kleinen 1-A-Powerbanks | Überstromabschaltung testen |
+| P1 | Free chambers in the base (all three models) | open the base, measure, photograph |
+| P2 | Does the Anker Nano hold at 80–120 mA permanently? Does the C port stay on with Rd? | test with a USB meter |
+| P3 | Does a firmware pulse (solution D: timer wake + radio burst) keep the power bank awake? | try with 2–3 power banks; otherwise cell on BAT_IN |
+| P4 | Motor start-up on small 1 A power banks | test overcurrent shut-off |
 
-## Quellen
+## Sources
 
 - [galaxus-ll]: https://galaxus.de/en/s5/product/hasbro-gaming-looping-louie-german-board-games-288540
 - [cdtm]: https://cdtm.com/blog/creating-circling-centerling-looping-louie-modding

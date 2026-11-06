@@ -1,28 +1,32 @@
-# Entwicklung
+# Development
 
-## Abhängigkeiten
+Status: 2026-11-06 · Setup and commands for hardware (KiCad) and docs. The firmware (Rust, std on ESP-IDF)
+has no code yet; its tools and commands (toolchain, build, flash, tests, WebAssembly preview) will be added with
+the firmware, see [firmware-architecture.md](firmware-architecture.md).
 
-Getestet unter Ubuntu 26.04. **Alles auf einmal einrichten:**
+## Dependencies
+
+Tested on Ubuntu 26.04. **Set up everything at once:**
 
 ```bash
 ./setup.sh
 ```
 
-Das Skript installiert nur, was fehlt, und kann jederzeit erneut ausgeführt werden.
-Einzeln:
+The script only installs what is missing and can be run again at any time.
+Individually:
 
-| Werkzeug | Zweck | Installation | Pflicht |
+| Tool | Purpose | Installation | Required |
 |---|---|---|---|
-| KiCad ≥ 9 (inkl. `kicad-cli`, Python-Modul `pcbnew`) | Schaltplan, Layout, Prüfungen, Fertigungsdaten | `sudo apt install kicad` | ja |
-| easyeda2kicad | Symbole, Footprints und 3D-Modelle von LCSC/JLC-Teilen holen | `uv tool install easyeda2kicad` | ja |
-| just | Befehls-Runner (alle Entwicklungsbefehle) | `sudo apt install just` | ja |
-| zip, python3 | ZIP der Gerber-Daten, Skripte | meist vorhanden | ja |
-| kicad-packages3d | 3D-Modelle der KiCad-Standardbauteile (für Renders) | `sudo apt install kicad-packages3d` | empfohlen |
-| Java ≥ 21 + Freerouting | Autorouter der Ladeplatine (`just route charger-board`, Hauptplatine optional `ROUTER=freerouting`); `setup.sh` lädt `tools/freerouting.jar` | `sudo apt install default-jre` | für Routing |
-| python3-matplotlib | Platzierungsbild (`just plot`) | `sudo apt install python3-matplotlib` | ja |
+| KiCad ≥ 9 (incl. `kicad-cli`, Python module `pcbnew`) | schematic, layout, checks, manufacturing data | `sudo apt install kicad` | yes |
+| easyeda2kicad | fetch symbols, footprints and 3D models of LCSC/JLC parts | `uv tool install easyeda2kicad` | yes |
+| just | command runner (all development commands) | `sudo apt install just` | yes |
+| zip, python3 | ZIP of the Gerber data, scripts | usually present | yes |
+| kicad-packages3d | 3D models of the KiCad standard parts (for renders) | `sudo apt install kicad-packages3d` | recommended |
+| Java ≥ 21 + Freerouting | autorouter for the charger board (`just route charger-board`, main board optional `ROUTER=freerouting`); `setup.sh` downloads `tools/freerouting.jar` | `sudo apt install default-jre` | for routing |
+| python3-matplotlib | placement image (`just plot`) | `sudo apt install python3-matplotlib` | yes |
 
-Nach der Installation KiCad einmal mit Schaltplan- und Platineneditor öffnen, damit die globalen
-Bibliothekstabellen angelegt werden. Dann:
+After installation, open KiCad once with the schematic and PCB editor so that the global
+library tables are created. Then:
 
 ```bash
 just check
@@ -30,143 +34,183 @@ just check
 
 ### Python
 
-- Skripte, die die Platine bearbeiten (`board_outline.py`), brauchen das Modul `pcbnew` und laufen
-  deshalb mit dem **System-Python** (`/usr/bin/python3`), in das das KiCad-Paket das Modul installiert.
-  Anderer Pfad: `KICAD_PYTHON=/pfad/zu/python3 just outline`.
-- `fetch_parts.py` braucht nur die Standardbibliothek und das Kommando `easyeda2kicad`.
-- Es gibt bewusst keine virtuelle Umgebung: `pcbnew` lässt sich nicht per pip installieren.
+- Scripts that edit the board (`board_outline.py`) need the `pcbnew` module and therefore run
+  with the **system Python** (`/usr/bin/python3`), into which the KiCad package installs the module.
+  Different path: `KICAD_PYTHON=/path/to/python3 just outline`.
+- `fetch_parts.py` only needs the standard library and the `easyeda2kicad` command.
+- There is deliberately no virtual environment: `pcbnew` cannot be installed via pip.
 
-## Befehle
+## Commands
 
 ```
-just check         Werkzeuge prüfen
-just parts         fehlende LCSC-Teile aus hardware/bom/teile.csv nach hardware/lib holen
-just parts-update  alle LCSC-Teile neu holen
-just symbols       projekteigene Symbole erzeugen (hardware/lib/louie.kicad_sym)
-just schematic     Schaltplan der Hauptplatine aus dem Generator erzeugen (überschreibt!) + ERC
-just outline       AA-Umriss der Hauptplatine setzen (Maße in hardware/scripts/board_outline.py)
-just pcb           Hauptplatine (4 Lagen) aus dem Schaltplan anlegen und platzieren (überschreibt Layout!)
-just plot          Platzierung mit Luftlinien als Bild (build/main-board/placement.png)
-just route         Hauptplatine routen: eigener Labyrinth-Router (route_fix.py), GND über die Innenlage In1,
-                   danach Masseflächen füllen; just route charger-board routet die Ladeplatine mit Freerouting.
-                   Optionen runs=N (Versuche), force=1 (Gate übergehen), siehe „Routing: bestes Ergebnis behalten“
-just main-board    Hauptplatine komplett: anlegen, routen, ERC, DRC (alte Namen: just four-layer, just vierlagig)
-just route-baseline  hardware/<platine>/routing.json aus der offiziellen Platine neu anlegen
-just charger-schematic  Schaltplan der Ladeplatine erzeugen (überschreibt!) + ERC
-just charger-pcb   Ladeplatine anlegen, platzieren und routen (überschreibt Layout!)
-just erc           Schaltplan prüfen
-just drc           Platine prüfen, inkl. Abgleich mit dem Schaltplan
-just sch-pdf       Schaltplan als PDF
-just render        3D-Ansichten als PNG
-just images        Bilder nach docs/bilder/ (3D, alle vier Kupferlagen, Schaltplan, Platzierung; just images charger-board)
-just modell        3D-Modell als STEP/GLB/STL (build/main-board/3d/, Hüllkurvenprüfung in hardware/mechanik/huelle.scad)
-just fab           Fertigungsdaten (Gerber, Bohrdaten, Bestückung, Stückliste, ZIP)
-just clean         build/ löschen
+just check         check tools
+just parts         fetch missing LCSC parts from hardware/bom/teile.csv into hardware/lib
+just parts-update  fetch all LCSC parts again
+just symbols       generate project symbols (hardware/lib/louie.kicad_sym)
+just schematic     generate the main board schematic from the generator (overwrites!) + ERC
+just outline       set the AA outline of the main board (dimensions in hardware/scripts/board_outline.py)
+just pcb           create and place the main board (4 layers) from the schematic (overwrites the layout!)
+just plot          placement with ratsnest as an image (build/main-board/placement.png)
+just pcb-sync      re-link footprints with the schematic (symbol UUID, value, DNP); layout and routing stay
+just route         route the main board: own maze router (route_fix.py), GND via inner layer In1,
+                   then fill ground planes; just route charger-board routes the charger board with Freerouting.
+                   Options runs=N (attempts), force=1 (bypass the gate), see "Routing: keep the best result"
+just main-board    complete main board: create, route, ERC, DRC (old names: just four-layer, just vierlagig)
+just route-check   quick check of the own router on the official board (approx. 30 s, no routing run)
+just route-baseline  recreate hardware/<board>/routing.json from the official board
+just score         routing score of the official board (and other versions: just score main-board build/main-board/keep/*.kicad_pcb)
+just explain       explain the gate decision for a candidate: just explain [board] <file.kicad_pcb>
+just charger-schematic  generate the charger board schematic (overwrites!) + ERC
+just charger-pcb   create, place and route the charger board (overwrites the layout!)
+just erc           check the schematic
+just drc           check the board, incl. comparison with the schematic
+just sch-pdf       schematic as PDF
+just render        3D views as PNG
+just images        images to docs/bilder/ (3D, all four copper layers, schematic, placement; just images charger-board)
+just modell        3D model as STEP/GLB/STL (build/main-board/3d/, envelope check in hardware/mechanik/huelle.scad)
+just hull          check the envelope (after just modell): radius < 7.25 mm, bottom only in the pocket (|y| ≤ 5.2, ≤ 1.5 mm high)
+just fab           manufacturing data (Gerber, drill data, placement, BOM, ZIP); DNP parts not in placement/BOM
+just clean         delete build/
 ```
 
-Rezepte mit `board`-Parameter (`erc`, `drc`, `route`, `render`, `images`, `modell`, `fab`, `sch-pdf`) nehmen ohne
-Angabe die Hauptplatine (`main-board`, 4 Lagen); `charger-board` ist die Ladeplatine (2 Lagen).
-Alle Ausgaben landen in `build/<platine>/` (nicht im Git).
+Recipes with a `board` parameter (`erc`, `drc`, `route`, `render`, `images`, `modell`, `fab`, `sch-pdf`) default to
+the main board (`main-board`, 4 layers); `charger-board` is the charger board (2 layers).
+All outputs go to `build/<board>/` (not in Git).
 
-## Bauteile
+## Parts
 
-- **Quelle der Wahrheit ist `hardware/bom/teile.csv`**: Funktion, Wert, Herstellerteil, Gehäuse,
-  LCSC-Nummer, Alternativen, Status.
-- Ziel: **gängige Teile**, die es bei mehreren Distributoren gibt (LCSC, Mouser, DigiKey, Reichelt …),
-  damit man bei verschiedenen Platinenherstellern Angebote einholen kann.
-- Passive Bauteile sind generisch (Widerstände, Kondensatoren in 0603/0805/1206) und kommen aus den
-  KiCad-Standardbibliotheken. 0603 als kleinste Größe, damit alles auch von Hand lötbar bleibt.
-- ICs, Module und Stecker kommen über `just parts` in die Projektbibliothek `hardware/lib/lcsc.*`.
-  Die Bibliothek ist eingecheckt, das Projekt öffnet also auch ohne Internet.
-- Neues Teil: Zeile in `teile.csv` ergänzen (`bibliothek` = `lcsc`, LCSC-Nummer eintragen), dann `just parts`.
-- Die EasyEDA-API sperrt bei zu vielen Abfragen kurzzeitig (HTTP 403). Das Skript pausiert deshalb
-  zwischen den Teilen; bei einer Sperre einfach später erneut aufrufen.
+- **The source of truth is `hardware/bom/teile.csv`**: function, value, manufacturer part, package,
+  LCSC number, alternatives, status.
+- Goal: **common parts** that are available from several distributors (LCSC, Mouser, DigiKey, Reichelt …),
+  so that quotes can be obtained from different PCB manufacturers.
+- Passive parts are generic and come from the KiCad standard libraries. Main board: **0402** (space in the
+  AA format, machine assembly); charger board: 0603/0805 (also hand-solderable).
+- ICs, modules and connectors go into the project library `hardware/lib/lcsc.*` via `just parts`.
+  Own symbols and footprints (solder pads, test pads) are in `hardware/lib/louie.*`.
+  The libraries are checked in, so the project also opens without internet.
+- New part: add a row to `teile.csv` (`bibliothek` = `lcsc`, enter the LCSC number), then `just parts`.
+- The EasyEDA API blocks briefly after too many requests (HTTP 403). The script therefore pauses
+  between parts; if blocked, simply run it again later.
 
-## Schaltplan
+## Schematic
 
-- Der erste Schaltplan der Hauptplatine wird von `hardware/scripts/gen_main_schematic.py` erzeugt.
-  Die Schaltung steht dort als Python-Liste (Bauteile, Werte, Footprints, Pin → Netz).
-  Jeder Pin bekommt ein Netz-Label, unbenutzte Pins ein No-Connect-Kreuz.
-- Symbole: KiCad-Standardbibliothek, wo vorhanden. Eigene Symbole (ESP32-C3-MINI-1,
-  DRV8833 im Parallelbetrieb) erzeugt `hardware/scripts/gen_symbols.py`, weil die LCSC-Symbole
-  keine Pin-Typen haben und die ERC-Prüfung damit wertlos wäre.
-- **Sobald der Schaltplan im KiCad-GUI bearbeitet wird, ist der GUI-Stand maßgeblich.**
-  Dann `just schematic` nicht mehr aufrufen, es würde die Änderungen überschreiben.
+- The first schematic of the main board is generated by `hardware/scripts/gen_main_schematic.py`.
+  The circuit is defined there as a Python list (parts, values, footprints, pin → net).
+  Every pin gets a net label, unused pins a no-connect cross.
+- Symbols: KiCad standard library where available. Own symbols (ESP32-C6-MINI-1, DRV8213DSG, LIS2DH12) and
+  the solder pad/test pad footprints are generated by `hardware/scripts/gen_symbols.py` (`just symbols`), because
+  the LCSC symbols have no pin types and the ERC check would be worthless with them.
+- The symbol UUIDs are fixed (derived from project and reference): running `just schematic` again does not change the
+  link to the board. Older boards or new parts without a layout change: `just pcb-sync`.
+- **As soon as the schematic is edited in the KiCad GUI, the GUI version is authoritative.**
+  Then do not run `just schematic` any more; it would overwrite the changes.
 
 ## Layout
 
-- Die Hauptplatine hat **4 Lagen** (Entscheidung 2026-11-03; Lagenaufbau JLC04081H-3313, 0,8 mm; In1 = GND-Lage,
-  In2 = Signale; [hauptplatine-c6.md](hauptplatine-c6.md) Kapitel 11). Die 2-Lagen-Variante ist verworfen und nur
-  noch in Git (Commit c45c6de). Die Ladeplatine hat weiterhin 2 Lagen.
-- `just pcb` legt die Platine per Skript neu an (`gen_main_pcb.py`): Umriss, Lagenaufbau, Footprints mit
-  Netzen, Designregeln (auch `louie-main.kicad_dru`), Netzklassen, Antennen-Sperrflächen, Vorrouten, Thermal-Vias,
-  Masseflächen auf allen Lagen. Die Platzierung steht in `placement.py` (alle Bauteile oben).
-- `just plot` zeichnet Ober- und Unterseite mit Luftlinien und meldet Überlappungen.
-- `just route` routet mit dem eigenen Router `route_fix.py` (`ROUTER=freerouting` als Alternative). Danach `just drc`.
-- Wer `just pcb` aufruft, überschreibt die geroutete Platine; der alte Stand landet vorher in
-  `build/<platine>/keep/before-pcb-<zeit>.kicad_pcb`.
-- **Wie beim Schaltplan gilt:** Sobald im GUI geroutet oder verschoben wird, ist der GUI-Stand
-  maßgeblich; `just pcb` würde alles überschreiben.
+- The main board has **4 layers** (decision 2026-11-03; stack-up JLC04081H-3313, 0.8 mm; In1 = GND layer,
+  In2 = signals; [hauptplatine-c6.md](hauptplatine-c6.md) chapter 11; why not 2 layers:
+  [decision-history.md](decision-history.md)). The charger board has 2 layers.
+- `just pcb` recreates the board by script (`gen_main_pcb.py`): outline, stack-up, footprints with
+  nets, design rules (also `louie-main.kicad_dru`), net classes, antenna keep-outs, pre-routes, thermal vias,
+  ground planes on all layers. The placement is in `placement.py`: everything assembled on top; bottom only solder
+  pads, test points and optional, unassembled footprints (DNP, [idee-optionale-hardware.md](idee-optionale-hardware.md) 0b).
+- `just plot` draws top and bottom with ratsnest and reports overlaps.
+- `just route` routes with the own router `route_fix.py` (`ROUTER=freerouting` as an alternative). Then `just drc`.
+- Options of the own router are at the top of `route_fix.py`: `ENDPOINT_VIAS` (a via at a trace end or
+  pad counts as a connection on all layers), `VIA_UNDER_BODIES` (`"bottom"`: vias between the pads under parts
+  allowed, `"none"`: not allowed), `ISLAND_AREA_SEARCH` (search the whole fill area for a via for GND islands), `WIDTHS`
+  (trace width per net, the last one is the minimum width), `MAX_ROUNDS` (steps per pass). Check with
+  `just route-check`.
+- Running `just pcb` overwrites the routed board; the old version is saved beforehand to
+  `build/<board>/keep/before-pcb-<time>.kicad_pcb`.
+- **Same as for the schematic:** as soon as routing or moving is done in the GUI, the GUI version is
+  authoritative; `just pcb` would overwrite everything.
 
-## Routing: bestes Ergebnis behalten
+## Routing: keep the best result
 
-Die Router streuen stark (eigener Router auf 4 Lagen 0–5 offene Verbindungen; früher 2 Lagen/Freerouting 12–25). Damit ein
-neuer Lauf kein besseres Ergebnis überschreibt, geht jedes `just route` durch ein Gate (`hardware/scripts/route_gate.py`):
+The routers vary a lot (own router on 4 layers: 0–5 unrouted connections on the previous design). So that a
+new run does not overwrite a better result, every `just route` goes through a gate (`hardware/scripts/route_gate.py`):
 
-1. **Versuche:** `just route main-board runs=10` startet 10 Versuche (Standard 6, parallel `ROUTE_PARALLEL`, Standard 3);
-   der beste Versuch geht ins Gate.
-2. **Kennzahlen** (kicad-cli-DRC als JSON + pcbnew), Rangfolge lexikografisch, kleiner ist besser:
-   `drc_violations` (ohne Bibliotheksabgleich der Footprints), `unconnected`, `gnd_islands` (gefüllte Flächenstücke
-   ohne Via/Durchsteckpad, nur über Bahnen angebunden), `via_count`, `track_length_mm`.
-3. **Ergebnisdatei** `hardware/<platine>/routing.json` (eingecheckt): Fingerabdruck des Designs, `board_hash` der
-   offiziellen Platine, Kennzahlen, Router und Variante, Zeitpunkt, Werkzeugversionen.
-4. **Entscheidung:**
-   - gleicher Fingerabdruck und besser → ersetzt `louie-*.kicad_pcb` und `routing.json`
-   - gleicher Fingerabdruck, nicht besser → offizielle Platine bleibt; der Lauf landet unter
-     `build/<platine>/route/rejected/<zeit>-<kennzahlen>.kicad_pcb`
-     („Neuer Lauf: X offen, bisher Y → verworfen …“). Hat `just pcb` die offizielle Platine vorher überschrieben,
-     stellt das Gate das bisherige Routing wieder her (aus `build/<platine>/keep/` oder Git).
-   - anderer Fingerabdruck (Design geändert) → der beste Lauf wird offiziell, die Basis wird neu gesetzt
-   - `just route <platine> force=1` übernimmt ohne Vergleich
-   Jede übernommene Platine liegt zusätzlich als `build/<platine>/keep/accepted-<zeit>-<kennzahlen>.kicad_pcb`.
+1. **Attempts:** `just route main-board runs=10` starts 10 attempts (default 6, in parallel `ROUTE_PARALLEL`, default 3).
+   The best attempt goes to the gate: first feasible, then smallest violation, then smallest score S (same rules as
+   the gate). The log shows a table of all attempts and the Pareto view.
+2. **Metrics and score** (`hardware/scripts/route_score.py`, configuration `hardware/routing-score.toml`, rationale
+   and definitions in [routing-score.md](routing-score.md)): kicad-cli DRC as JSON (twice, the second run with
+   0.05 mm extra clearance) and pcbnew; zones are only refilled in memory; approx. 3–4 s per board.
+   - **Hard constraints** (`[hard]`): `drc_errors`, `unconnected`, `antenna_intrusions` (copper of other nets in the
+     antenna keep-outs), `power_width_violations` (current paths from `[[boards.<board>.paths]]`, width per
+     IPC-2221, more than 2 mm too narrow).
+   - **Soft metrics** (`[soft]`): score `S = Σ weight · value / scale`, smaller is better, e.g. GND islands,
+     signal vias, signal length, detours, voltage drop of the current paths, coupling of the sense lines to OUT_A/OUT_B,
+     length without GND reference, distance to the antenna, USB.
+   - `weight` is the importance (user), `scale` the size of a "noticeable difference" (fixed). If the TOML changes
+     (hash) or there is a new metrics version (`METRICS_VERSION`), the gate re-measures the official board.
+3. **Result file** `hardware/<board>/routing.json` (checked in): design fingerprint, `board_hash` of the
+   official board, all metrics, `score` (S, hard violations, contributions), `score_config_sha256`,
+   `metrics_version`, `details` (current paths, worst nets), router and variant, timestamp, tool versions.
+4. **Decision** (`route_score.decide()`):
+   - same fingerprint:
+     1. feasible beats infeasible; if both are infeasible, the smaller violation wins (count, then too-narrow
+        length of the current paths; Deb's rule);
+     2. otherwise the gate only accepts the run at **ΔS ≤ −1.0** (`min_improvement`) and if no metric with a veto
+        (`max_regression`: voltage drop +30 mV, coupling +5 mm, antenna proximity +3 mm) gets worse;
+     - accepted → replaces `louie-*.kicad_pcb` and `routing.json`;
+     - not accepted → the official board stays; the run is saved under
+       `build/<board>/route/rejected/<time>-<metrics>.kicad_pcb`
+       (log line "New run: S … (+…), hard … → rejected (…; main drivers …)", log text: „Neuer Lauf: … → verworfen
+       (…; Haupttreiber …)“). If `just pcb` overwrote the official board before, the gate restores the previous
+       routing (from `build/<board>/keep/` or Git).
+   - different fingerprint (design changed) → the best run becomes official, the baseline is reset
+   - `just route <board> force=1` accepts without comparison
+   Every accepted board is also stored as `build/<board>/keep/accepted-<time>-<metrics>.kicad_pcb`. The gate writes
+   the full report of the last decision (contributions, tipping factors, robustness, current paths) to
+   `build/<board>/route/score-report.txt`.
+5. **Change weights:** only `weight` (and `min_improvement`) in `hardware/routing-score.toml`. `just score` and
+   `just explain` show beforehand how the ranking changes; the robustness line shows whether a
+   decision depends on the weights (below approx. 10 % or above 90 % of the random weight sets = stable).
 
-**Fingerabdruck:** SHA-256 über die *ungeroutete* Platine, wie `just pcb` sie schreibt (Platzierung, Vorrouten,
-Flächen-Umrisse, Sperrflächen, Netze, Board-Setup) plus `board.design_settings`/`net_settings` aus der `.kicad_pro`
-und die `.kicad_dru`. Vorher normalisiert: ohne UUIDs (auch in Pfaden), Generator-/Versionskennung,
-Plot-Einstellungen und Flächenfüllungen; Elemente sortiert (KiCad sortiert beim Speichern nach UUID). Neu Speichern
-oder neu Erzeugen ändert ihn also nicht, eine verschobene Bauteilposition schon.
+**Fingerprint:** SHA-256 over the *unrouted* board as `just pcb` writes it (placement, pre-routes,
+zone outlines, keep-outs, nets, board setup) plus `board.design_settings`/`net_settings` from the `.kicad_pro`
+and the `.kicad_dru`. Normalized beforehand: without UUIDs (also in paths), generator/version identifiers,
+plot settings and zone fills; elements sorted (KiCad sorts by UUID when saving). Saving again
+or regenerating therefore does not change it, but a moved part position does.
 
-Aus einer *gerouteten* Platine lässt er sich nicht berechnen: `route_fix.py` und `stitch.py` sperren ihre Bahnen und
-Vias genauso wie die Vorrouten, „gesperrt“ unterscheidet also nicht Design und Routing. Deshalb gilt am Start eines
-Laufs: Ist die Startplatine (normalisiert) die offizielle aus `routing.json` (`board_hash`, also erneutes
-`just route` ohne `just pcb`), gilt deren gespeicherter Fingerabdruck; sonst ist die Startplatine die ungeroutete und
-ihr Hash der Fingerabdruck. Eine im GUI geänderte geroutete Platine zählt damit als geändertes Design.
+It cannot be computed from a *routed* board: `route_fix.py` and `stitch.py` lock their traces and
+vias just like the pre-routes, so "locked" does not distinguish design from routing. Therefore, at the start of a
+run: if the start board (normalized) is the official one from `routing.json` (`board_hash`, i.e. running
+`just route` again without `just pcb`), its stored fingerprint applies; otherwise the start board is the unrouted one
+and its hash is the fingerprint. A routed board changed in the GUI therefore counts as a changed design.
 
-**Weitere Befehle:**
+**Further commands:**
 
 ```
-just route-baseline main-board        routing.json aus der offiziellen Platine anlegen (erzeugt die ungeroutete
-                                      Platine dafür in einem temporären Ordner, prüft, dass Platzierung, Flächen,
-                                      Regeln und alle Vorrouten zur offiziellen passen)
-route_gate.py check <board> <datei>   eine Platine probeweise durchs Gate schicken (ohne --apply ändert es nichts)
-route_gate.py fingerprint <datei>     Fingerabdruck/Inhalts-Hash einer Platine
-route_gate.py measure <datei>         Kennzahlen einer Platine
+just route-baseline main-board        create routing.json from the official board (generates the unrouted
+                                      board for it in a temporary folder, checks that placement, zones,
+                                      rules and all pre-routes match the official one)
+route_gate.py check <board> <file>    send a board through the gate as a trial (changes nothing without --apply)
+route_gate.py fingerprint <file>      fingerprint/content hash of a board
+route_gate.py measure <file>          metrics, details and assessment of a board (JSON)
+route_gate.py score [board] [file …]  score table, report per file and Pareto view (= just score)
+route_gate.py explain [board] <file>  explain the decision against the official board (= just explain)
 ```
 
-Umgebungsvariablen (englische Namen; alte gehen weiter): `ROUTE_RUNS` (alt `FREEROUTING_ATTEMPTS`), `ROUTE_PARALLEL`
-(alt `FREEROUTING_PARALLEL`), `ROUTER=own|freerouting` (Hauptplatine; alt `ROUTER=eigen`), `ROUTE_VARIANTS`,
-`ROUTE_PLANE`, `ROUTE_GND`, `FREEROUTING_PASSES`, `FREEROUTING_JAR`. Die Arbeitsordner der Versuche heißen
-`build/<platine>/route/attempt_<n>/`.
+Environment variables (old names still work): `ROUTE_RUNS` (old `FREEROUTING_ATTEMPTS`), `ROUTE_PARALLEL`
+(old `FREEROUTING_PARALLEL`), `ROUTER=own|freerouting` (main board; old `ROUTER=eigen`), `ROUTE_VARIANTS`,
+`ROUTE_PLANE`, `ROUTE_GND`, `FREEROUTING_PASSES`, `FREEROUTING_JAR`. The working folders of the attempts are named
+`build/<board>/route/attempt_<n>/`.
 
-## KiCad-Projekte
+## KiCad projects
 
-- Jede Platine hat ein eigenes Projekt unter `hardware/<platine>/`.
-- Die Projekt-Bibliothekstabellen (`sym-lib-table`, `fp-lib-table`) verweisen relativ auf
-  `${KIPRJMOD}/../lib/`. Nichts muss global in KiCad eingetragen werden.
-- `*.kicad_prl` (lokale Ansichtseinstellungen) und Backups werden nicht eingecheckt.
+- Each board has its own project under `hardware/<board>/`.
+- The project library tables (`sym-lib-table`, `fp-lib-table`) refer relatively to
+  `${KIPRJMOD}/../lib/`. Nothing needs to be registered globally in KiCad.
+- `*.kicad_prl` (local view settings) and backups are not checked in.
 
-## Fertigung
+## Manufacturing
 
-- `just fab` erzeugt herstellerneutrale Daten: Gerber mit klassischen Endungen, Excellon-Bohrdaten,
-  Bestückungsliste (CSV) und Stückliste mit LCSC-Spalte.
-- Für Hersteller mit eigenem Format (z. B. JLCPCB-Spaltennamen) werden die CSVs bei Bedarf angepasst.
+- `just fab` generates vendor-neutral data: Gerber with classic extensions, Excellon drill data,
+  placement list (CSV) and BOM with an LCSC column.
+- **DNP:** optional parts (bottom, `dnp` in the schematic and on the footprint, status "DNP/optional" in `teile.csv`)
+  are missing from the placement list and BOM (`--exclude-dnp`); `…-stueckliste-alle.csv` lists them with a DNP column.
+  This keeps assembly single-sided (top).
+- For manufacturers with their own format (e.g. JLCPCB column names), the CSVs are adapted as needed.

@@ -1,154 +1,141 @@
-# Offene Punkte, Annahmen und Alternativen
+# Open items, assumptions and decisions
 
-Stand: 2026-11-01 · Zum gemeinsamen Durchgehen. Bitte direkt hier kommentieren oder abhaken.
+Status: 2026-11-06 · Collected list to go through together. Details are in the linked documents.
 
-## Stand Layout Hauptplatine (2026-11-01)
+Current status in one sentence: main board with **ESP32-C6-MINI-1** (target -H8, fallback -N4), **DRV8213**,
+**USB-C (J4)**, **4 layers**, single-sided assembly; firmware in **Rust** (std on ESP-IDF). Authoritative:
+[hauptplatine-c6.md](hauptplatine-c6.md), [hardware-konzept.md](hardware-konzept.md),
+[firmware-architecture.md](firmware-architecture.md).
 
-**Gewählt: Variante 1b – einseitig maschinell bestückt, Passive in 0402, universell.**
-Unten nur Kupferflächen (Testpads, Kabel-Lötpads, Endkontakte). Platine B bleibt reine Brücke.
-
-| Variante | Ergebnis |
-|---|---|
-| 1 (einseitig, 0603) | passt nicht (12 Teile bleiben selbst dicht gepackt übrig) |
-| **1b (einseitig, 0402, Lötpads statt JST)** | **passt und ist zu ca. 95 % geroutet** (siehe unten) |
-| 2 (oben Maschine, unten Hand, 0603) | passt; Rückfallebene `placement_zweiseitig.py` am 2026-11-03 entfernt (C3-Stand, nur noch in Git) |
-
-Erreicht (`just pcb` + `just route`):
-- alle 40 Bauteile platziert, kein Überlapp, Schaltplan-Abgleich fehlerfrei
-- DRV8833 um 90° gedreht; Ausgangsseite (OUT_A, OUT_B, ISEN, Shunt) und VSYS-Sammelschiene
-  per Skript vorgeroutet, Rest mit Freerouting
-- Masseflächen oben und unten, GND-Vias in den Mittel-Pads des Moduls und im Thermal-Pad des
-  DRV8833, ca. 40 Stitching-Vias
-- Antennenbereich frei von Kupfer (Randstreifen für die OUT_A-Bahn zum Endkontakt)
-
-**Neu (2026-11-01):** Beschleunigungssensor **LIS2DH12 oben (maschinell bestückt)**, rechte obere Ecke,
-I²C an IO2/IO8 (0x18), INT1 an RXD. Unten zwei Lötpad-Reihen im 2,54-mm-Raster:
-**J2 Erweiterung** (3V3, GND, SDA, SCL, INT) für externe I²C-Module und **J3 Service** (EN, TXD, BOOT, GND)
-– ein Taster kommt an BOOT + GND. Weitere freie Pins gibt es nicht (alle GPIOs belegt).
-
-**Rest für die Handarbeit im KiCad-GUI** – Freerouting ist hier am Limit und schwankt stark:
-ein Lauf hatte alle Signale geroutet, andere lassen 4–6 dünne Leitungen offen (zuletzt z. B. EN,
-ISEN_ADC, USB_D+, DRV_IN2, DRV_nSLEEP) plus einzelne GND-Inseln.
-- offene Leitungen im GUI ziehen (alles Signale ohne Strom, 0,2 mm reichen)
-- GND-Inseln / schwach angebundene GND-Pads mit je einem Via versehen
-- vereinzelte Vias zu nah am Rand verschieben
-- **Ab hier im GUI weiterarbeiten** – `just pcb` und `just route` würden die Handarbeit überschreiben.
-- Vor der Bestellung zusätzlich: ESP-Footprint gegen Datenblatt prüfen (A11), N4X-Frage (F12),
-  Endkontakte/Mechanik (F3).
-
-Bilder: `just plot`, `just render`, Kupferlagen: siehe Befehle in `docs/entwicklung.md`.
+**Numbers:** F/A numbers stay fixed because other documents refer to them. Missing numbers are done or were
+dropped by the switch to C6/DRV8213/4 layers (history: [decision-history.md](decision-history.md)).
+New: T = tests (breadboard, measurement on the Louie or prototype board), S = software and operation.
 
 ---
 
-## Offene Fragen (Entscheidung durch dich)
+## 1. Next steps
 
-| # | Frage | Optionen | Empfehlung |
-|---|---|---|---|
-| F1 | **Antenne und Endkontakt am selben Ende.** Das Modul liegt zwangsläufig mit der Antenne an einem Platinenende, dort sitzt aber auch der Batteriekontakt (Metall) und es muss eine Leiterbahn (MOT_A) zum Kontakt. Aktuell: 1,2 mm Streifen am Rand frei für diese Bahn. | a) so lassen und per Funktest prüfen · b) ESP32-C3-MINI-1**U** mit u.FL und kleiner Draht-/Flexantenne · c) Kontakt am Antennen-Ende über einen Draht außen an der Platine vorbei · d) Chip-Design (ESP32-C3FH4 + Chip-Antenne mittig), aufwendig | a) mit frühem Funktest am Steckbrett-Prototyp; b) als Plan B |
-| F2 | **Kabelabgang J1:** Der JST-Stecker zeigt zur Platinenseite (+y). Wie kommt das Kabel aus dem Batteriefach (neues Modell: Deckel; altes Modell: offen)? | a) JST seitlich (jetzt) · b) Lötpads statt Stecker (spart Platz und Bauhöhe) · c) stehender JST (BM04B) · d) Stecker auf Brückenplatine B | am Fach ausprobieren; b) ist am robustesten |
-| F3 | **Endkontakte (Mechanik):** Aktuell nur 2 × 2 mm Platzhalter-Pads unten an den Enden. | a) gebogene Lötfahnen wie beim Salto Sammy · b) Batteriekontakt-Clips (z. B. Keystone SMD) · c) Messingkappe/-niete · d) Federblech | Salto-Prinzip ansehen (Referenzkauf), dann entscheiden |
-| F4 | **Halt der Platine im AA-Fach:** Die Platine liegt flach in einer runden Mulde. Wer zentriert sie und schützt die Unterseiten-Bauteile? | a) 3D-gedruckte Halbschale (wie C-Hülse, nur AA) · b) Schrumpfschlauch · c) nur durch Kontakte gehalten | a) |
-| F5 | **Strapping-Pins IO2/IO8/IO9:** Sind die 10k-Pull-ups an IO2 und IO8 nötig? | Datenblatt ESP32-C3 prüfen; ggf. R10/R11 streichen | prüfen vor Bestellung |
-| F6 | **LED D1** sitzt unten und ist im Fach nicht sichtbar. | a) behalten (Debug) · b) streichen · c) nach oben | a), kostet fast nichts |
-| F7 | **Platinendicke 0,8 mm** (wegen Modulhöhe in der AA-Hülle). | 0,8 mm (Aufpreis bei manchen Herstellern) · 1,0 mm · 0,6 mm | Kostenabschätzung abwarten |
-| F8 | **Bestückungsstrategie final.** | Variante 2 · einseitig mit 0402-Passiven (siehe Alternative unten) | Variante 2, nach Routing neu bewerten |
-| F9 | **Lizenz** für Hardware und Firmware. | z. B. CERN-OHL-S/-P (Hardware), MIT/GPL (Firmware) | offen |
-| F10 | ~~**Ladeplatine:** Teile mit Status „zu prüfen“~~ – erledigt (2026-11-01): Ladeplatine im AA-Format entworfen, Teile geprüft. Neue Punkte L1–L6 in [ladeplatine.md](ladeplatine.md). | – | – |
-| F12 | **ESP32-C3-MINI-1-N4 ist laut Mouser abgekündigt** (nicht für neue Designs). Nachfolger: ESP32-C3-MINI-1-**N4X**, pinkompatibel. | Lagerbestand bei JLCPCB/LCSC prüfen, LCSC-Nummer des N4X ermitteln und umstellen | umstellen, sobald verfügbar bestätigt |
-| F13 | **Kosten:** Variante 2 entspricht kostenmäßig etwa Szenario A der [Kostenabschätzung](kostenabschaetzung.md) (einseitig maschinell, Economic), die Unterseite lötest du selbst. Ca. 9 €/Stück bei 10, ca. 3,40 €/Stück bei 100. | – | Angebot mit echten Daten einholen, wenn das Layout fertig ist |
-| F11 | **Freerouting**: Ergebnis des Autorouters prüfen und ggf. von Hand nacharbeiten. | – | nach `just route` |
-
----
-
-## Annahmen (bitte prüfen)
-
-| # | Annahme | Warum unsicher | Erwogene Alternativen |
-|---|---|---|---|
-| A1 | Die Platine liegt leicht unter der Mitte der AA-Hülle, das Modul hat an den Ecken ca. **0,1 mm Luft**. | Theoretischer Wert; Fächer haben Spiel, aber keine Garantie. | dünnere Platine (0,6 mm), Platine tiefer legen, Chip-Design ohne Modul |
-| A2 | **Motorstrom < 1 A**, DRV8833 parallel mit 2 A Begrenzung reicht. | Nicht gemessen. | DRV8871/DRV8876 (brauchen ≥ 4,5–6,5 V), TB6612 (≥ 4,5 V), nur MOSFET (kein Rückwärts) |
-| A3 | **AP2112K** genügt; unter ca. 3,5 V Akku sinkt 3V3 leicht, ESP32-C3 läuft ab 3,0 V. Ruhestrom 55 µA. | Bei leerem Akku Brownout-Risiko bei WLAN-Spitzen. | TLV75533 (25 µA, ähnlich), Buck-Boost (z. B. TPS63802) für stabile 3,3 V bis 2,7 V Akku |
-| A4 | **Hebel-Erkennung** mit 100k/10k/100k funktioniert: Hebel zu ≈ 0,3 V, offen ≈ 3,3 V; Deep-Sleep-Wake auf IO3. | Abhängig vom Motorwiderstand und Leckströmen des DRV8833 im Sleep. | Komparator, aktiver Messimpuls über die H-Brücke |
-| A5 | **Akkuspannungs-Teiler 470k/470k** mit 100 nF ist genau genug. | Hochohmig, ESP-ADC-Eingang belastet. | 100k/100k (21 µA Dauerstrom), Teiler per MOSFET schaltbar |
-| A6 | **Shunt 0,1 Ω**: Strombegrenzung 2 A und Strommessung über ADC (max. 200 mV) reichen für Hebel-Erkennung während der Fahrt. | ADC-Auflösung bei kleinen Strömen. | 0,2 Ω (1 A Grenze, doppelte Messspannung) |
-| A7 | **WLAN-Reichweite** reicht trotz Motor und Metallkontakten in der Nähe. | Siehe F1. | ESP32-C3-MINI-1U |
-| A8 | **USB (Full Speed) über das 4-adrige Kabel** und den JST-Stecker funktioniert. | Kurzes, ungeschirmtes Kabel – meist unkritisch. | Nur OTA + einmaliges Flashen über Testpads (2-adriges Kabel) |
-| A9 | **Designregeln** (4 Lagen, seit 2026-11-03) 0,15 mm Abstand/Mindestbahn, 0,2 mm Standardbahn, Via 0,3/0,5 mm: JLCPCB-Mehrlagen (0,09/0,09 mm) mit 67 % Reserve, siehe hauptplatine-c6.md 11.2. Vorher (2 Lagen, verworfen): 0,13/0,15 mm, Via 0,3/0,6 mm. | Andere Hersteller (Aisler, PCBWay) vor Bestellung gegenprüfen. | 0,15/0,2 mm Regeln (mehr Platzbedarf, nicht vollständig routbar) |
-| A10 | **Vias im Thermal-Pad** des DRV8833 (ungefüllt) sind für die Maschinenbestückung ok. | Lot kann in die Vias abfließen. | gefüllte/abgedeckte Vias (Aufpreis), Vias neben dem Pad |
-| A11 | **LCSC-Footprint des ESP32-C3-MINI-1** stimmt mit dem Datenblatt überein. | Von easyeda2kicad konvertiert, nicht gegen das Datenblatt geprüft. | eigenen Footprint nach Datenblatt zeichnen – **vor Bestellung prüfen!** |
-| A12 | **Loopin' Chewie** hat 2 × AA. | Nicht gesehen. | wird sonst nicht unterstützt (deine Vorgabe) |
-| A13 | Die **Unterseiten-Bauteile** (max. ca. 0,9 mm hoch) stören in der AA-Hülle nicht. | Abhängig von F4. | – |
-| A15 | **Mindest-Bahnbreite 0,13 mm**: Verjüngung in Freerouting abgeschaltet, `route.py` hebt schmalere Bahnen auf 0,13 mm an. | Aisler & Co. verlangen teils 0,125–0,15 mm. | Engstellen auf 0,15 mm verbreitern |
-| A16 | **Leistungsbahnen 0,4 mm**, OUT_A/OUT_B je über **ein** Via 0,3 mm pro Lagenwechsel. | Ein 0,3-mm-Via trägt grob 1 A; reicht bei < 1 A Motorstrom. | zweites Via parallel, breitere Bahnen |
-| A18 | **LIS2DH12-INT1 an RXD (GPIO20)**: INT ist nach dem Einschalten Push-Pull aktiv-high; an RXD stört das den Boot nicht. Wecken nur aus Light Sleep (GPIO20 kann nicht aus Deep Sleep wecken). | Laut Recherche, Datenblatt noch prüfen. | BMA400 (INT aktiv-low) an IO2 für Deep-Sleep-Wecken |
-| A19 | **Ob ein Schlag auf die Spielertaste sich vom laufenden Motor abhebt**, ist ungeklärt. | Nicht gemessen. | Messen am Steckbrett-Prototyp mit Breakout-Modul |
-| A17 | **GND-Vias direkt in den Mittel-Pads des ESP-Moduls** und im Thermal-Pad des DRV8833 (ungefüllt). | Lot kann bei der Bestückung abfließen. | gefüllte Vias (Aufpreis), Vias neben den Pads |
-| A14 | **Testpads** (3V3, GND, EN, BOOT, TXD, RXD) reichen für Erstinbetriebnahme und Notfall-Flashen. | – | Tag-Connect-Footprint (größer) |
-
----
-
-## Getroffene Entscheidungen und verworfene Alternativen
-
-| Thema | Entscheidung | Verworfen, weil |
+| Step | Content | Reference |
 |---|---|---|
-| Befehls-Runner | `just` | make: altmodische Syntax; mise: Kern ist Versionsverwaltung, KiCad nicht installierbar |
-| Schaltplan | per Skript erzeugt (`just schematic`), danach GUI | atopile/SKiDL: kein normaler Schaltplan für Nachbauer |
-| Symbole | KiCad-Standard, eigene für ESP32-C3-MINI-1 und DRV8833-parallel | LCSC-Symbole ohne Pin-Typen → ERC wertlos |
-| Eine oder zwei Platinen im Fach | **eine** Hauptplatine + reine Brücke | A/B-Aufteilung: Kabel zwischen den Fächern, nicht nötig |
-| Bestückung | Variante 2 (oben Maschine, unten Hand) | einseitig passt nicht (siehe oben) |
-| **Alternative noch offen:** einseitig mit 0402 | Mit 0402-Passiven (≈ 40 % der 0603-Fläche) käme man oben auf ca. 60 % Belegung – immer noch sehr eng, nur maschinell bestückbar. | erst nach dem Routing von Variante 2 bewerten |
-| DRV8833-Footprint | ohne eingebaute Thermal-Vias (die haben 0,2 mm Bohrung), eigene 0,3-mm-Vias | 0,2 mm kostet bei vielen Herstellern Aufpreis |
-| Bestückungsdruck | Bezeichner nur auf der Fab-Ebene | auf 13,5 mm Breite nicht lesbar unterzubringen |
-| Endkontakt-Pads | 2 × 2 mm Platzhalter | 3 × 3 mm kollidiert mit der Antennen-Sperrfläche |
-| DRV8833-Lage | um 90° gedreht: Eingangsreihe zum Rand, Ausgangsreihe zur Mitte | ungedreht: alle Ausgangspins zwischen Modul und 0402-Reihen eingeklemmt |
-| VSYS-Verteilung | vorgeroutete 0,4-mm-Sammelschiene oben | VSYS-Fläche unten: Freerouting zerschneidet sie mit Signalen in Inseln |
-| Flächen beim Autorouting | Export **ohne** Kupferflächen, GND nicht an Freerouting; danach füllen + Stitching | mit Flächen: Freerouting behandelt sie als belegtes Kupfer → kaum routbar |
-| 0402-Anordnung | eine Reihe am Modul, Rest unter/neben dem DRV8833 | zwei Reihen: Signale vom Modul zum DRV8833 kommen nicht durch |
-| Routing | Freerouting (Autorouter) als Startpunkt | Skript-Routing: unrealistisch; nur Hand-Routing: dauert, kommt danach |
+| 1 | **Buy the dev board** (Waveshare ESP32-C6-DEV-KIT-N8 or ESP32-C6-DevKitC-1-N8; no motor driver board) and **run the pre-order checks** 4.1–4.5: motor current on the lab supply, lever network on the real Louie, boot/strapping/wake, IO18/IO19 levels (F17), ADC dividers (T1, T5, part of T2; A2–A5). Software tests in LED mode (T3, T7, T8) run in parallel | [test-hardware.md](test-hardware.md) 2, 4, 5 |
+| 2 | **Finish routing the current version** (with pads and DNP footprints on the bottom), see F15 | [hauptplatine-c6.md](hauptplatine-c6.md) 11.7 |
+| 3 | **Check before ordering** (F13, F14, A9, A11, inspect the layout in the GUI) | [hauptplatine-c6.md](hauptplatine-c6.md) 11.6 |
+| 4 | **Order the prototype batch** (F16) | [kostenabschaetzung.md](kostenabschaetzung.md), [test-hardware.md](test-hardware.md) |
+| 5 | **Set up the firmware in Rust**: core crate (game logic, hardware-free) with PC tests and WebAssembly preview, then the ESP-IDF part | [firmware-architecture.md](firmware-architecture.md) |
 
 ---
 
-## Ideen (später analysieren)
+## 2. Open questions (your decision)
 
-### I1: Versorgung über USB-C-Akku-AA-Zellen statt LiPo + Ladeplatine — **verworfen**
+| # | Question | Options | Recommendation |
+|---|---|---|---|
+| F1 | **Antenna and end contact at the same end.** The module antenna is at one end of the board; the battery contact (metal) and the OUT_A trace in the edge strip are there too. The antenna keep-out applies on all layers ([hauptplatine-c6.md](hauptplatine-c6.md) 2.6). | a) leave as is, check with an RSSI test · b) module variant with external antenna (u.FL) as plan B · c) route the contact at the antenna end with a wire on the outside | a) with RSSI test T4 |
+| F3 | **End contacts (mechanics).** Provisional: nickel strip 4 × 0.15 mm on BT1/BT2, bent around on the outside through the slot of the cap ([hardware-konzept.md](hardware-konzept.md) 6). | a) nickel strip (provisional) · b) battery contact clips (e.g. Keystone SMD) · c) brass cap/rivet · d) spring plate | a) test on the printed part; contact pressure also for the bridge (L4) |
+| F4 | **Sleeve in the AA compartment** (`huelle.scad`): below J4 the cable window removes the edge rail as a support, so plug forces go into the solder tabs. | a) shorter and deeper window · b) support rail between J1 and J5 | test on the printed part ([hauptplatine-c6.md](hauptplatine-c6.md) chapter 6) |
+| F13 | **Get a real quote.** All costs are extrapolations. | Gerber (`just fab`) into the JLC calculator (website and JLCONE), stack-up JLC04081H-3313, 0.8 mm; read off price and lead time | before ordering ([kostenabschaetzung.md](kostenabschaetzung.md) 5.7) |
+| F14 | **Module H8 or N4.** -H8 (8 MB) is the target and has been available at JLC since 2026-11-06 (620 pcs). Both are pin- and footprint-compatible. | a) H8 · b) N4 | H8 (headroom for OTA, languages, Zigbee); with embedded UI, languages and WASM the firmware will probably be 1.6–2.0 MB; OTA on N4 only with a `www` partition or without OTA ([firmware-architecture.md](firmware-architecture.md)) |
+| F17 | **Reset level of motor inputs.** During reset, internal pull-ups on IO18/IO19 pull IN1/IN2 HIGH → the DRV8213 brakes briefly (no start-up). | a) leave as is · b) external 3.3 k pull-downs on IN1/IN2 (coast also during reset, approx. 1 mA per pin when HIGH) | measure in [test-hardware.md](test-hardware.md) 4.4 (reset, boot **and deep sleep**, with and without `gpio_hold_en`): a) if deep sleep gives a reliable LOW and the boot HIGH window is < approx. 0.5 s; otherwise b). Reason: IN1 = IN2 = HIGH in deep sleep keeps the DRV8213 braking, SENSE stays 0 V and the lever wake fails ([hauptplatine-c6.md](hauptplatine-c6.md) 3.2) |
+| F15 | **Routing of the current version.** With the pads and DNP footprints on the bottom, our own router does not yet route the board completely. | Proposals 1–4 in [hauptplatine-c6.md](hauptplatine-c6.md) 11.7 (fewer footprints under the module, improve the router, Freerouting as a pre-stage, move parts) | status and rounds: 11.7 |
+| F16 | **Prototype batch:** quantity, module (F14), assemble LIS2DH12 or not, manufacturer. | 5 / 10 / 30 pcs; JLC Economic PCBA (single-sided) | after F13 and the pre-order checks ([test-hardware.md](test-hardware.md) 4); T3 does not gate the order; costs: [kostenabschaetzung.md](kostenabschaetzung.md), [test-hardware.md](test-hardware.md) 7 |
 
-> Verworfen (2026-11-01): Eine Zelle liefert 1,5 V, gebraucht werden 3 V (zwei Zellen) bzw. mehr für Turbo.
-> Ein Fach ist zudem durch die Hauptplatine belegt. Ginge nur mit Aufwärtswandler, lohnt nicht.
+---
 
-Idee: Bei den 2×AA-Modellen eine handelsübliche, per USB-C ladbare AA-Zelle als Stromquelle nutzen
-(z. B. im zweiten Fach statt der Brücke). Laden wäre dann gelöst, Ladeplatine und externer Akku entfallen.
+## 3. Tests
 
-Erste Gedanken, noch nicht geprüft:
-- Solche Zellen liefern **konstant 1,5 V** (interner Li-Ion-Akku + Abwärtswandler). Eine Zelle reicht nicht
-  für ESP32 (3,3 V) und Motor → bräuchte einen Aufwärtswandler auf der Hauptplatine. Motorspannung über
-  1,5 V hinaus (Turbo) ebenfalls nur per Aufwärtswandler.
-- Belegt ein Fach → die Hauptplatine müsste dann allein in das andere Fach, und die Fachbrücke/Kontakte
-  ändern sich (Akku-Zelle und Hauptplatine wären in Reihe statt Brücke).
-- Strombelastbarkeit dieser Zellen (oft 2–3 A max., interne Schutzabschaltung) und Kapazität
-  (meist 1500–2500 mWh) prüfen.
-- Beim alten Modell (1× C) nicht direkt übertragbar.
+Test setup, measurement records and scope: [test-hardware.md](test-hardware.md) (section 1: what is checked before
+ordering, section 5: software in LED mode, section 6: what only the prototype board shows). No motor driver on the
+breadboard: everything that needs the motor driven runs on the prototype board. Results feed into the assumptions (section 4).
 
-### I2: USB-C-Buchse direkt auf der Hauptplatine, nach oben zeigend
+| # | Test | Checks | Where (test-hardware.md) | Source |
+|---|---|---|---|---|
+| T1 | Wake with `WAKEUP_ANY_HIGH` on IO3 with inverted lever level; special case "lever closed when going to sleep" | A4 | pre-order 4.2 (real lever, no driver) and 4.3 (wake sources), final on the board | [hauptplatine-c6.md](hauptplatine-c6.md) 2.5, 7 |
+| T2 | Motor current and lever on the Louie; DRV8213: current limiting, heating during stall, lever detection in autosleep (outputs Hi-Z) | A2, A4, A6 | motor current: pre-order 4.1 (lab supply), lever: 4.2; **DRV8213 part and stall detection only on the board** (6) | [hauptplatine-c6.md](hauptplatine-c6.md) 7 |
+| T3 | Hotspot with 8 phones + BLE scan (BTHome) at the same time: heap, stability, coexistence | S7 | software setup 5.3 (does not gate the order) | [geraete-anlernen.md](geraete-anlernen.md) 8, [idee-funk-taster.md](idee-funk-taster.md) 10 |
+| T4 | RSSI in the compartment with metal contact in front of the antenna, both mounting orientations (edge strip −y) | F1, A7 | **only on the board** (6) | [hauptplatine-c6.md](hauptplatine-c6.md) 7 |
+| T5 | IO8 (strapping) with a player button pressed during boot | A20 | pre-order 4.3 (dev board has 10 k on IO8) | [idee-optionale-hardware.md](idee-optionale-hardware.md) 0b |
+| T6 | Hit on the player button or knocking vs. motor vibration (LIS2DH12) | A19 | **only on the board** (6), no sensor breakout | [idee-optionale-hardware.md](idee-optionale-hardware.md) 6 |
+| T7 | Shelly BLU: advertising interval, fixed MAC, legacy advertising; "long" when the hold time is reached or on release | – | software setup 5.3 | [idee-funk-taster.md](idee-funk-taster.md) 10 |
+| T8 | Captive portal on iOS and Android | S6 | software setup 5.3 | [software-konzept.md](software-konzept.md) 3.2 |
+| T9 | Can you feel 0.3 s jerks or the kickback (0.6 s, −30 %)? | – | **only on the board** (6), needs the motor driver | [web-ui-konzept.md](web-ui-konzept.md) 10, [modus-baukasten.md](modus-baukasten.md) 9 |
 
-Idee: Eine USB-C-Buchse senkrecht ("vertical"/"upright") auf der Platine, Öffnung nach oben bzw. zur Seite,
-sodass man wie bei einer USB-C-Akkuzelle direkt ein Kabel an die Platine im Fach stecken kann.
+Charger board: open items L1–L5 in [ladeplatine.md](ladeplatine.md) 6 (connector in the new model, heating of the
+MCP73831, battery polarity, contact pressure, base).
 
-Erste Gedanken, noch nicht geprüft:
-- Es gibt **vertikale USB-C-Buchsen** (Platinenmontage, Stecker kommt senkrecht von oben) und
-  **mid-mount**-Varianten. Bauhöhe vertikal meist 6–10 mm → passt in der AA-Hülle nur am Rand der Kurve
-  bzw. gar nicht; mid-mount (Platinenausschnitt) könnte passen. Zu prüfen.
-- Dann könnte der Laderegler auf die Hauptplatine; der Akku bleibt extern (oder I1).
-- Zugänglichkeit: neues Modell hat einen Deckel → Buchse nur bei offenem Fach erreichbar.
+---
 
-### I3: Optionale Handlöt-Bestückung und Erweiterungs-Pads auf der Unterseite
+## 4. Assumptions (please check)
 
-Kupfer, Lötstopplack und Pads auf der Unterseite kosten bei einer 2-Lagen-Platine nichts extra; nur die
-**maschinelle Bestückung** der Unterseite kostet. Deshalb nach Fertigstellung der ersten Platine prüfen:
-- **Optionale Footprints unten** (nicht bestückt, „DNP“), die man bei Bedarf selbst lötet, z. B. größere
-  Puffer-Elkos, ein Taster an IO9 (BOOT), eine zweite LED, Spannungsteiler für Sensoren.
-- **Erweiterungs-Lötpads** für I²C oder andere Busse: Beim ESP32-C3 lässt sich I²C auf beliebige GPIOs
-  legen. Schon jetzt liegen IO2, IO8, RXD, TXD, 3V3 und GND unten auf Pads → empfohlen SDA = IO8,
-  SCL = IO2 (beide haben bereits 10k Pull-ups; Begründung in der Recherche unten). Prüfen: Pad-Raster für eine
-  Stiftleiste oder ein JST-SH-Kabel (Qwiic/STEMMA-QT-kompatibel), Platz unter dem Modul.
-- Gilt besonders für den Einsatz als **Tuning-Modul in anderen 2×AA-Spielzeugen** (eigene Firmware).
-- Recherche mit 16 Kandidaten (Beschleunigungssensor, Hall, Ladezustand, I²C-Pads …) und Empfehlung:
-  [idee-optionale-hardware.md](idee-optionale-hardware.md)
+| # | Assumption | Why unverified | Alternatives considered |
+|---|---|---|---|
+| A1 | **Envelope:** largest radius 6.94 mm (J4) with AA radius 7.25 mm, so approx. 0.3 mm clearance; end caps clear (`just hull`). | Calculated from the STL; compartments have play, but no guarantee. | thinner sleeve, place the board lower |
+| A2 | **Motor current < 1 A**; DRV8213 with 2 A current limit (R_IPROPI 1.24 k) is sufficient. | Not measured; pre-order check [test-hardware.md](test-hardware.md) 4.1 (T2). | adjust R_IPROPI (table in 4.1) |
+| A3 | **AP2112K** is sufficient; with an empty battery 3V3 drops slightly (dropout approx. 250 mV at 600 mA), the C6 runs from 3.0 V. Quiescent current 55 µA. The firmware cuts off the cell at approx. 3.3–3.4 V under load. | Brownout risk during radio peaks with an empty battery; droop estimate from the stall current in [test-hardware.md](test-hardware.md) 4.1, real check only on the board. | LDO with low quiescent current (TLV75533, RT9080), buck-boost (e.g. TPS63802) |
+| A4 | **Lever detection** with R3 100 k OUT_A → GND, R4 10 k OUT_B → 3V3: lever closed ≈ 3.0 V (HIGH), open 0 V; deep-sleep wake on IO3. | Depends on motor resistance, a possible diode in the new model and DRV8213 leakage currents in autosleep (T1, T2); pre-order check [test-hardware.md](test-hardware.md) 4.2, leakage final on the board. | comparator, active measuring pulse via the H-bridge |
+| A5 | **Voltage divider VSYS 470k/470k** with 100 nF is accurate enough (5.5 V → 2.75 V). | High impedance, ADC input loads it; pre-order check [test-hardware.md](test-hardware.md) 4.5. Also VBUS 100k/100k gives only 2.5 V at IO4, about at VIH (0.75 × 3.3 V = 2.48 V) → digital wake check in 4.3. | 100k/100k (continuous current), divider switchable via MOSFET |
+| A6 | **Current sensing via IPROPI** (R8/C14 → IO1, 255 mV/A) is sufficient for lever and hit detection while running. | ADC resolution at low currents (T2). | different R_IPROPI (also changes the current limit) |
+| A7 | **Wi-Fi and BLE range** is sufficient despite the motor and metal contacts nearby. | See F1 (T4). | module variant with external antenna |
+| A9 | **Design rules 4 layers:** 0.15 mm trace/clearance, via 0.3/0.5 mm; JLCPCB multilayer allows 0.09/0.09 mm ([hauptplatine-c6.md](hauptplatine-c6.md) 11.2). | Other manufacturers (Aisler, PCBWay) have their own limits. | cross-check before ordering |
+| A11 | **Footprint of the ESP32-C6-MINI-1** (own, `lcsc:WIFIM-SMD_ESP32-C6-MINI-1`; pads identical to the KiCad footprint) matches the datasheet. | Only compared against the KiCad footprint ([hauptplatine-c6.md](hauptplatine-c6.md) 2.1), not directly against the datasheet. | **check before ordering** |
+| A12 | **Loopin' Chewie** has 2 × AA. | Not seen. | otherwise not supported |
+| A13 | **Bottom side:** only pads, test points and DNP footprints in the pocket (\|y\| ≤ 5.2 mm); tallest part U6 (TPS22918) 1.45 mm per TI with 2.0 mm pocket depth. | `just hull` reports a violation of the 1.5 mm limit with the generic 3D model (1.64 mm). | correct the model; assemble U6 only when needed |
+| A14 | **Service access:** flashing via USB-C J4 (USB-Serial-JTAG); emergency path via J3 (EN, TXD, BOOT, GND, RXD) and test points TP1–TP4. | – | Tag-Connect footprint (larger) |
+| A16 | **Current paths** (BAT_IN → Q1 → VSYS → VM, OUT_A/OUT_B) on outer layers ≥ 0.3–0.5 mm, battery-motor path pre-routed (31 mV at 2 A); the routing gate checks the width per IPC-2221. | Check the via count per layer change on the finished routing (one 0.3 mm via carries roughly 1 A). | second via in parallel, wider traces |
+| A17 | **GND vias directly in the module's center pads** (7 pcs) and thermal vias in the DRV8213 exposed pad, unfilled. | Solder can wick away during assembly. | filled vias (extra cost), vias next to the pads |
+| A18 | **Sensor INT on IO2** (J2, LP GPIO, wakes from deep sleep): LIS2DH12 INT1 is push-pull; IO2 is not a strapping pin on the C6. | Reset polarity (CTRL_REG6) not checked in the datasheet. | open-drain source, BMA400 |
+| A19 | **Hit on the player button** stands out from the running motor. | Not measured (T6). | evaluate only during motor pauses, high-pass |
+| A20 | **IO8 as player input S4** (strapping, 10 k pull-up) does not disturb boot: for SPI boot the level does not matter, only download mode needs 1. | Button pressed at power-up not tested (T5). | do not press S4 during boot; different pin |
+
+---
+
+## 5. Software and operation (open)
+
+| # | Question | Proposal | Source |
+|---|---|---|---|
+| S1 | Start via the lever directly, or only after release as the default? | – | [software-konzept.md](software-konzept.md) 11 |
+| S2 | Hotspot with password or open by default? | with password | [software-konzept.md](software-konzept.md) 11 |
+| S3 | Define lever gestures (force hotspot, admin reset), rule out confusion with normal play; can toggling 3× be detected reliably? | status LED shows the window | [software-konzept.md](software-konzept.md) 11, [web-ui-konzept.md](web-ui-konzept.md) 10 |
+| S4 | Users may save modes: on by default? | on | [software-konzept.md](software-konzept.md) 11 |
+| S5 | "Who may control": is "everyone" as the default safe enough for parties? | – | [web-ui-konzept.md](web-ui-konzept.md) 10 |
+| S6 | Captive portal behavior on iOS and Android | in test (T8) | [software-konzept.md](software-konzept.md) 11 |
+| S7 | How many simultaneous clients are safe? | 8 | [software-konzept.md](software-konzept.md) 11 |
+| S8 | Mode builder: test ⏪/⏩ left/right with children; keep the joker count the same across meanness levels?; vibration is missing on iPhones – is the fill ring enough? | – | [modus-baukasten.md](modus-baukasten.md) 9 |
+| S9 | Device pairing: keep the assignment across restarts? May the game master pair devices? One device with two Louies? | – | [geraete-anlernen.md](geraete-anlernen.md) 8, [idee-funk-taster.md](idee-funk-taster.md) 10 |
+| S10 | Set the Shelly key via GATT from the Louie (pairing without the Shelly app)? | – | [idee-funk-taster.md](idee-funk-taster.md) 10 |
+
+---
+
+## 6. Decisions made
+
+Reasons and rejected alternatives: [decision-history.md](decision-history.md).
+
+| Topic | Decision | Reference |
+|---|---|---|
+| Controller | ESP32-C6-MINI-1, target -H8, fallback -N4 (ESP32-C3 rejected) | [hauptplatine-c6.md](hauptplatine-c6.md) |
+| Motor driver | DRV8213DSG with IPROPI, current limiting, autosleep (DRV8833 rejected) | [hauptplatine-c6.md](hauptplatine-c6.md) 3 |
+| USB | USB-C J4 on the main board, flashing only via J4; charger board separate | [hauptplatine-c6.md](hauptplatine-c6.md) 2.4, [ladeplatine.md](ladeplatine.md) |
+| Layers, thickness | 4 layers, JLC04081H-3313, 0.8 mm (2 layers rejected; formerly F7) | [hauptplatine-c6.md](hauptplatine-c6.md) 11 |
+| Assembly | single-sided machine assembly (top), bottom only pads, test points, DNP (formerly F8) | [hauptplatine-c6.md](hauptplatine-c6.md) 11.7 |
+| Pinout | authoritative: [hauptplatine-c6.md](hauptplatine-c6.md) 2.3 (sensor INT IO2, I²C IO6/IO7, J6 players, J7 LED, IO22 free) | – |
+| Cable J1 | solder pads instead of a connector, cable through the window of the sleeve (formerly F2) | [hardware-konzept.md](hardware-konzept.md) 6 |
+| Boards in the compartment | one main board + plain bridge or charger board in the second compartment | [hardware-konzept.md](hardware-konzept.md) |
+| License (formerly F9) | software: PolyForm Noncommercial 1.0.0; hardware and docs: CC BY-NC-SA 4.0; commercial use only with permission | [LICENSE](../LICENSE) |
+| Firmware | Rust, std on ESP-IDF; game logic as a hardware-free crate (ESP, PC, WebAssembly); C++ only as fallback (MicroPython rejected) | [firmware-architecture.md](firmware-architecture.md) |
+| Mode preview | in the browser via WebAssembly from the Rust core crate | [firmware-architecture.md](firmware-architecture.md) |
+| External buttons | BLE BTHome passive (Shelly BLU); 433 MHz, ESP-NOW, Zigbee rejected as button radio | [idee-funk-taster.md](idee-funk-taster.md) |
+| Command runner | `just` | [entwicklung.md](entwicklung.md) |
+| Schematic, layout | generated by script (`just schematic`, `just pcb`); own symbols because of pin types (ERC) | [entwicklung.md](entwicklung.md) |
+| Routing | own router `route_fix.py` with keep-best gate and routing score | [entwicklung.md](entwicklung.md), [routing-score.md](routing-score.md) |
+| Silkscreen | reference designators only on the fab layer (cannot be placed legibly on 13.5 mm) | – |
+
+---
+
+## 7. Ideas
+
+Ideas live in their own documents; only the references are here.
+
+- [ideen.md](ideen.md) – collection of ideas (game modes, UI, committee)
+- [idee-optionale-hardware.md](idee-optionale-hardware.md) – additional hardware on the bottom (sections 0/0b implemented)
+- [idee-usb-c-hauptplatine.md](idee-usb-c-hauptplatine.md) – USB-C and cell directly on the main board (basis for J4/J5)
+- [idee-powerbank.md](idee-powerbank.md) – power supply via a power bank in the base (open items P1–P4)
+- [idee-funk-taster.md](idee-funk-taster.md) – wireless buttons as players
+- [idee-zigbee-betrieb.md](idee-zigbee-betrieb.md) – Zigbee operation in the home Wi-Fi (open items there)

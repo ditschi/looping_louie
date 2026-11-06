@@ -1,72 +1,74 @@
-# Idee: Zigbee-Betrieb („Unterwegs mit Tastern“)
+# Idea: Zigbee mode ("On the go with buttons")
 
-Stand: 2026-11-02 · Status: Idee, Hardware ist mit dem ESP32-C6 vorbereitet, Software später (nur C/ESP-IDF).
-Grundlage: [hauptplatine-c6.md](hauptplatine-c6.md) Abschnitt 4 (Koexistenz), [idee-funk-taster.md](idee-funk-taster.md).
+Status: 2026-11-06 · idea; hardware is prepared with the ESP32-C6, software later (Zigbee stack from
+ESP-IDF, in C or from the Rust firmware via esp-idf).
+Basis: [hauptplatine-c6.md](hauptplatine-c6.md) section 4 (coexistence), [idee-funk-taster.md](idee-funk-taster.md).
 
-## 1. Warum eine eigene Betriebsart
+## 1. Why a separate operating mode
 
-Laut Espressif-Koexistenz-Tabelle (C6) geht ein **Zigbee-Coordinator weder zusammen mit dem eigenen Hotspot noch
-zusammen mit dem BLE-Scan** (beides „X“, nicht unterstützt). Zigbee ist deshalb **eine eigene Betriebsart**, keine
-Zusatzfunktion im Partymodus. Nacheinander geht dagegen alles, denn es ist dasselbe Funkteil.
+According to the Espressif coexistence table (C6), a **Zigbee coordinator works neither together with the own hotspot nor
+together with the BLE scan** (both "X", not supported). Zigbee is therefore **a separate operating mode**, not an
+extra function in party mode. One after the other, everything works, because it is the same radio.
 
-| Betriebsart | Funk | Bedienung | Wofür |
+| Operating mode | Radio | Control | Use |
 |---|---|---|---|
-| **WLAN** (Standard) | Heim-WLAN oder eigener Hotspot, BLE-Scan für BTHome-Taster | Web-UI am Handy, BTHome-Taster | Zuhause, Party mit Handys |
-| **Unterwegs (Zigbee)** | kein WLAN, Louie ist Zigbee-Coordinator | nur Zigbee-Taster (z. B. IKEA, Aqara) | unterwegs, Party ohne Handys, immer derselbe Modus |
-| Heim-WLAN + Zigbee (später) | WLAN-STA + Coordinator („C1“, instabil) | Web-UI und Zigbee-Taster | nur, wenn der Test es stabil zeigt |
+| **Wi-Fi** (default) | home Wi-Fi or own hotspot, BLE scan for BTHome buttons | web UI on the phone, BTHome buttons | at home, party with phones |
+| **On the go (Zigbee)** | no Wi-Fi, Louie is Zigbee coordinator | Zigbee buttons only (e.g. IKEA, Aqara) | on the go, party without phones, always the same mode |
+| Home Wi-Fi + Zigbee (later) | Wi-Fi STA + coordinator ("C1", unstable) | web UI and Zigbee buttons | only if the test shows it is stable |
 
-Im Unterwegs-Betrieb spielen alle mit Tastern. Es läuft der **zuletzt gewählte Modus** (bzw. der Hebel-Modus),
-die Belegung der Taster ist vorher im WLAN-Betrieb eingerichtet. Anlernen der Zigbee-Taster passiert ebenfalls im
-WLAN-Betrieb (Web-UI startet dazu kurz den Coordinator, ohne Hotspot geht das nur im Heim-WLAN, oder mit
-Assistent: „Hotspot wird für 60 s getrennt, jetzt Taster koppeln“).
+In on-the-go mode everyone plays with buttons. The **last selected game mode** runs (or the lever mode);
+the button assignment is set up beforehand in Wi-Fi mode. Pairing the Zigbee buttons also happens in
+Wi-Fi mode (the web UI briefly starts the coordinator for it; without a hotspot this only works on home Wi-Fi, or with
+a wizard: "Hotspot will be disconnected for 60 s, pair the buttons now").
 
-## 2. Zurück in den WLAN-Betrieb – ohne Versehen
+## 2. Back to Wi-Fi mode – without accidents
 
-Anforderung: Der Wechsel darf **nicht während des Spiels** passieren, auch nicht, wenn alle gleichzeitig drücken.
-Der Schlüssel ist der **Hebel**: Während einer Runde steht er auf „an“.
+Requirement: The switch must **not happen during the game**, not even when everyone presses at the same time.
+The key is the **lever**: during a round it is "on".
 
-**Empfehlung (zwei Wege, beide sicher):**
+**Recommendation (two ways, both safe):**
 
-1. **Hebel aus + zwei beliebige Taster gleichzeitig 5 s gedrückt halten** (Entscheidung 2026-11-02).
-   - Nur bei Hebel „aus“, also nie in einer laufenden Runde.
-   - Zwei **verschiedene** angelernte Taster, beide innerhalb von 1 s gedrückt. Nicht „alle“, weil bis zu 8 verbunden
-     sein können. Ein einzelnes Kind kann das nicht zufällig auslösen.
-   - **Was die Taster melden** (unsicher, im Test prüfen): Viele Zigbee-Taster melden beim Halten einen Beginn und beim
-     Loslassen ein Ende, z. B. IKEA RODRET/STYRBAR als „Move“ … „Stop“ oder Aqara als „hold“ … „release“. Dann misst
-     Louie die 5 s selbst: Beide Taster sind gleichzeitig im Haltezustand. Meldet ein Taster nur einmal „lang gedrückt“
-     ohne Ende, gilt ersatzweise: zwei verschiedene Taster melden „lang“ innerhalb von 2 s, bei Hebel aus. Auch das
-     passiert im Spiel nicht.
-   - Rückmeldung über die Status-LED (schnelles Blinken), denn bei Hebel aus ist der Motor getrennt. Danach
-     startet WLAN bzw. Hotspot.
-2. **Hebel-Geste beim Aufwachen** (gibt es schon im Konzept als „Hotspot erzwingen“, software-konzept.md 3.1):
-   Louie wecken und innerhalb von 10 s den Hebel 5× schnell umlegen. Funktioniert auch, wenn die Taster-Batterien
-   leer sind oder die Taster fehlen. Das ist die immer verfügbare Rettung.
+1. **Lever off + hold any two buttons at the same time for 5 s** (decision 2026-11-02).
+   - Only with the lever "off", so never in a running round.
+   - Two **different** paired buttons, both pressed within 1 s. Not "all", because up to 8 can be
+     connected. A single child cannot trigger this by accident.
+   - **What the buttons report** (unverified, check in the test): Many Zigbee buttons report a start when held and an end
+     on release, e.g. IKEA RODRET/STYRBAR as "Move" … "Stop" or Aqara as "hold" … "release". Then
+     Louie measures the 5 s itself: both buttons are in the hold state at the same time. If a button reports "long press" only once
+     without an end, the fallback is: two different buttons report "long" within 2 s, with the lever off. That
+     does not happen in a game either.
+   - Feedback via the status LED (fast blinking), because with the lever off the motor is disconnected. After that
+     Wi-Fi or the hotspot starts.
+2. **Lever gesture on wake-up** (already in the concept as "force hotspot", software-konzept.md 3.1):
+   wake Louie and flip the lever 5× quickly within 10 s. Works even when the button batteries
+   are empty or the buttons are missing. This is the always-available rescue.
 
-**Optional, später zu entscheiden: Startfenster.** Nach jedem Aufwachen ist Louie erst 20 s im WLAN-Betrieb. Verbindet
-sich in dieser Zeit ein Handy, bleibt er dort, sonst wechselt er in den Unterwegs-Betrieb. Damit braucht man meist gar
-keine Geste. Der Preis ist, dass die Taster erst nach 20 s funktionieren.
+**Optional, to be decided later: start window.** After every wake-up, Louie is in Wi-Fi mode for 20 s first. If
+a phone connects during this time, it stays there; otherwise it switches to on-the-go mode. Then usually no
+gesture is needed at all. The price is that the buttons only work after 20 s.
 
-**Abgelehnt:** „Alle Taster gleichzeitig“ ohne Hebelbedingung, weil das im Spiel vorkommen kann. Ebenso der BOOT-Taster,
-denn er ist im Batteriefach nicht erreichbar.
+**Rejected:** "All buttons at the same time" without the lever condition, because that can happen in a game. Likewise the BOOT button,
+because it cannot be reached in the battery compartment.
 
-## 3. Später: Modus wechseln und anzeigen ohne Handy
+## 3. Later: switch and show the game mode without a phone
 
-- **Modus wechseln:** Bei Hebel aus z. B. einen Taster 3 s halten → nächster Modus aus einer Favoritenliste
-  (im WLAN-Betrieb festgelegt, z. B. Klassisch / Druckkochtopf / Turbulenzen).
-- **Anzeigen:** Status-LED blinkt die Nummer des Modus (1×, 2×, 3×), oder Louie „zeigt“ den Modus mit einer kurzen
-  typischen Bewegung, sobald der Hebel an ist (nur wenn spürbar und nicht störend).
-- Fiesheit bleibt im Unterwegs-Betrieb fest auf dem zuletzt eingestellten Wert.
+- **Switch game mode:** With the lever off, e.g. hold a button for 3 s → next mode from a favorites list
+  (set in Wi-Fi mode, e.g. Classic / Pressure cooker / Turbulence).
+- **Show:** The status LED blinks the number of the mode (1×, 2×, 3×), or Louie "shows" the mode with a short
+  typical movement as soon as the lever is on (only if noticeable and not disruptive).
+- Meanness stays fixed at the last set value in on-the-go mode.
 
-## 4. Was jetzt schon vorzusehen ist
+## 4. What to provide for now
 
-- **Hardware:** nichts zusätzlich (gleiches Funkteil, gleiche Antenne). Sinnvoll sind das **8-MB-Flash (C6-MINI-1-H8)**
-  und eine gute Antennenlage (Antennenkorrektur L2).
-- **Status-LED** ist Pflicht, weil sie im Unterwegs-Betrieb die einzige Anzeige ist.
-- **Software:** Der Zigbee-Stack gibt es nur in C (esp-zigbee-sdk). Mit MicroPython geht das nicht ohne eigenes
-  C-Modul. Realistisch also erst mit einer C-Firmware oder einem C-Modul, siehe [firmware-sprache.md](firmware-sprache.md).
+- **Hardware:** nothing extra (same radio, same antenna). Useful are the **8 MB flash (C6-MINI-1-H8)**
+  and a good antenna position (antenna fix L2 is done, [analyse-funk-controller.md](analyse-funk-controller.md) 2).
+- **Status LED** is mandatory, because it is the only display in on-the-go mode.
+- **Software:** The Zigbee stack only exists as a C library for ESP-IDF (`esp-zigbee-sdk`, precompiled). The
+  Rust firmware runs on ESP-IDF and can include it as an IDF component and call it via FFI (unverified, not
+  tried yet). Context: [firmware-architecture.md](firmware-architecture.md).
 
-## 5. Offene Punkte
+## 5. Open items
 
-- [ ] Welche Zigbee-Taster (IKEA STYRBAR/RODRET, Aqara Mini) und wie schnell melden sie einen Druck?
-- [ ] Startfenster ja/nein, und wie lang?
-- [ ] Zigbee + Heim-WLAN (C1) im Test stabil?
+- [ ] Which Zigbee buttons (IKEA STYRBAR/RODRET, Aqara Mini) and how fast do they report a press?
+- [ ] Start window yes/no, and how long?
+- [ ] Zigbee + home Wi-Fi (C1) stable in the test?
