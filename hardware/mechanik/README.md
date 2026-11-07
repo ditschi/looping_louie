@@ -67,7 +67,7 @@ optional ein Tropfen Sekundenkleber.
 
 ## Einschränkungen und Stellschrauben
 
-- **Oben offen:** Die Platine (13,5 mm) ist fast so breit wie eine AA-Zelle (14,5 mm). Über
+- **Oben offen:** Die Platine (14,1 mm, Enden 12,5 mm im Kappenschlitz `pcb_zunge_w`) ist fast so breit wie eine AA-Zelle (14,5 mm). Über
   dem ESP32-Modul bleibt am Rand keine Wandstärke, daher hat der AA-Einsatz keinen Deckel.
   Im Fach schließt dessen Wand den Einsatz ein. In der C-Hülse ist er rundum geschlossen.
 - **Passung:** `spiel` (0,2 mm) und `duebel_loch` an den eigenen Drucker anpassen. Am besten
@@ -79,6 +79,6 @@ optional ein Tropfen Sekundenkleber.
 - Die Bauteilhöhen im Platinen-Dummy sind Näherungen nach Datenblatt (Stand C6 mit USB-C J4). Sie dienen nur zur
   Kollisionsprüfung in den Ansichten `teil = "baugruppe"` und `teil = "kollision"` (zeigt, was aus der
   AA-Hüllkurve ragt; das Modul-Dummy ist mit 2,55 mm etwas zu hoch angesetzt und ragt an den Kanten knapp
-  heraus). Rechnerische Prüfung mit dem 3D-Export: docs/hauptplatine-c6.md 8.4.
+  heraus). Rechnerische Prüfung mit dem 3D-Export: docs/hauptplatine-c6.md Kapitel 6.
 - **USB-C (C6-Stand):** Die Buchse sitzt oben an der Kante +y; die Schale liegt darunter, die Buchse ist frei
   zugänglich. Unter J4 fehlt wegen des Kabelfensters der Randsteg als Auflage (offen).

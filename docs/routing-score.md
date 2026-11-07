@@ -1,8 +1,27 @@
-# Routing-Qualität bewerten: harte Bedingungen + gewichteter Score (Vorschlag)
+# Routing-Qualität bewerten: harte Bedingungen + gewichteter Score
 
-Stand 2026-11-03. **Vorschlag, noch nicht umgesetzt.** `route_gate.py` bleibt unverändert, bis die Gewichte
-bestätigt sind. Der Prototyp liegt außerhalb des Repos (Scratchpad: `score_metrics.py`, `score.py`,
-`routing-score.toml`). Er hat alle Platinen nur gelesen; die Flächen werden nur im Speicher neu gefüllt.
+Stand 2026-11-04. **Umgesetzt** (Gewichte aus Abschnitt 3 vom Auftraggeber bestätigt): `hardware/scripts/route_score.py`
+(Messung, `evaluate()`, `decide()`, Bericht), Konfiguration `hardware/routing-score.toml`, eingebaut in
+`route_gate.py` (Gate, `just score`, `just explain`) und `route.py` (bester Versuch eines Aufrufs). Bedienung:
+[entwicklung.md](entwicklung.md), Abschnitt „Routing: bestes Ergebnis behalten“. Abschnitte 1–4 beschreiben die
+geltenden Regeln; Abschnitt 5 und 8 sind die Prototyp-Messung vom 2026-11-03 (Historie, vor dem Umbau der Platine).
+
+**Abweichungen der Umsetzung vom Vorschlag:**
+- `tight_clearance` zählt die beteiligten Elemente (Bahnen, Vias, Pads), nicht die gemeldeten Paare. Welche Paare
+  kicad-cli 9.0.8 meldet, schwankt bei gleicher Platine von Lauf zu Lauf um ±2 % (228–232), die Elemente nicht (275).
+  Skala unverändert 10.
+- Board-Wissen (Netze, Antenne, Via-in-Pad-Liste, Modul, Strompfade) steht unter `[boards.<platine>]`; die
+  allgemeinen Abschnitte sind Vorgaben. `thermal_vias_u2` heißt `thermal_vias` (Pad aus `[boards.*.module]`).
+- `routing.json` speichert zusätzlich `details` und `score.parts`; `ranking` entfällt (`"decision": "hard+weighted"`).
+- Befund 8.1 (VSYS-Pfad zu schmal) und 8.3 (Netzklassen) sind behoben: `gen_main_pcb.py` routet Q1 → C1/C2 mit 0,5 mm
+  nur auf den Außenlagen vor, `route_fix.py` routet VSYS nie unter 0,3 mm, die Netzklassen werden beim Erzeugen neu
+  gesetzt (hauptplatine-c6.md 11.7).
+
+**Prüfung der Umsetzung (2026-11-04, Platine vor dem Umbau):** `just score main-board
+build/main-board/keep/variant4-0-open.kicad_pcb` → wie im Prototyp gewinnt die offizielle Platine: beide verletzen
+`power_width_violations`, Verletzung 1/10,0 mm gegen 1/23,0 mm → VERWERFEN; weich ΔS = +3,77 für variant4 (mit der
+neuen `tight_clearance`-Zählung; Prototyp +3,07), Robustheit 0,5 % „übernehmen“. Ein bytegleicher Stand
+(`best-0-open`) ergibt ΔS = 0,00.
 
 ## Kurzfassung
 

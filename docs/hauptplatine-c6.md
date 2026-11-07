@@ -278,9 +278,10 @@ Rechnung aus dem 3D-Export (`just modell`, `just hull` → `hull_check.py`, Eckp
 
 | Größe | Wert |
 |---|---|
-| J4 Vorderkante | y = +6,10 mm (Platinenkante 6,75) |
+| J4 Vorderkante | y = +6,10 mm (Platinenkante dort 6,75 in der Aussparung vor J4, sonst 7,05) |
 | J4 Oberkante | z = +3,75 mm über der Zellachse |
 | größter Radius aller Bauteile | **6,94 mm** (J4, obere vordere Kante) bei AA-Radius 7,25 → **ca. 0,3 mm Luft** |
+| größter Radius insgesamt (seit 14,1 mm Breite) | **7,06 mm** (Platinenkante oben, x ±21,9) → 0,19 mm Luft |
 | Bauteile unter den Endkappen (x > 22,2) | keine |
 | Unterseite | größtes \|y\| 4,80 mm (Tasche 5,2 mm), Bauhöhe unten siehe 11.7 |
 
@@ -561,7 +562,9 @@ Danach eine Runde mit 4 Versuchen.
 
 | Runde | Änderung davor | Ergebnis |
 |---|---|---|
-| M | Router-Erweiterungen, F1/JP1/R22 wie oben, `just pcb` | läuft seit 20:49: eigener Router, 4 Versuche; nach dem 1. Durchlauf 12 / ? / **1** / 14 offen (Signale) |
+| M (13,5 mm) | Router-Erweiterungen, F1/JP1/R22 wie oben, `just pcb` | 4 Versuche ab 20:49; nach dem 1. Durchlauf 12 / ? / **1** / 14 offen. Nach 50 min abgebrochen, weil die Platine vor Runde M breiter werden sollte; Zwischenstand Versuch 3 in `build/main-board/keep/roundM-13.5mm-attempt3-pass1.kicad_pcb` |
+| M (14,1 mm) | Platine 14,1 mm breit (11.8), sonst wie oben, `just pcb` | eigener Router, 4 Versuche (21:42–23:30): nach dem 1. Durchlauf 2 / 9 / 1 / 10, nach dem 2. Durchlauf 17 / 1 / 8 / 4 offene Signale. Das Gate nahm Versuch 3 (Design geändert): **1 offenes Signal** (ISEN_ADC an R8), 11 GND-Flächenstücke ohne Via, 2 DRC-Fehler (Lochabstand eines Router-Vias VBUS zur J4-Lasche S1), hart 14, S 162,9. `just route-check` auf diesem Stand: die 11 GND-Inseln lassen sich mit Flächensuche **und** Aufreißen alle anbinden (ohne Aufreißen keine) |
+| M+ | Nacharbeit `route_finish.py` (neu): route_fix auf der gerouteten Platine, alle Router-Bahnen aufreißbar (`rip_tracks`), GND-Inseln auch an schon angebundene Füllung (`ISLAND_AREA_SEARCH`), danach Stitching wie `route.py`, zuletzt `fragment_vias()` (Via in jedes Flächenstück ohne Anbindung) | 18 min, 206 Schritte; der beste Zwischenstand war der Ausgangsstand (1 offenes Signal). `fragment_vias()` fand in keinem der 11 Flächenstücke eine Via-Stelle: Unter ihnen liegen auf In2/B.Cu Bahnen oder Pads anderer Netze. Nicht ins Gate gegeben, offizielle Platine bleibt Runde M |
 
 
 
@@ -604,6 +607,51 @@ ohne U6, F1, C17, R22, Q2, R17, R18, R19/R20/R23/R24, C16/C18–C20; `…-stueck
   fand für R6–R7 keinen Weg mehr. Deshalb J6 nach y −1,3 und J3 0,1 mm nach außen.
 - Neue Footprints in `louie.pretty` (aus `gen_symbols.py`): `SolderPads_1x03/1x06_P2.54mm`, `TestPad_D1.0mm`.
 - `just hull` (`hull_check.py`): Hüllkurve aus dem STL (Radius, Tasche, Endkappen).
+
+**Stand 2026-11-07 nach Runde M (Budget erreicht):** offizielle Platine = Runde M, Versuch 3, 14,1 mm breit;
+`routing.json` passt (Fingerabdruck 93e4000685). ERC 0, Schaltplan-Abgleich 0, `antenna_intrusions` 0,
+`power_width_violations` 0. Offen (`unconnected` 12, `drc_errors` 2):
+- 1 Signal: ISEN_ADC von R8 zur Bahn an C14.
+- 11 GND-Flächenstücke auf F.Cu/B.Cu ohne Via; sie hängen nur an SMD-Pads (C8–C12, C16, C4/R3, D1, R15, R20,
+  U1.14, U5). Unter ihnen ist auf allen Lagen kein Via-Platz frei. `just route-check` zeigt: mit Aufreißen lassen
+  sich alle 11 anbinden, aber nur, wenn die aufgerissenen Signale danach neu gehen.
+- DRC: 2 × Lochabstand 0,275 statt 0,28 mm zwischen einem Router-Via (VBUS, (10,47; 4,53)) und der Bohrung der
+  J4-Lasche S1. `route_fix.py` nähert die Langlochbohrung als Kreis an, das reicht hier um 5 µm nicht.
+
+Vorschläge (Entscheidung Auftraggeber):
+1. GND-Anbindung vor dem Signalrouting: `route_fix.py` setzt zuerst für jedes GND-SMD-Pad ein Via (fanout) und routet
+   die Signale danach drumherum, statt Inseln am Ende nachträglich anzubinden.
+2. Bohrungen als Langloch statt Kreis in die Sperrraster eintragen (S1-Laschen der USB-C-Buchse).
+3. Kleine Lockerung: Füll-Flächenstücke ohne Via, die nur an SMD-Pads hängen, im Score als weiche Kennzahl
+   (`gnd_islands`) statt als `unconnected` zählen. Das wäre eine Änderung an den freigegebenen harten Bedingungen.
+
+### 11.8 Platinenbreite 14,1 mm (Stand 2026-11-06)
+
+Auftrag aus der Analyse der Platzoptimierung: Platine von 13,5 auf **14,1 mm** verbreitern (Rückfall 14,0 mm).
+- AA-Ø 14,5 mm; auf Platinenhöhe (z −0,3 … +0,5 um die Zellachse) ist der Kreis noch 14,47 mm breit, 14,1 mm lassen
+  Luft für die Umrisstoleranz bei JLC (±0,2 mm, unsicher je Fräsung).
+- Gewinn ca. 27 mm²: je Rand und Lage eine Längsbahn mehr, vor allem an +y unter J4 (SDA/SCL/INT neben OUT_B).
+- Bauteile am neuen Rand: höchstens ca. 1,2 mm über der Oberseite (0402 passt).
+
+Umsetzung (alles erzeugt):
+- `board_outline.py`:
+  - `WIDTH_MM = 14.1`.
+  - Enden als Zunge (`TONGUE_W = 12.5`, `TONGUE_L = 0.8`, so weit greift die Platine in die Kappen).
+  - Innenecken R 0,5 mm (Fräser 1,0 mm), Außenecken R 0,3 mm.
+  - Aussparung vor J4 (`RECESS_X` 10,8 … 19,8, `RECESS_DEPTH` 0,3): die Buchsenöffnung bleibt 0,7 mm hinter der Kante.
+- `gen_main_pcb.py`:
+  - `BOARD_W` aus `board_outline.py`; Randbahnen OUT_A/OUT_B, Rand- und Antennen-Sperrflächen wachsen mit.
+  - Zusätzliche Rand-Sperrflächen an den Zungenecken und an der Aussparung; der Antennenbereich bleibt kupferfrei.
+  - Die DRC-Prüfung „Bestückungsdruck an der Platinenkante“ ist abgeschaltet (`ignore_silk_edge()`): Der
+    Pin-1-Kreis des Modul-Footprints liegt jetzt auf der Kante, der Hersteller schneidet ihn ab.
+- `huelle.scad`: `pcb_w = 14.1`; neuer Parameter `pcb_zunge_w = 12.5` für den Kappenschlitz (vorher an `pcb_w`
+  gekoppelt). Die Schale bleibt gleich: Auf Höhe der Platinenunterseite ist sie innen 14,49 mm breit.
+- `plot_layout.py` zeichnet den Umriss aus Edge.Cuts.
+- Hüllkurve (`just modell`, `just hull`):
+  - Größter Radius 7,06 mm an der Platinenkante (x ±21,9, y ±7,05, z +0,43), unter 7,25 mm.
+  - J4 unverändert 6,94 mm.
+  - Unten |y| ≤ 3,35 mm; die Endkappen sind frei.
+  - Bauhöhe unten wie in 11.7: generisches U6-Modell 1,64 mm, echtes Teil 1,45 mm.
 
 ---
 

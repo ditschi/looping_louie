@@ -57,6 +57,8 @@ just route         route the main board: own maze router (route_fix.py), GND via
                    Options runs=N (attempts), force=1 (bypass the gate), see "Routing: keep the best result"
 just main-board    complete main board: create, route, ERC, DRC (old names: just four-layer, just vierlagig)
 just route-check   quick check of the own router on the official board (approx. 30 s, no routing run)
+route_finish.py    rework a routed board (open connections, GND islands; router tracks may be ripped up); then pass the
+                   result through the gate: route_gate.py check main-board <file> --start <unrouted> --apply
 just route-baseline  recreate hardware/<board>/routing.json from the official board
 just score         routing score of the official board (and other versions: just score main-board build/main-board/keep/*.kicad_pcb)
 just explain       explain the gate decision for a candidate: just explain [board] <file.kicad_pcb>

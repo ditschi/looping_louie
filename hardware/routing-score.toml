@@ -1,0 +1,214 @@
+# Routing score: hard constraints + weighted sum (docs/routing-score.md, approved 2026-11-04)
+#
+# Used by hardware/scripts/route_gate.py (keep-best gate, `just score`, `just explain`) and route.py (best attempt).
+# Decision order:
+#   1. hard constraints: every [hard] metric must be <= its limit. A feasible board beats an infeasible one;
+#      between two infeasible boards the smaller total violation wins (Deb's rule), then the shorter under-width
+#      length of the current paths.
+#   2. weighted score of the soft metrics, lower is better:  S = sum_i weight_i * value_i / scale_i
+#      scale  = engineering "unit of noticeable difference" (fixed, changes only with the design)
+#      weight = importance (user preference: 0 = report only, 1 = normal, 3 = important, 5 = critical,
+#               negative = more is better)
+#   3. a candidate replaces the official board only if S_new <= S_official - min_improvement and no metric with a
+#      veto (max_regression) got worse by more than allowed.
+#
+# Changing this file changes its hash; the gate then re-measures the official board before the next decision.
+
+version = 1
+
+[decision]
+min_improvement = 1.0   # score points; ~5 signal vias or 50 mm signal track at default weights
+
+[hard]                  # metric = maximum allowed value
+drc_errors = 0          # kicad-cli DRC, severity error, without library checks
+unconnected = 0         # kicad-cli DRC unconnected_items
+antenna_intrusions = 0  # copper of non-allowed nets inside the antenna rule areas (any layer)
+power_width_violations = 0  # current paths with more under-width length than neckdown_allow_mm (IPC-2221)
+
+# Soft metrics: weight (importance) and scale (value that counts as one point before weighting).
+# max_regression: optional veto, the candidate is rejected if value_new - value_official > max_regression.
+[soft.drc_warnings]
+weight = 2.0
+scale = 1             # dangling tracks/vias, silk; each warning is rework
+
+[soft.gnd_islands]
+weight = 3.0
+scale = 1             # GND fill fragments tied to the net only through tracks / SMD pads
+
+[soft.signal_vias]
+weight = 2.0
+scale = 10            # vias on non-GND nets; GND (stitching) vias are not penalized
+
+[soft.signal_length_mm]
+weight = 1.0
+scale = 50
+
+[soft.detour_worst5]
+weight = 1.0
+scale = 0.5           # mean detour ratio (routed / octilinear MST) of the 5 worst nets
+
+[soft.bends]
+weight = 0.5
+scale = 50            # direction changes on non-GND nets
+
+[soft.acute_angles]
+weight = 1.0
+scale = 1             # same-net track junctions < 90 deg (acid traps)
+
+[soft.overlapping_segments]
+weight = 0.5
+scale = 1             # same-net segments folded back onto each other (router clean-up)
+
+[soft.via_in_pad]
+weight = 2.0
+scale = 1             # vias inside SMD pads not on the allow list (solder wicking, no POFV ordered)
+
+[soft.tight_clearance]
+weight = 1.0
+scale = 10            # items (tracks/vias/pads, no zones) closer than clearance + margin to another item
+
+[soft.power_drop_mv]
+weight = 2.0
+scale = 20            # worst DC drop on the defined current paths at their peak current
+max_regression = 30
+
+[soft.sense_coupling_mm]
+weight = 3.0
+scale = 5             # length of sense nets within coupling_gap_mm of an aggressor on a coupled layer
+max_regression = 5
+
+[soft.sense_length_mm]
+weight = 1.0
+scale = 10
+
+[soft.return_gap_mm]
+weight = 3.0
+scale = 2             # signal length without GND fill on the nearest plane (or adjacent layer)
+
+[soft.antenna_proximity_mm]
+weight = 2.0
+scale = 5             # signal track length within antenna.margin_mm of the antenna areas
+max_regression = 3
+
+[soft.stitch_gap_p95_mm]
+weight = 1.0
+scale = 1             # 95th percentile distance from outer-layer GND fill to the nearest GND via
+
+[soft.gnd_vias_module]
+weight = -0.5         # negative weight = more is better
+scale = 4             # GND vias within module.margin_mm of the module
+
+[soft.usb_vias]
+weight = 1.0
+scale = 2
+
+[soft.usb_skew_mm]
+weight = 0.5
+scale = 5             # USB full speed: skew is uncritical, reported mostly for information
+
+[soft.usb_stubs]
+weight = 1.0
+scale = 1
+
+[soft.ref_plane_mm2]
+weight = 0.0          # report only (antipad loss in the reference plane, correlates with signal vias)
+scale = 10
+
+# ---------------------------------------------------------------------------------------------------------
+# Board knowledge (defaults; [boards.<board>] below overrides per board)
+
+[nets]
+gnd = "/GND"
+power = []
+sense = []
+aggressors = []
+usb_pair = []
+coupling_gap_mm = 0.6
+clearance_margin_mm = 0.05
+
+[antenna]
+area_prefix = "Antenne"          # rule areas whose name starts with this
+allowed_nets = []
+margin_mm = 2.0
+
+[via_in_pad]
+allowed = []
+
+[module]
+ref = ""                         # radio module (GND vias around it), empty = not measured
+margin_mm = 1.0
+thermal_pad = ""                 # pad for the thermal via count (information only)
+
+[thermal]
+copper_rise_k = 20               # allowed temperature rise for the width check
+ipc_k_external = 0.048           # IPC-2221: I = k * dT^0.44 * A^0.725 (A in mil^2)
+ipc_k_internal = 0.024           # conservative IPC-2221 value; IPC-2152 data allow ~0.048 (see docs)
+neckdown_allow_mm = 2.0          # under-width length allowed per path (fine-pitch pin stubs)
+resistivity_ohm_m = 1.72e-8
+via_plating_um = 20
+
+# --- main board (4 layers) -------------------------------------------------------------------------------
+[boards.main-board.nets]
+power = ["/VSYS", "/BAT_IN", "/VBUS_J4", "/OUT_A", "/OUT_B", "/+3V3", "/VLED", "/VLED_SW"]
+sense = ["/ISEN", "/ISEN_ADC", "/VBAT_ADC"]
+aggressors = ["/OUT_A", "/OUT_B"]
+usb_pair = ["/USB_D+", "/USB_D-"]
+
+[boards.main-board.antenna]
+allowed_nets = ["/OUT_A"]        # OUT_A to the end contact BT1 runs in the edge strip by design
+
+[boards.main-board.via_in_pad]
+allowed = ["U2:*", "U1:*"]       # DRV8213 thermal pad, module GND pads (Espressif: GND vias)
+
+[boards.main-board.module]
+ref = "U1"
+thermal_pad = "U2:9"
+
+# Current paths: pad -> pad on one net; current_a = continuous current (width check), peak_a = peak (voltage drop).
+# Motor current up to 2 A (IPROPI limit, R1 1.24 k); continuous current not measured yet (hardware-konzept.md).
+[[boards.main-board.paths]]
+name = "OUT_A U2 -> BT1"
+from = "U2:2"
+to = "BT1:1"
+current_a = 1.5
+peak_a = 2.0
+
+[[boards.main-board.paths]]
+name = "OUT_B U2 -> BT2"
+from = "U2:3"
+to = "BT2:1"
+current_a = 1.5
+peak_a = 2.0
+
+[[boards.main-board.paths]]
+name = "VSYS D2 -> U2 VM"
+from = "D2:1"
+to = "U2:1"
+current_a = 1.5
+peak_a = 2.0
+
+[[boards.main-board.paths]]
+name = "VBUS J4 -> D2"
+from = "J4:A4"
+to = "D2:2"
+current_a = 1.5
+peak_a = 2.0
+
+[[boards.main-board.paths]]
+name = "BAT J5 -> Q1"
+from = "J5:1"
+to = "Q1:3"
+current_a = 1.5
+peak_a = 2.0
+
+[[boards.main-board.paths]]
+name = "VSYS Q1 -> U2 VM"
+from = "Q1:2"
+to = "U2:1"
+current_a = 1.5
+peak_a = 2.0
+
+# --- charger board (2 layers, Freerouting) ---------------------------------------------------------------
+[boards.charger-board.nets]
+power = ["/VBUS", "/VSYS", "/BAT"]
+usb_pair = ["/USB_D+", "/USB_D-"]

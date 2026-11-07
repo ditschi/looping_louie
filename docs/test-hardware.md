@@ -521,7 +521,9 @@ The 5 assembled boards allow losing one (e.g. in a stall or thermal test).
 
 ### 7.1 Key data
 
-- **Outline:** 46.0 × 13.5 mm, corners R 0.5 mm (verified, Edge.Cuts in `louie-main.kicad_pcb`). 6.2 cm². 4 layers,
+- **Outline:** 46.0 × 14.1 mm; the ends (0.8 mm into the end caps) are 12.5 mm wide, inner corners R 0.5 mm (mill),
+  outer corners R 0.3 mm, 0.3 × 9 mm recess in front of USB-C (`hardware/scripts/board_outline.py`, since 2026-11-06).
+  About 6.5 cm². 4 layers,
   0.8 mm, single-sided assembly.
 - **Extended parts at JLC:** ESP32-C6-MINI-1, DRV8213DSGR, AP2112K-3.3, TYPE-C-31-M-12, USBLC6-2SC6, SS34F,
   LIS2DH12TR = 7 (verified, JLC parts API); AO3401A is Basic. With special values (1.24 k 1 %, 47 µF 1206)

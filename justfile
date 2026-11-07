@@ -34,6 +34,10 @@ pcb:
     @{{kicad_python}} {{hw}}/scripts/gen_main_pcb.py 2>&1 | grep -v "swig/python detected a memory leak"
     @just plot
 
+# Footprints der Hauptplatine neu mit dem Schaltplan verknüpfen (nach just schematic), Layout/Routing bleiben
+pcb-sync:
+    @{{kicad_python}} {{hw}}/scripts/gen_main_pcb.py --sync-links 2>&1 | grep -v "swig/python detected a memory leak"
+
 # Hauptplatine komplett: anlegen, routen (Gate: nur Verbesserungen), ERC, DRC; Optionen wie just route
 main-board *args:
     @just pcb
@@ -56,9 +60,22 @@ plot:
 route board="main-board" *args:
     @{{kicad_python}} {{hw}}/scripts/route.py {{board}} {{args}} 2>&1 | grep -v "swig/python detected a memory leak\|Debug: Adding duplicate image handler"
 
+# Schnellprüfung des eigenen Routers (route_fix.py) an der offiziellen Platine, ohne Routing-Lauf (ca. 1 min)
+route-check:
+    @{{kicad_python}} {{hw}}/scripts/test_route_fix.py 2>&1 | grep -v "swig/python detected a memory leak\|Debug: Adding duplicate image handler"
+
 # Routing-Ergebnis neu erfassen: hardware/<board>/routing.json aus der offiziellen Platine (Kennzahlen per DRC)
 route-baseline board="main-board":
     @{{kicad_python}} {{hw}}/scripts/route_gate.py init {{board}} 2>&1 | grep -v "swig/python detected a memory leak\|Debug: Adding duplicate image handler"
+
+# Routing-Score der offiziellen Platine und optional weiterer Stände (docs/routing-score.md), ändert nichts:
+# just score [board] [kandidat.kicad_pcb …], z. B. just score main-board build/main-board/keep/*.kicad_pcb
+score *args:
+    @{{kicad_python}} {{hw}}/scripts/route_gate.py score {{args}} 2>&1 | grep -v "swig/python detected a memory leak\|Debug: Adding duplicate image handler"
+
+# Gate-Entscheidung für einen Kandidaten erklären (Beiträge, Kipp-Faktoren, Robustheit): just explain [board] <kandidat>
+explain *args:
+    @{{kicad_python}} {{hw}}/scripts/route_gate.py explain {{args}} 2>&1 | grep -v "swig/python detected a memory leak\|Debug: Adding duplicate image handler"
 
 # Schaltplan der Ladeplatine aus gen_charger_schematic.py erzeugen (überschreibt!)
 charger-schematic:
@@ -102,9 +119,14 @@ fab board="main-board": (erc board) (drc board) (_out board + "/fab/gerber")
     out=build/{{board}}/fab
     kicad-cli pcb export gerbers -o $out/gerber/ $pcb
     kicad-cli pcb export drill --format excellon --excellon-separate-th -o $out/gerber/ $pcb
-    kicad-cli pcb export pos --format csv --units mm --side both -o $out/{{"louie-" + replace(board, "-board", "")}}-bestueckung.csv $pcb
-    kicad-cli sch export bom --fields 'Reference,Value,Footprint,${QUANTITY},LCSC Part' \
+    # Bestückung und Stückliste ohne DNP-Teile (optionale Footprints unten, docs/idee-optionale-hardware.md 0b);
+    # die vollständige Stückliste mit DNP-Spalte liegt daneben (-stueckliste-alle.csv)
+    kicad-cli pcb export pos --format csv --units mm --side both --exclude-dnp -o $out/{{"louie-" + replace(board, "-board", "")}}-bestueckung.csv $pcb
+    kicad-cli sch export bom --fields 'Reference,Value,Footprint,${QUANTITY},LCSC Part' --exclude-dnp \
         --group-by 'Value,Footprint' -o $out/{{"louie-" + replace(board, "-board", "")}}-stueckliste.csv $sch
+    kicad-cli sch export bom --fields 'Reference,Value,Footprint,${QUANTITY},LCSC Part,${DNP}' \
+        --labels 'Reference,Value,Footprint,Qty,LCSC Part,DNP' --group-by 'Value,Footprint,${DNP}' \
+        -o $out/{{"louie-" + replace(board, "-board", "")}}-stueckliste-alle.csv $sch
     rm -f $out/{{"louie-" + replace(board, "-board", "")}}-gerber.zip && zip -qj $out/{{"louie-" + replace(board, "-board", "")}}-gerber.zip $out/gerber/*
     echo "Fertigungsdaten in $out/"
 
@@ -143,6 +165,10 @@ modell board="main-board": (_out board + "/3d")
         --include-silkscreen --include-soldermask -o $out/{{"louie-" + replace(board, "-board", "")}}.glb  $pcb >/dev/null
     kicad-cli pcb export stl  --force --subst-models -o $out/{{"louie-" + replace(board, "-board", "")}}.stl $pcb >/dev/null
     ls -la $out
+
+# Hüllkurve der Hauptplatine gegen die AA-Hülle prüfen (Radius < 7,25 mm, unten nur in der Tasche); vorher just modell
+hull:
+    @python3 {{hw}}/scripts/hull_check.py
 
 # Hauptplatine zusätzlich Innenlagen (copper-l2-gnd, copper-l3-signal) und Platzierung, Ladeplatine mit Präfix lade-
 # Alle Bilder einer Platine neu erzeugen (docs/bilder/: 3D, Kupferlagen, Schaltplan)

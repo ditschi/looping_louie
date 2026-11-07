@@ -30,6 +30,8 @@ LIBS = {
     "Battery_Management": KICAD_SYMBOLS / "Battery_Management.kicad_sym",
     "Power_Protection": KICAD_SYMBOLS / "Power_Protection.kicad_sym",
     "Transistor_FET": KICAD_SYMBOLS / "Transistor_FET.kicad_sym",
+    "Power_Management": KICAD_SYMBOLS / "Power_Management.kicad_sym",
+    "Jumper": KICAD_SYMBOLS / "Jumper.kicad_sym",
 }
 
 R0402 = "Resistor_SMD:R_0402_1005Metric"
@@ -38,15 +40,22 @@ C0603 = "Capacitor_SMD:C_0603_1608Metric"
 C0805 = "Capacitor_SMD:C_0805_2012Metric"
 C1206 = "Capacitor_SMD:C_1206_3216Metric"
 TP_SMALL = "TestPoint:TestPoint_Pad_D1.5mm"
+TEST_PAD = "louie:TestPad_D1.0mm"  # Unterseite, Inbetriebnahme (docs/idee-optionale-hardware.md 0.4)
 TP_CONTACT = "TestPoint:TestPoint_Pad_2.0x2.0mm"  # Platzhalter, Kontaktmechanik offen
 
 
-def R(ref, value, n1, n2, at, fp=R0402):
-    return dict(ref=ref, lib="Device:R", value=value, fp=fp, at=at, pins={"1": n1, "2": n2})
+def R(ref, value, n1, n2, at, fp=R0402, **extra):
+    return dict(ref=ref, lib="Device:R", value=value, fp=fp, at=at, pins={"1": n1, "2": n2}, **extra)
 
 
-def C(ref, value, n1, n2, at, fp=C0402):
-    return dict(ref=ref, lib="Device:C", value=value, fp=fp, at=at, pins={"1": n1, "2": n2})
+def C(ref, value, n1, n2, at, fp=C0402, **extra):
+    return dict(ref=ref, lib="Device:C", value=value, fp=fp, at=at, pins={"1": n1, "2": n2}, **extra)
+
+
+# Optionale Teile unten (docs/idee-optionale-hardware.md 0/0b): Footprint vorhanden, nicht bestückt (DNP). Die
+# Stückliste führt sie mit DNP-Kennzeichen; just fab lässt sie in Bestückungsliste und JLC-Stückliste weg.
+def DNP(part):
+    return dict(part, dnp=True)
 
 
 def TP(ref, value, net, at, fp=TP_SMALL):
@@ -70,6 +79,9 @@ BLOCKS = [
     ("Hebel-Erkennung (Hebel zu = SENSE HIGH) und Kontakte an den Platinenenden", (254, 175.26)),
     ("Erweiterungs-Pads (I2C/INT) und Service-Pads, Unterseite", (139.7, 200.66)),
     ("Beschleunigungssensor (I2C 0x18, INT1 an IO2), bestückungsoptional", (254, 213.36)),
+    ("Unten, DNP: Spieler-Pads J6", (350.52, 33.02)),
+    ("Unten, DNP: LED-Pads J7, U6", (350.52, 116.84)),
+    ("Unten: Testpunkte", (139.7, 246.38)),
 ]
 
 PARTS = [
@@ -131,7 +143,10 @@ PARTS = [
          fp="lcsc:WIFIM-SMD_ESP32-C6-MINI-1", at=(177.8, 73.66), ref_at=(-12.7, -24.13), val_at=(2.54, 24.13),
          pins={"3": "+3V3", "8": "EN", "1": "GND", "12": "VBAT_ADC", "13": "ISEN_ADC", "5": "INT", "6": "SENSE",
                "9": "VBUS_DET", "10": "IO5", "15": "SDA", "16": "SCL", "22": "IO8", "23": "BOOT",
-               "17": "USB_D-", "18": "USB_D+", "19": "LED", "24": "MOT_IN1", "25": "MOT_IN2", "31": "TXD"}),
+               "17": "USB_D-", "18": "USB_D+", "19": "LED", "24": "MOT_IN1", "25": "MOT_IN2", "31": "TXD",
+               # Erweiterungen unten (alle optional): IO15 LED-Versorgung ein, IO20/IO21 Spieler-Eingänge,
+               # IO23 LED-Daten, RXD Konsole (J3-5); IO22 frei (Reserve)
+               "20": "IO15", "26": "IO20", "27": "IO21", "29": "IO23", "30": "RXD"}),
     C("C9", "10u", "+3V3", "GND", (152.4, 139.7), fp=C0603),
     C("C10", "100n", "+3V3", "GND", (165.1, 139.7)),
     R("R2", "10k", "+3V3", "EN", (177.8, 139.7)),
@@ -146,9 +161,10 @@ PARTS = [
     dict(ref="J2", lib="Connector_Generic:Conn_01x05", value="Erweiterung I2C", bom=False,
          fp="louie:SolderPads_1x05_P2.54mm", at=(165.1, 228.6),
          pins={"1": "+3V3", "2": "GND", "3": "SDA", "4": "SCL", "5": "INT"}),   # Sensor-Breakout/Schalter
-    dict(ref="J3", lib="Connector_Generic:Conn_01x05", value="Service Taster", bom=False,
+    # Service: vollständige UART0-Konsole (TXD, RXD), EN, BOOT, GND – z. B. Pogo-Adapter; Taster an 3+4
+    dict(ref="J3", lib="Connector_Generic:Conn_01x05", value="Service", bom=False,
          fp="louie:SolderPads_1x05_P2.54mm", at=(203.2, 228.6),
-         pins={"1": "EN", "2": "TXD", "3": "BOOT", "4": "GND", "5": "IO5"}),     # Taster an 3+4
+         pins={"1": "EN", "2": "TXD", "3": "BOOT", "4": "GND", "5": "RXD"}),
 
     # --- Ausgangsstufe ---------------------------------------------------------------------------
     # GAINSEL an GND: 205 µA/A; R1 = R_IPROPI: ITRIP = 0,51 V / (1,24 k × 205 µA/A) ≈ 2 A
@@ -178,13 +194,55 @@ PARTS = [
          pins={"9": "+3V3", "10": "+3V3", "2": "+3V3", "3": "GND", "5": "GND", "6": "GND",
                "1": "SCL", "4": "SDA", "12": "INT"}),
     C("C15", "100n", "+3V3", "GND", (266.7, 233.68)),
+
+    # --- Unterseite, optional (docs/idee-optionale-hardware.md 0b.4): nichts davon ist bestückt ---------------------
+    # J6 „Spieler“: S1 = IO5 (Deep-Sleep-Wecken, ADC), S2 = IO20, S3 = IO21, S4 = IO8 (R11 10 k vorhanden);
+    # Taster/Reed gegen GND mit internem Pull-up (45 k) und 1 kΩ in Reihe im Kabel; keine RC-Footprints
+    dict(ref="J6", lib="Connector_Generic:Conn_01x06", value="Spieler S1-S4", bom=False,
+         fp="louie:SolderPads_1x06_P2.00mm", at=(355.6, 66.04),
+         pins={"1": "+3V3", "2": "IO5", "3": "IO20", "4": "IO21", "5": "IO8", "6": "GND"}),
+    # IO5: R nach 3V3 (Pull-up, Widerstandsleiter), R und C nach GND (NTC, Piezo-Ableitung, Filter)
+    DNP(R("R19", "10k", "IO5", "+3V3", (370.84, 48.26), lcsc="C25744")),
+    DNP(R("R20", "1M", "IO5", "GND", (383.54, 48.26))),
+    DNP(C("C16", "10n", "IO5", "GND", (396.24, 48.26), lcsc="C15195")),
+
+    # J7 „LED“: 1 VLED, 2 IO23 (NeoPixel-Daten/LED/Taster), 3 GND. VLED über Lastschalter U6 (Freigabe IO15,
+    # R22 hält ihn im Reset und Deep Sleep aus) oder über JP1 (Lötbrücke, Standard offen); dahinter PTC F1 0,5 A
+    # (VSYS ist sonst ungesichert) und C17 als Puffer. Serienwiderstand 330 Ω gehört ans LED-Ende des Kabels.
+    dict(ref="J7", lib="Connector_Generic:Conn_01x03", value="LED", bom=False,
+         fp="louie:SolderPads_1x03_P2.54mm", at=(355.6, 154.94), pins={"1": "VLED", "2": "IO23", "3": "GND"}),
+    # TPS22918 (DBV): CT offen = schnellste Flanke; QOD offen = keine Ausgangsentladung (TI: zulässig). An VOUT
+    # meldet der ERC Stromausgang an offenem Kollektor, an VLED fand der Router keinen Weg; die LEDs entladen VLED.
+    DNP(dict(ref="U6", lib="Power_Management:TPS22917DBV", value="TPS22918DBVR", lcsc="C131941",
+             fp="Package_TO_SOT_SMD:SOT-23-6", at=(383.54, 144.78), ref_at=(-7.62, -8.89), val_at=(2.54, 10.16),
+             pins={"1": "VSYS", "2": "GND", "3": "IO15", "6": "VLED_SW"})),
+    # Lötbrücke als 0603-Pads (Lot oder 0-Ω-Widerstand): der SolderJumper-Footprint fand unten keinen Platz mehr
+    dict(ref="JP1", lib="Jumper:SolderJumper_2_Open", value="VSYS->VLED", bom=False,
+         fp="Resistor_SMD:R_0603_1608Metric", at=(383.54, 127.0),
+         pins={"1": "VSYS", "2": "VLED_SW"}),
+    DNP(dict(ref="F1", lib="Device:Polyfuse", value="0.5A 6V", lcsc="C883108",
+             fp="Fuse:Fuse_0805_2012Metric", at=(401.32, 144.78), pins={"1": "VLED_SW", "2": "VLED"})),
+    DNP(C("C17", "10u", "VLED", "GND", (401.32, 167.64), fp=C0805, lcsc="C1713")),
+    DNP(R("R22", "100k", "IO15", "GND", (370.84, 170.18), lcsc="C25741")),
+
+    # Testpunkte (Messspitze, Prüfadapter)
+    TP("TP1", "VSYS", "VSYS", (152.4, 254.0), fp=TEST_PAD),
+    TP("TP2", "VBUS", "VBUS_J4", (165.1, 254.0), fp=TEST_PAD),
 ]
 
 # ---------------------------------------------------------------------------------------------
 
 
-def uid():
-    return str(uuid.uuid4())
+def uid(*name):
+    """Feste UUIDs (uuid5 aus Projekt und Name bzw. laufender Nummer): ein erneutes just schematic ändert die
+    Verknüpfung Symbol ↔ Footprint (Pfad in der .kicad_pcb) nicht, der Schaltplan-Abgleich im DRC bleibt gültig."""
+    key = "/".join(name) if name else f"item/{next(_SEQ)}"
+    return str(uuid.uuid5(_NS, f"{_PROJECT}/{key}"))
+
+
+_NS = uuid.UUID("7d3c1d52-4f1e-4a8e-9a55-1f0c2b6e9a10")
+_PROJECT = "louie-main"
+_SEQ = iter(range(1, 10 ** 9))
 
 
 def fmt(v):
@@ -227,7 +285,9 @@ COMMENT = "Platine im AA-Format, siehe docs/hardware-konzept.md"
 def main(sch=SCH, parts=PARTS, blocks=BLOCKS, title=TITLE, comment=COMMENT, project="louie-main",
          generator="gen_main_schematic.py"):
     """Schreibt den Schaltplan. Andere Platinen (gen_charger_schematic.py) rufen das mit eigenen Daten auf."""
-    root = uid()
+    global _PROJECT, _SEQ
+    _PROJECT, _SEQ = project, iter(range(1, 10 ** 9))
+    root = uid("root")
     lib_symbols, pin_cache = {}, {}
     items = []
 
@@ -238,6 +298,7 @@ def main(sch=SCH, parts=PARTS, blocks=BLOCKS, title=TITLE, comment=COMMENT, proj
         x, y = part["at"]
         is_power = part["ref"].startswith("#")
         in_bom = part.get("bom", True) and not is_power
+        dnp = part.get("dnp", False)
 
         # Bauteil
         rx, ry = part.get("ref_at", (2.54, -1.27))
@@ -256,8 +317,8 @@ def main(sch=SCH, parts=PARTS, blocks=BLOCKS, title=TITLE, comment=COMMENT, proj
         pin_text = "".join(f'\t\t(pin "{p["number"]}" (uuid "{uid()}"))\n' for p in pins)
         items.append(
             f'\t(symbol (lib_id "{part["lib"]}") (at {fmt(x)} {fmt(y)} 0) (unit 1)\n'
-            f'\t\t(exclude_from_sim no) (in_bom {"yes" if in_bom else "no"}) (on_board {"no" if is_power else "yes"}) (dnp no)\n'
-            f'\t\t(uuid "{uid()}")\n{prop_text}{pin_text}'
+            f'\t\t(exclude_from_sim no) (in_bom {"yes" if in_bom else "no"}) (on_board {"no" if is_power else "yes"}) (dnp {"yes" if dnp else "no"})\n'
+            f'\t\t(uuid "{uid("symbol", part["ref"])}")\n{prop_text}{pin_text}'
             f'\t\t(instances (project "{project}" (path "/{root}" (reference "{part["ref"]}") (unit 1))))\n'
             '\t)\n')
 

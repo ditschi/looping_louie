@@ -62,7 +62,14 @@ def main():
         ax.set_aspect("equal")
         ax.set_xlim(-24, 24)
         ax.set_ylim(7.5, -7.5)
-        ax.add_patch(plt.Rectangle((-23, -6.75), 46, 13.5, fill=False, lw=1.5, color="black"))
+        ex0, ey0, ex1, ey1 = box(board.GetBoardEdgesBoundingBox())
+        for item in board.GetDrawings():  # Umriss (Edge.Cuts): Strecken und Bögen als Polylinie
+            if item.GetLayer() == pcbnew.Edge_Cuts:
+                if item.GetShape() == pcbnew.SHAPE_T_ARC:
+                    pts = [to_xy(item.GetStart()), to_xy(item.GetArcMid()), to_xy(item.GetEnd())]
+                else:
+                    pts = [to_xy(item.GetStart()), to_xy(item.GetEnd())]
+                ax.plot([q[0] for q in pts], [q[1] for q in pts], color="black", lw=1.5)
         for zone in board.Zones():
             if zone.GetIsRuleArea() and zone.GetZoneName() != "GND-Lage":  # In1 ganzflächig
                 x0, y0, x1, y1 = box(zone.GetBoundingBox())
@@ -106,10 +113,10 @@ def main():
             if overlap(a, b) > 0.01:
                 problems.append(f"{side}: {ra} überlappt {rb} ({overlap(a, b):.1f} mm²)")
         for ref, b in courtyards[side]:
-            if b[0] < -23 or b[2] > 23 or b[1] < -6.75 or b[3] > 6.75:
+            if b[0] < ex0 or b[2] > ex1 or b[1] < ey0 or b[3] > ey1:
                 problems.append(f"{side}: {ref} ragt über den Platinenrand")
 
-    usable = 46 * 13.5
+    usable = (ex1 - ex0) * (ey1 - ey0)
     fig.suptitle(f"Belegung (Courtyard-Fläche): oben {area['F']:.0f} mm², unten {area['B']:.0f} mm² "
                  f"von je {usable:.0f} mm²  ·  Luftlinien: grau GND, rot VSYS, orange 3V3", fontsize=11)
     OUT.parent.mkdir(parents=True, exist_ok=True)

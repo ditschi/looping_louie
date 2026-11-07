@@ -64,7 +64,8 @@ no capacitor, no diode. No regulator, no reverse operation.
 **The only constraint is the size of an AA cell** (Ø 14.5 × 50.5 mm). It is known that this fits into the
 compartment; the *Salto Sammy* shows that electronics fit into this form.
 
-- Board **46 × 13.5 mm, 0.8 mm thick, 4 layers** (decision 2026-11-03): JLC standard stackup
+- Board **46 × 14.1 mm** (ends 12.5 mm wide where they sit in the end caps, 0.3 mm recess in front of USB-C;
+  widened from 13.5 mm on 2026-11-06), **0.8 mm thick, 4 layers** (decision 2026-11-03): JLC standard stackup
   **JLC04081H-3313** (0.8 mm, outer 1 oz, inner 0.5 oz); L1 components/signals, L2 (In1) solid GND layer,
   L3 (In2) signals, L4 solder pads/signals; rules 0.15/0.15 mm, via 0.3/0.5 mm (details:
   [hauptplatine-c6.md](hauptplatine-c6.md) chapter 11). Dimensions in `hardware/scripts/board_outline.py`.
@@ -253,7 +254,7 @@ All parts print **without support material**; assembly only by plugging together
 | Cap plus / minus | 1 each | inner side on the bed | hold the board ends in a slot (0.8 mm overlap), positive terminal nub optional |
 | C-cell adapter | 1 (old model only) | upright | AA→C adapter, longitudinal slot for the cable |
 
-- **Top side open in AA format:** The board (13.5 mm) is almost as wide as the AA sleeve
+- **Top side open in AA format:** The board (14.1 mm) is almost as wide as the AA sleeve
   (14.5 mm); above the module no wall thickness remains at the edge. The compartment itself encloses the
   insert; with the C-cell adapter it is fully enclosed.
 - **End contacts:** Solder nickel strip 4 × 0.15 mm onto BT1/BT2, route it under the board through the

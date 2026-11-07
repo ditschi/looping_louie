@@ -237,7 +237,7 @@ def attempt(n, start, project):
     grid = stitch_grid(pcb)  # GND-Flächen oben/unten im Raster verbinden
     removed = remove_dangling_vias(pcb)
     label = f"{passes} Durchläufe, Bahn {track}/{supply} mm" if BOARD == "main-board" else f"{passes} Durchläufe"
-    return n, label, unrouted, route_gate.measure(pcb), grid, removed, pcb
+    return n, label, unrouted, route_gate.measure(pcb, board=BOARD), grid, removed, pcb
 
 
 def attempt_own(n, pcb):
@@ -264,7 +264,7 @@ def attempt_own(n, pcb):
         grid += stitch_grid(pcb)
     removed = remove_dangling_vias(pcb)
     label = f"eigener Router, Via-Kosten {via_cost}, F {f_cost}, B {b_cost}"
-    return n, label, still_open, route_gate.measure(pcb), grid, removed, pcb
+    return n, label, still_open, route_gate.measure(pcb, board=BOARD), grid, removed, pcb
 
 
 def main():
@@ -280,23 +280,33 @@ def main():
     print(f"Design-Fingerabdruck {fingerprint[:12]} ({why})", flush=True)
 
     from concurrent.futures import ProcessPoolExecutor
-    best = None
+    import route_score
+    cfg = route_score.load_config(BOARD)
+    best, results = None, []
     with ProcessPoolExecutor(max_workers=PARALLEL) as pool:
         # ROUTE_VARIANTS="3,4": nur diese Versuche (Wiederholung/Streuung), sonst 1..runs
         numbers = [int(x) for x in os.environ["ROUTE_VARIANTS"].split(",")] if os.environ.get("ROUTE_VARIANTS") \
             else list(range(1, ATTEMPTS + 1))
-        for n, label, unrouted, metrics, grid, removed, pcb in pool.map(
+        for n, label, unrouted, meas, grid, removed, pcb in pool.map(
                 attempt, numbers, [start] * len(numbers), [project] * len(numbers)):
             first = "Router" if ROUTER == "own" else "Freerouting"
             extra = f", {removed} lose Vias/Bahnstücke entfernt" if removed else ""
-            print(f"Versuch {n} ({label}): {first} {unrouted} offen → nach Stitching {route_gate.short(metrics)}, "
-                  f"{grid} Stitching-Vias{extra}", flush=True)
-            if best is None or route_gate.rank(metrics) < route_gate.rank(best[0]):
-                best = (metrics, n, label)
+            print(f"Versuch {n} ({label}): {first} {unrouted} offen → nach Stitching "
+                  f"{route_gate.short(meas['metrics'], cfg, meas['details'])}, {grid} Stitching-Vias{extra}", flush=True)
+            # bester Versuch: erst zulässig, dann kleinste Verletzung, dann kleinster Score S (route_score.rank_key)
+            key = route_score.rank_key(cfg, meas["metrics"], meas["details"])
+            results.append((f"Versuch {n}", meas))
+            if best is None or key < best[0]:
+                best = (key, n, label, meas)
                 shutil.copy(pcb, best_file)
+    for line in route_score.table(cfg, sorted(results, key=lambda r: route_score.rank_key(cfg, r[1]["metrics"],
+                                                                                         r[1]["details"]))):
+        print(line)
+    for line in route_score.pareto(cfg, results):
+        print(line)
     print(f"bester Versuch dieses Aufrufs: {best[1]} ({best[2]})")
     info = {"router": ROUTER, "variant": f"Versuch {best[1]}: {best[2]}", "runs": len(numbers)}
-    route_gate.gate(BOARD, best_file, fingerprint, best[0], info, force=FORCE)
+    route_gate.gate(BOARD, best_file, fingerprint, best[3], info, force=FORCE)
     print(f"jetzt: just drc {BOARD}")
 
 

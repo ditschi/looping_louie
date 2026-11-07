@@ -5,11 +5,16 @@ Enthält Symbole, für die es weder in KiCad noch bei LCSC ein brauchbares gibt 
 DRV8213DSG; C3, DRV8833 und LIS2DH12 bleiben als Rückfall bzw. für Platine B)
 (LCSC-Symbole haben keine Pin-Typen, damit wäre die ERC-Prüfung wertlos).
 
+Außerdem die Lötpad-Footprints im 2,54-mm-Raster (hardware/lib/louie.pretty/SolderPads_1x0N_P2.54mm, N aus
+SOLDER_PADS), weil KiCad dafür nur Stiftleisten mit Bohrung hat.
+
 Aufruf (über just):  just symbols
 """
 from pathlib import Path
 
 LIB = Path(__file__).resolve().parent.parent / "lib" / "louie.kicad_sym"
+FOOTPRINTS = LIB.parent / "louie.pretty"
+SOLDER_PADS = (3, 4, 5)  # Pads je Reihe im 2,54-mm-Raster (J7, –, J2/J3)
 FONT = "(effects (font (size 1.27 1.27)))"
 HIDDEN = "(effects (font (size 1.27 1.27)) (hide yes))"
 
@@ -208,7 +213,63 @@ def lis2dh12():
     )
 
 
+def solder_pads(n, pitch=2.54, size=1.4):
+    """Footprint mit n SMD-Lötpads in einer Reihe (Pad 1 eckig), ohne Bestückung (nicht in Stückliste/Bestückung)."""
+    half = round((n - 1) * pitch / 2 + 0.85, 2)
+    name = f"SolderPads_1x{n:02d}_P{pitch:.2f}mm"
+    pitch_de = f"{pitch:.2f}".replace(".", ",")
+    pads = []
+    for k in range(n):
+        x = round(-(n - 1) * pitch / 2 + k * pitch, 2)
+        shape = "rect" if k == 0 else "circle"
+        pads.append(f'\t(pad "{k + 1}" smd {shape} (at {x if x else "0.0"} 0) (size {size} {size}) '
+                    '(layers "F.Cu" "F.Mask"))\n')
+    return name, (
+        f'(footprint "{name}"\n'
+        '\t(version 20241229)\n'
+        '\t(generator "louie")\n'
+        '\t(layer "F.Cu")\n'
+        f'\t(descr "{n} SMD-Lötpads im {pitch_de}-mm-Raster (Stiftleiste oder Litzen). Keine Bestückung.")\n'
+        '\t(tags "solder pad header")\n'
+        '\t(property "Reference" "REF**" (at 0 -1.6 0) (layer "F.Fab") (effects (font (size 0.5 0.5) (thickness 0.08))))\n'
+        f'\t(property "Value" "SolderPads_1x{n:02d}" (at 0 1.6 0) (layer "F.Fab") (hide yes) '
+        '(effects (font (size 0.5 0.5) (thickness 0.08))))\n'
+        '\t(attr smd exclude_from_pos_files exclude_from_bom)\n'
+        f'\t(fp_rect (start -{half} -0.95) (end {half} 0.95) (stroke (width 0.05) (type default)) (fill no) '
+        '(layer "F.CrtYd"))\n'
+        + "".join(pads) +
+        '\t(embedded_fonts no)\n'
+        ')\n')
+
+
+def test_pad(d=1.0, courtyard=0.65):
+    """Runder Testpunkt (Messspitze/Pogo-Pin), nur Kupfer; Sperrbereich enger als TestPoint_Pad_D1.0mm von KiCad
+    (r = 1,0 mm), damit er zwischen die optionalen Bauteile unten passt."""
+    name = f"TestPad_D{d:.1f}mm"
+    return name, (
+        f'(footprint "{name}"\n'
+        '\t(version 20241229)\n'
+        '\t(generator "louie")\n'
+        '\t(layer "F.Cu")\n'
+        f'\t(descr "Runder SMD-Testpunkt {d:.1f} mm (Messspitze, Pogo-Pin). Keine Bestückung.")\n'
+        '\t(tags "test point pad")\n'
+        '\t(property "Reference" "REF**" (at 0 -1.0 0) (layer "F.Fab") (effects (font (size 0.5 0.5) (thickness 0.08))))\n'
+        f'\t(property "Value" "{name}" (at 0 1.0 0) (layer "F.Fab") (hide yes) '
+        '(effects (font (size 0.5 0.5) (thickness 0.08))))\n'
+        '\t(attr smd exclude_from_pos_files exclude_from_bom)\n'
+        f'\t(fp_circle (center 0 0) (end {courtyard} 0) (stroke (width 0.05) (type default)) (fill no) '
+        '(layer "F.CrtYd"))\n'
+        f'\t(pad "1" smd circle (at 0 0) (size {d} {d}) (layers "F.Cu" "F.Mask"))\n'
+        '\t(embedded_fonts no)\n'
+        ')\n')
+
+
 def main():
+    name, text = test_pad()
+    (FOOTPRINTS / f"{name}.kicad_mod").write_text(text)
+    for n, pitch in [(n, 2.54) for n in SOLDER_PADS] + [(6, 2.0)]:  # 1x06 2,0 mm: J6 (kürzer, 11.7)
+        name, text = solder_pads(n, pitch)
+        (FOOTPRINTS / f"{name}.kicad_mod").write_text(text)
     LIB.write_text(
         '(kicad_symbol_lib\n'
         '\t(version 20241209)\n'

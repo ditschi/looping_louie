@@ -27,7 +27,8 @@ nippel_h = 1.0;
 
 /* [Platine] */
 pcb_l = 46.0;
-pcb_w = 13.5;
+pcb_w = 14.1;           // Platinenbreite (hardware/scripts/board_outline.py)
+pcb_zunge_w = 12.5;     // Breite der Platinenenden, die in die Kappen greifen (Zunge, 0,8 mm lang)
 pcb_t = 0.8;
 pcb_top = 0.5;      // Oberseite über der Achse (siehe hardware-konzept.md 4.1)
 
@@ -104,8 +105,8 @@ module kappe(nippel) {
                     cylinder(d = nippel_d, h = nippel_h + eps);
         }
         // Platinenschlitz, blind: legt die Platine in Länge, Breite und Höhe fest
-        translate([kappe_innen - 1, -(pcb_w / 2 + spiel), pcb_bot - spiel])
-            cube([1 + ueberdeckung + spiel, pcb_w + 2 * spiel, pcb_t + 2 * spiel]);
+        translate([kappe_innen - 1, -(pcb_zunge_w / 2 + spiel), pcb_bot - spiel])
+            cube([1 + ueberdeckung + spiel, pcb_zunge_w + 2 * spiel, pcb_t + 2 * spiel]);
         // Nickelband: unter der Platine durch die Kappe nach außen
         translate([kappe_innen - 1, -(band_b / 2 + spiel), pcb_bot - band_schlitz_t])
             cube([kappe_l + 2, band_b + 2 * spiel, band_schlitz_t + eps]);
