@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
-"""Legt die Ladeplatine an: Umriss, Bauteile nach der Tabelle unten, Designregeln, Brücke, Masseflächen.
+"""Creates the charger board: outline, components per the table below, design rules, bridge, ground pours.
 
-Format wie die Hauptplatine (46 mm lang), aber nur 12,5 mm breit und 1,6 mm dick: Im AA-Fach steht die
-Platine **hochkant**, die liegende USB-C-Buchse an der Längskante zeigt nach oben aus dem Fach
-(Stecker quer zur Zellachse). In der Basis wird sie flach aufgeklebt, die Buchse zeigt dann durch ein
-Loch in der Seitenwand. Siehe docs/ladeplatine.md.
+Same format as the main board (46 mm long), but only 12.5 mm wide and 1.6 mm thick: in the AA compartment the
+board stands **on edge**, the horizontal USB-C receptacle on the long edge points upwards out of the compartment
+(plug across the cell axis). In the base it is glued on flat, the receptacle then points through a
+hole in the side wall. See docs/charger-board.md.
 
-Aufbau von links nach rechts (Steckseite der Buchse bei -y = "oben"):
-  USB-C + ESD + CC-Widerstände | Laderegler, Ladeanzeige, Load-Sharing | JST-PH, Akku-Lötpads | Kabel-Lötpads
-Unten: nur die Brücke (breite Bahn zwischen den Endkontakten) und Massefläche.
+Layout from left to right (mating side of the receptacle at -y = "top"):
+  USB-C + ESD + CC resistors | charge controller, charge indicator, load sharing | JST-PH, battery solder pads |
+  cable solder pads
+Bottom: only the bridge (wide track between the end contacts) and ground pour.
 
-Muss mit dem System-Python laufen, das das KiCad-Modul pcbnew enthält.
-Aufruf (über just):  just charger-pcb      danach: just route charger-board
+Must run with the system Python that contains the KiCad module pcbnew.
+Usage (via just):  just charger-pcb      afterwards: just route charger-board
 
-Achtung: entfernt alle Footprints, Leiterbahnen und Zonen der Platine und setzt sie neu.
+Warning: removes all footprints, tracks and zones of the board and places them anew.
 """
 from pathlib import Path
 
@@ -28,53 +29,53 @@ SCH = HARDWARE / "charger-board" / "louie-charger.kicad_sch"
 PCB = HARDWARE / "charger-board" / "louie-charger.kicad_pcb"
 ORIGIN = board_outline.ORIGIN_MM
 BOARD_L, BOARD_W, THICKNESS = 46.0, 12.5, 1.6
-EDGE_Y = -BOARD_W / 2   # Steckseite der USB-C-Buchse
-BRIDGE_TRACK = 1.0      # Motorstrom bis 2 A: ca. 20 mOhm auf 43 mm, Hauptplatine nutzt 0,4 mm
-BRIDGE_Y = 5.45         # dicht am Rand, damit darüber noch GND-Vias Platz haben
+EDGE_Y = -BOARD_W / 2   # mating side of the USB-C receptacle
+BRIDGE_TRACK = 1.0      # motor current up to 2 A: approx. 20 mOhm over 43 mm, main board uses 0.4 mm
+BRIDGE_Y = 5.45         # close to the edge so that GND vias still fit above it
 
 USB_X = -15.0
-# Referenz -> (x, y, Drehung, Seite); mm relativ zur Platinenmitte
+# reference -> (x, y, rotation, side); mm relative to the board centre
 PLACEMENT = {
-    # USB-C: Öffnung bündig mit der Kante -y (Vorderkante im Footprint bei +3,65 mm)
+    # USB-C: opening flush with the -y edge (front edge in the footprint at +3.65 mm)
     "J101": (USB_X, EDGE_Y + 3.65, 180, "F"),
-    "U102": (USB_X, 4.5, 0, "F"),          # ESD direkt hinter den Datenpins
+    "U102": (USB_X, 4.5, 0, "F"),          # ESD directly behind the data pins
     "R101": (USB_X + 3.5, 4.5, 90, "F"),   # CC1
     "R102": (USB_X - 3.3, 4.5, 90, "F"),   # CC2
-    # Reihe an der Steckkante: Ladeanzeige (von oben sichtbar) und Gate-Pull-down
+    # row at the mating edge: charge indicator (visible from above) and gate pull-down
     "D101": (-7.0, -5.2, 0, "F"),
     "R104": (-4.0, -5.2, 180, "F"),
     "R105": (-1.0, -5.2, 0, "F"),
-    # Laderegler
+    # charge controller
     "C101": (-7.2, -1.2, 90, "F"),
     "U101": (-3.6, -1.2, 0, "F"),
     "C102": (-0.2, -1.2, 90, "F"),
     "R103": (1.8, -1.2, 90, "F"),
-    # Load-Sharing
-    "D102": (-5.4, 4.3, 180, "F"),         # Kathode (VSYS) rechts
+    # load sharing
+    "D102": (-5.4, 4.3, 180, "F"),         # cathode (VSYS) on the right
     "Q101": (0.8, 4.3, 0, "F"),
     "C103": (4.0, 4.3, 90, "F"),
-    # Akku: JST-PH, Öffnung ebenfalls zur Kante -y; daneben Lötpads als Alternative
+    # battery: JST-PH, opening also towards the -y edge; next to it solder pads as alternative
     "J102": (10.5, EDGE_Y + 5.1, 180, "F"),
-    "TP101": (17.0, -3.4, 0, "F"),         # Akku +
-    "TP102": (17.0, 3.4, 0, "F"),          # Akku -
-    # Kabel zur Hauptplatine (Belegung wie J1 dort)
+    "TP101": (17.0, -3.4, 0, "F"),         # battery +
+    "TP102": (17.0, 3.4, 0, "F"),          # battery -
+    # cable to the main board (pinout as J1 there)
     "J103": (20.4, 0.5, 0, "F"),
-    # Unterseite: Endkontakte der Brücke
+    # bottom side: end contacts of the bridge
     "BT101": (-21.4, 0, 0, "B"),
     "BT102": (21.4, 0, 0, "B"),
 }
 
-SILK = [  # (Text, x, y, Größe, Seite[, Drehung])
-    ("+", 12.6, 4.4, 0.8, "F"),            # Pin 1 des JST = Akku +
-    ("+", 15.2, -3.4, 0.8, "F"),           # Lötpads TP101 / TP102
+SILK = [  # (text, x, y, size, side[, rotation])
+    ("+", 12.6, 4.4, 0.8, "F"),            # pin 1 of the JST = battery +
+    ("+", 15.2, -3.4, 0.8, "F"),           # solder pads TP101 / TP102
     ("-", 15.2, 3.4, 0.8, "F"),
-    ("V", 22.2, -2.5, 0.8, "F"),           # Kabel-Lötpads J103: VSYS, D+, D-, GND
-    ("D+", 22.2, -0.5, 0.8, "F", 90),      # senkrecht, sonst zu breit für den Rand
+    ("V", 22.2, -2.5, 0.8, "F"),           # cable solder pads J103: VSYS, D+, D-, GND
+    ("D+", 22.2, -0.5, 0.8, "F", 90),      # vertical, otherwise too wide for the edge
     ("D-", 22.2, 1.5, 0.8, "F", 90),
     ("G", 22.2, 3.5, 0.8, "F"),
-    ("LADEN", -7.0, -3.6, 0.8, "F"),
-    ("Louie Lader v0.1", 0, -2.0, 1.0, "B"),
-    ("Brücke", 0, BRIDGE_Y, 0.8, "B"),
+    ("CHARGE", -7.0, -3.6, 0.8, "F"),
+    ("Louie Charger v0.1", 0, -2.0, 1.0, "B"),
+    ("Bridge", 0, BRIDGE_Y, 0.8, "B"),
 ]
 
 
@@ -83,7 +84,7 @@ def pos(x, y):
 
 
 def setup_rules(board):
-    """Wie Hauptplatine; Netzklassen kommen aus louie-charger.kicad_pro (Power 0,8 mm)."""
+    """As the main board; net classes come from louie-charger.kicad_pro (Power 0.8 mm)."""
     ds = board.GetDesignSettings()
     ds.SetCopperLayerCount(2)
     ds.SetBoardThickness(mm(THICKNESS))
@@ -108,7 +109,7 @@ def add_text(board, text, x, y, size, side, angle=0):
 
 
 def preroute_bridge(board, fps):
-    """Breite Bahn unten zwischen den Endkontakten, an den THT-Laschen der USB-Buchse vorbei."""
+    """Wide track on the bottom between the end contacts, past the THT tabs of the USB receptacle."""
     a, b = (pad_of(fps[r], "1").GetPosition() for r in ("BT101", "BT102"))
     y = mm(ORIGIN[1] + BRIDGE_Y)
     add_track(board, pad_of(fps["BT101"], "1").GetNet(), pcbnew.B_Cu, BRIDGE_TRACK,
@@ -116,8 +117,8 @@ def preroute_bridge(board, fps):
 
 
 def preroute_vbus(board, fps):
-    """VBUS von den feinen USB-Pads weg (Freerouting schafft das mit 0,5 mm nicht): hinter jedem
-    VBUS-Pad ein Via, unten eine gemeinsame Bahn bis unter die Anode von D102, dort wieder hoch."""
+    """VBUS away from the fine USB pads (Freerouting cannot do this with 0.5 mm): a via behind each
+    VBUS pad, on the bottom a common track to below the anode of D102, back up there."""
     usb = fps["J101"]
     net = pad_of(usb, "A4").GetNet()
     via_y = mm(ORIGIN[1] + 2.35)
@@ -131,7 +132,7 @@ def preroute_vbus(board, fps):
     add_track(board, net, pcbnew.B_Cu, 0.5, (min(vias), via_y), (anode.x, via_y))
     add_via(board, net, anode.x, via_y)
     add_track(board, net, pcbnew.F_Cu, 0.5, (anode.x, via_y), (anode.x, anode.y))
-    # VBUS-Pin 5 der ESD-Diode: Via rechts daneben, unten auf die Sammelbahn (oben kreuzt sonst CC1)
+    # VBUS pin 5 of the ESD diode: via to its right, on the bottom onto the common track (on top CC1 would cross)
     pin5 = pad_of(fps["U102"], "5").GetPosition()
     v = (pin5.x + mm(1.11), pin5.y)
     add_track(board, net, pcbnew.F_Cu, 0.3, (pin5.x, pin5.y), v)
@@ -142,14 +143,14 @@ def preroute_vbus(board, fps):
 def copper_zones(board, gnd):
     x0, x1 = ORIGIN[0] - BOARD_L / 2, ORIGIN[0] + BOARD_L / 2
     y0, y1 = ORIGIN[1] - BOARD_W / 2, ORIGIN[1] + BOARD_W / 2
-    for layer, name in [(pcbnew.F_Cu, "GND oben"), (pcbnew.B_Cu, "GND unten")]:
+    for layer, name in [(pcbnew.F_Cu, "GND top"), (pcbnew.B_Cu, "GND bottom")]:
         zone = pcbnew.ZONE(board)
         zone.SetLayer(layer)
         zone.SetNet(gnd)
         zone.SetZoneName(name)
         zone.SetLocalClearance(mm(0.25))
         zone.SetMinThickness(mm(0.2))
-        # voll angebunden: die feinen GND-Pads der USB-Buchse bekämen sonst nur eine Thermal-Speiche
+        # fully connected: the fine GND pads of the USB receptacle would otherwise get only one thermal spoke
         zone.SetPadConnection(pcbnew.ZONE_CONNECTION_FULL)
         zone.SetIslandRemovalMode(pcbnew.ISLAND_REMOVAL_MODE_ALWAYS)
         outline = zone.Outline()
@@ -163,11 +164,11 @@ def main():
     comps, nets = base.read_netlist(SCH)
     missing = set(comps) - set(PLACEMENT)
     if missing:
-        raise SystemExit(f"Keine Platzierung für: {', '.join(sorted(missing))}")
+        raise SystemExit(f"No placement for: {', '.join(sorted(missing))}")
 
     board = pcbnew.LoadBoard(str(PCB)) if PCB.exists() else pcbnew.NewBoard(str(PCB))
     base.clear_board(board)
-    for d in list(board.GetDrawings()):   # Umriss und Texte werden neu gesetzt
+    for d in list(board.GetDrawings()):   # outline and texts are placed anew
         board.Delete(d)
     board_outline.draw_outline(board, BOARD_L, BOARD_W)
     setup_rules(board)
@@ -198,10 +199,10 @@ def main():
         fp.Reference().SetTextThickness(mm(0.08))
         fp.Reference().SetPosition(fp.GetPosition())
         fp.Value().SetVisible(False)
-        # Bestückungsdruck der Bauteile (Umrisse) bleibt, Bezeichner nur auf Fab
+        # component silkscreen (outlines) stays, designators only on Fab
         for item in list(fp.GraphicalItems()):
             on_silk = item.GetLayer() in (pcbnew.F_SilkS, pcbnew.B_SilkS)
-            # Texte weg; bei der USB-Buchse auch die Umrisslinien (laufen über die Platinenkante)
+            # remove texts; for the USB receptacle also the outline lines (they run over the board edge)
             if on_silk and (item.GetClass() == "PCB_TEXT" or ref == "J101"):
                 fp.Remove(item)
         if side == "B":
@@ -211,12 +212,12 @@ def main():
 
     preroute_bridge(board, fps)
     preroute_vbus(board, fps)
-    ground_via_at_pad(board, fps["U102"], "2", -1.06, -0.2, width=0.3)  # sonst GND-Insel zwischen den Pins
+    ground_via_at_pad(board, fps["U102"], "2", -1.06, -0.2, width=0.3)  # otherwise GND island between the pins
     copper_zones(board, netinfo["/GND"])
     for args in SILK:
         add_text(board, *args)
     pcbnew.SaveBoard(str(PCB), board)
-    print(f"{PCB.relative_to(HARDWARE.parent)}: {BOARD_L} x {BOARD_W} x {THICKNESS} mm, {len(comps)} Bauteile")
+    print(f"{PCB.relative_to(HARDWARE.parent)}: {BOARD_L} x {BOARD_W} x {THICKNESS} mm, {len(comps)} components")
 
 
 if __name__ == "__main__":

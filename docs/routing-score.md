@@ -1,201 +1,201 @@
-# Routing-Qualität bewerten: harte Bedingungen + gewichteter Score
+# Rating routing quality: hard constraints + weighted score
 
-Stand 2026-11-04. **Umgesetzt** (Gewichte aus Abschnitt 3 vom Auftraggeber bestätigt): `hardware/scripts/route_score.py`
-(Messung, `evaluate()`, `decide()`, Bericht), Konfiguration `hardware/routing-score.toml`, eingebaut in
-`route_gate.py` (Gate, `just score`, `just explain`) und `route.py` (bester Versuch eines Aufrufs). Bedienung:
-[entwicklung.md](entwicklung.md), Abschnitt „Routing: bestes Ergebnis behalten“. Abschnitte 1–4 beschreiben die
-geltenden Regeln; Abschnitt 5 und 8 sind die Prototyp-Messung vom 2026-11-03 (Historie, vor dem Umbau der Platine).
+Status 2026-11-04. **Implemented** (weights from section 3 confirmed by the client): `hardware/scripts/route_score.py`
+(measurement, `evaluate()`, `decide()`, report), configuration `hardware/routing-score.toml`, built into
+`route_gate.py` (gate, `just score`, `just explain`) and `route.py` (best attempt of one call). Usage:
+[development.md](development.md), section "Routing: keep the best result". Sections 1–4 describe the rules in
+force; sections 5 and 8 are the prototype measurement from 2026-11-03 (history, before the board was reworked).
 
-**Abweichungen der Umsetzung vom Vorschlag:**
-- `tight_clearance` zählt die beteiligten Elemente (Bahnen, Vias, Pads), nicht die gemeldeten Paare. Welche Paare
-  kicad-cli 9.0.8 meldet, schwankt bei gleicher Platine von Lauf zu Lauf um ±2 % (228–232), die Elemente nicht (275).
-  Skala unverändert 10.
-- Board-Wissen (Netze, Antenne, Via-in-Pad-Liste, Modul, Strompfade) steht unter `[boards.<platine>]`; die
-  allgemeinen Abschnitte sind Vorgaben. `thermal_vias_u2` heißt `thermal_vias` (Pad aus `[boards.*.module]`).
-- `routing.json` speichert zusätzlich `details` und `score.parts`; `ranking` entfällt (`"decision": "hard+weighted"`).
-- Befund 8.1 (VSYS-Pfad zu schmal) und 8.3 (Netzklassen) sind behoben: `gen_main_pcb.py` routet Q1 → C1/C2 mit 0,5 mm
-  nur auf den Außenlagen vor, `route_fix.py` routet VSYS nie unter 0,3 mm, die Netzklassen werden beim Erzeugen neu
-  gesetzt (hauptplatine-c6.md 11.7).
+**Deviations of the implementation from the proposal:**
+- `tight_clearance` counts the items involved (tracks, vias, pads), not the reported pairs. Which pairs
+  kicad-cli 9.0.8 reports varies by ±2 % from run to run on the same board (228–232); the items do not (275).
+  Scale unchanged at 10.
+- Board knowledge (nets, antenna, via-in-pad list, module, current paths) lives under `[boards.<board>]`; the
+  general sections are defaults. `thermal_vias_u2` is called `thermal_vias` (pad from `[boards.*.module]`).
+- `routing.json` additionally stores `details` and `score.parts`; `ranking` is dropped (`"decision": "hard+weighted"`).
+- Findings 8.1 (VSYS path too narrow) and 8.3 (net classes) are fixed: `gen_main_pcb.py` pre-routes Q1 → C1/C2 at 0.5 mm
+  on the outer layers only, `route_fix.py` never routes VSYS below 0.3 mm, and the net classes are set again on
+  generation (main-board-c6.md 11.7).
 
-**Prüfung der Umsetzung (2026-11-04, Platine vor dem Umbau):** `just score main-board
-build/main-board/keep/variant4-0-open.kicad_pcb` → wie im Prototyp gewinnt die offizielle Platine: beide verletzen
-`power_width_violations`, Verletzung 1/10,0 mm gegen 1/23,0 mm → VERWERFEN; weich ΔS = +3,77 für variant4 (mit der
-neuen `tight_clearance`-Zählung; Prototyp +3,07), Robustheit 0,5 % „übernehmen“. Ein bytegleicher Stand
-(`best-0-open`) ergibt ΔS = 0,00.
+**Check of the implementation (2026-11-04, board before the rework):** `just score main-board
+build/main-board/keep/variant4-0-open.kicad_pcb` → as in the prototype, the official board wins: both violate
+`power_width_violations`, violation 1/10.0 mm vs 1/23.0 mm → REJECT; soft ΔS = +3.77 for variant4 (with the
+new `tight_clearance` count; prototype +3.07), robustness 0.5 % "accept". A byte-identical state
+(`best-0-open`) gives ΔS = 0.00.
 
-## Kurzfassung
+## Summary
 
-- **Heute** vergleicht das Gate lexikografisch (`drc_violations`, `unconnected`, `gnd_islands`, `via_count`,
-  `track_length_mm`). Die erste Kennzahl mit einem Unterschied entscheidet allein. Dabei zählen eine GND-Insel
-  mehr als beliebig viele Vias und Millimeter. Für Strompfade, Messleitungen, Antenne und Rückstromweg gibt es
-  gar keine Kennzahl.
-- **Vorschlag:** drei Stufen.
-  1. **Harte Bedingungen** (DRC-Fehler, offene Verbindungen, Kupfer in der Antennen-Sperrfläche, zu schmale
-     Strompfade). Wer sie verletzt, ist unzulässig. Sind beide Platinen unzulässig, gewinnt die kleinere
-     Verletzung (Regel nach Deb).
-  2. **Gewichtete Summe** der weichen Kennzahlen: `S = Σ weight_i · value_i / scale_i`.
-     - `scale` legt fest, ab welcher Größe ein Unterschied als „ein Punkt“ zählt (fest, in Einheiten).
-     - `weight` ist die Wichtigkeit und wird vom Nutzer gesetzt.
-  3. **Schwelle und Veto.** Ein Kandidat ersetzt die offizielle Platine nur, wenn er um mindestens
-     `min_improvement` Punkte besser ist (Standard 1,0). Einzelne kritische Kennzahlen dürfen sich zusätzlich
-     nicht um mehr als `max_regression` verschlechtern.
-  - Jeder Lauf schreibt einen **Sensitivitätsbericht**: Beitrag je Kennzahl, Anteil, „Kipp-Faktor“ des Gewichts,
-    Robustheit gegen zufällige Gewichte und eine Pareto-Sicht.
-- **Machbar:** Alle vorgeschlagenen Kennzahlen lassen sich mit `kicad-cli pcb drc` (JSON) und `pcbnew` (KiCad 9.0.8)
-  automatisch berechnen. Die Messung dauert **3,5 s pro Platine**, einschließlich zweier DRC-Läufe.
-- **Ergebnis 4 Lagen:** Die offizielle Platine (Versuch 3) gewinnt gegen `variant4-0-open`.
-  - Ihre Verletzung der harten Bedingung ist kleiner: 10 statt 23 mm zu schmale Bahn im Batterie-Motorpfad.
-  - Auch im weichen Score ist sie besser: ΔS = +3,07 für variant4. Variant4 führt zu längeren Messleitungen,
-    mehr Vias und mehr Länge; dagegen steht 1 GND-Insel weniger.
-  - Robust: In 98,9 % von 2000 zufälligen Gewichtssätzen (jedes Gewicht ×0,5 bis ×2) bleibt die offizielle
-    Platine vorne.
-  - **Das heutige lexikografische Gate hätte variant4 gewählt** (GND-Inseln 1 < 2).
-- **Befund nebenbei (wichtig, beide 4-Lagen-Stände):**
-  - Der Batteriestrom zum Motor (Q1 → VSYS → DRV8213 VM) läuft über Bahnen von **0,2–0,3 mm**, zum Teil auf
-    In2 (0,5 oz).
-  - Ursache: `route_fix.py` routet VSYS mit `WIDTHS["/VSYS"] = (0.3, 0.2)`.
-  - Bei 2 A sind das 56 mV (offiziell) bzw. 89 mV (variant4) Spannungsabfall. Nach IPC-2221 trägt der Pfad
-    weit weniger als 1,5 A Dauerstrom.
-  - Die 2-Lagen-Platine (Freerouting, Netzklasse Power 0,4 mm) hat das Problem nicht. Abschnitt 8.
+- **Today** the gate compares lexicographically (`drc_violations`, `unconnected`, `gnd_islands`, `via_count`,
+  `track_length_mm`). The first metric that differs decides on its own. One GND island therefore counts
+  for more than any number of vias and millimetres. There is no metric at all for current paths, sense lines,
+  antenna or return path.
+- **Proposal:** three stages.
+  1. **Hard constraints** (DRC errors, unconnected items, copper in the antenna keep-out area, current paths
+     too narrow). A board that violates them is infeasible. If both boards are infeasible, the smaller
+     violation wins (Deb's rule).
+  2. **Weighted sum** of the soft metrics: `S = Σ weight_i · value_i / scale_i`.
+     - `scale` defines the size at which a difference counts as "one point" (fixed, in units).
+     - `weight` is the importance and is set by the user.
+  3. **Threshold and veto.** A candidate replaces the official board only if it is better by at least
+     `min_improvement` points (default 1.0). In addition, individual critical metrics must not get worse
+     by more than `max_regression`.
+  - Every run writes a **sensitivity report**: contribution per metric, share, "flip factor" of the weight,
+    robustness against random weights and a Pareto view.
+- **Feasible:** All proposed metrics can be computed automatically with `kicad-cli pcb drc` (JSON) and `pcbnew`
+  (KiCad 9.0.8). The measurement takes **3.5 s per board**, including two DRC runs.
+- **Result 4 layers:** The official board (attempt 3) wins against `variant4-0-open`.
+  - Its violation of the hard constraint is smaller: 10 instead of 23 mm of too-narrow track in the battery–motor path.
+  - It is also better in the soft score: ΔS = +3.07 for variant4. Variant4 leads to longer sense lines,
+    more vias and more length; against that stands 1 GND island fewer.
+  - Robust: in 98.9 % of 2000 random weight sets (each weight ×0.5 to ×2) the official board stays
+    ahead.
+  - **Today's lexicographic gate would have picked variant4** (GND islands 1 < 2).
+- **Side finding (important, both 4-layer states):**
+  - The battery current to the motor (Q1 → VSYS → DRV8213 VM) runs over tracks of **0.2–0.3 mm**, partly on
+    In2 (0.5 oz).
+  - Cause: `route_fix.py` routes VSYS with `WIDTHS["/VSYS"] = (0.3, 0.2)`.
+  - At 2 A that is 56 mV (official) or 89 mV (variant4) of voltage drop. According to IPC-2221 the path carries
+    far less than 1.5 A continuous current.
+  - The 2-layer board (Freerouting, net class Power 0.4 mm) does not have the problem. Section 8.
 
-## 1. Warum nicht lexikografisch?
+## 1. Why not lexicographic?
 
-| | Lexikografisch (heute) | Harte Bedingungen + gewichtete Summe |
+| | Lexicographic (today) | Hard constraints + weighted sum |
 |---|---|---|
-| Ausgleich zwischen Zielen | keiner: 1 Insel weniger schlägt +8 Vias, +36 mm, +19 mm Messleitung | ausdrücklich, über Gewichte |
-| Neue Kennzahlen | jede neue Kennzahl hinten wirkt praktisch nie | jede wirkt nach ihrem Gewicht |
-| Nachvollziehbar | sehr (eine Kennzahl entscheidet) | mit Beitragstabelle ebenso |
-| Rauschen | kleinste Unterschiede (1 Via, 0,1 mm) ersetzen die Platine | Schwelle `min_improvement` |
-| Gefahr | wichtige Eigenschaften (Strompfad, Antenne) fehlen ganz | Kompensation: viele kleine Gewinne verdecken einen echten Schaden → harte Bedingungen + Veto |
-| Einstellen | Reihenfolge | Gewichte (Skalen bleiben fest) |
+| Trade-off between goals | none: 1 island fewer beats +8 vias, +36 mm, +19 mm sense line | explicit, via weights |
+| New metrics | any new metric at the end practically never has an effect | each acts according to its weight |
+| Traceable | very (one metric decides) | equally, with the contribution table |
+| Noise | tiny differences (1 via, 0.1 mm) replace the board | threshold `min_improvement` |
+| Risk | important properties (current path, antenna) are missing entirely | compensation: many small gains hide real damage → hard constraints + veto |
+| Tuning | order | weights (scales stay fixed) |
 
-**Lexikografisch bleibt richtig für die harten Bedingungen.** Was auf keinen Fall passieren darf, wird nicht
-gegen anderes verrechnet. Deshalb gelten die harten Bedingungen zuerst und die Summe nur unter den zulässigen
-Platinen. Das entspricht den Zulässigkeitsregeln von Deb (2000) aus der Optimierung mit Nebenbedingungen:
-- zulässig schlägt unzulässig;
-- von zwei unzulässigen gewinnt die mit der kleineren Gesamtverletzung;
-- von zwei zulässigen gewinnt der bessere Zielwert.
+**Lexicographic remains right for the hard constraints.** What must never happen is not traded off
+against anything else. That is why the hard constraints apply first and the sum only among the feasible
+boards. This matches Deb's (2000) feasibility rules from constrained optimization:
+- feasible beats infeasible;
+- of two infeasible ones, the one with the smaller total violation wins;
+- of two feasible ones, the better objective value wins.
 
-Freerouting verfährt intern ähnlich. Die Router-Bewertung zieht Punkte für offene Verbindungen und
-Abstandsverletzungen ab. Der Optimierer gewichtet Mehrlänge (1000), Mehr-Vias (2000) und Knicke (500) gegen
-untere Schranken. Er nimmt keinen Schritt an, der Verbindungen verliert oder DRC-Fehler erzeugt, und hört auf,
-sobald ein Schritt weniger als 1 % bringt.
+Freerouting works similarly internally. The router score deducts points for unconnected items and
+clearance violations. The optimizer weights extra length (1000), extra vias (2000) and bends (500) against
+lower bounds. It accepts no step that loses connections or creates DRC errors, and stops as soon as a step
+gains less than 1 %.
 
-### Normierung: feste Skalen statt Verhältnis zur Basis
+### Normalization: fixed scales instead of ratio to the baseline
 
-- **Verhältnis zur offiziellen Platine** (`value/value_official`):
-  - Bei Basis 0 (GND-Inseln, Rückstromlücken auf 4 Lagen) ist es undefiniert.
-  - Jede neue offizielle Platine verschiebt die Bedeutung aller Gewichte.
-  - Abgelehnt.
-- **Feste Skala** (`value/scale`): `scale` sagt, wie viel einer Größe ungefähr gleich schlimm ist.
-  - Standardwerte: 10 Signal-Vias ≈ 50 mm Signalbahn ≈ 1 GND-Insel ≈ 5 mm Messleitung neben dem Motor ≈ 20 mV
-    Abfall.
-  - Gewichte bleiben über viele Läufe vergleichbar. Gewählt.
-- Der Bericht zeigt trotzdem die Prozentänderung gegenüber der Basis, damit man sich die Größen besser
-  vorstellen kann.
+- **Ratio to the official board** (`value/value_official`):
+  - With a baseline of 0 (GND islands, return gaps on 4 layers) it is undefined.
+  - Every new official board shifts the meaning of all weights.
+  - Rejected.
+- **Fixed scale** (`value/scale`): `scale` says how much of a quantity is roughly equally bad.
+  - Default values: 10 signal vias ≈ 50 mm signal track ≈ 1 GND island ≈ 5 mm sense line next to the motor ≈ 20 mV
+    drop.
+  - Weights stay comparable across many runs. Chosen.
+- The report still shows the percentage change relative to the baseline, so the magnitudes are easier to
+  picture.
 
-### Dass eine Kennzahl allein dominiert, wird verhindert durch
+### A single metric is prevented from dominating by
 
-1. **Skalen**, die einen „spürbaren Unterschied“ beschreiben (nicht 1 mm, nicht 1 Via);
-2. **Entscheidung über ΔS** zur offiziellen Platine statt über den absoluten S. Konstante Anteile wie die
-   230 Fine-Pitch-Engstellen der Vorrouten heben sich dadurch auf.
-3. die Spalte **Anteil** im Bericht. Liegt eine Kennzahl dauerhaft über ca. 50 %, ist ihre Skala zu klein
-   gewählt.
-4. **Veto** (`max_regression`) für Antenne, Strompfad und Messleitungen. Diese lassen sich nicht durch viele
-   kleine Gewinne an anderer Stelle „abkaufen“.
+1. **scales** that describe a "noticeable difference" (not 1 mm, not 1 via);
+2. **deciding on ΔS** relative to the official board instead of the absolute S. Constant parts such as the
+   230 fine-pitch tight spots of the pre-routes cancel out this way.
+3. the **share** column in the report. If one metric stays above about 50 %, its scale was chosen
+   too small.
+4. a **veto** (`max_regression`) for antenna, current path and sense lines. These cannot be "bought off" by many
+   small gains elsewhere.
 
-### Gleichstand und Rauschen
+### Ties and noise
 
-- Die Messung ist deterministisch: gleicher Stand, gleiche Zahlen. Gestreut wird nur beim Routen (11.4 in
-  hauptplatine-c6.md).
-- Die Schwelle `min_improvement = 1,0` Punkt verhindert, dass ein praktisch gleichwertiger Lauf die eingecheckte
-  Platine ersetzt. Das hält die Git-Historie ruhig und schützt eine im GUI geprüfte Platine.
-- Bei |ΔS| < 1,0 bleibt die offizielle Platine; es gibt keinen weiteren Tie-Break.
-- 1,0 Punkt entspricht bei den Standardgewichten z. B. 5 Signal-Vias, 50 mm Signalbahn oder 1/3 GND-Insel.
+- The measurement is deterministic: same state, same numbers. Scatter only comes from routing (11.4 in
+  main-board-c6.md).
+- The threshold `min_improvement = 1.0` point prevents a practically equivalent run from replacing the checked-in
+  board. This keeps the Git history quiet and protects a board that was checked in the GUI.
+- With |ΔS| < 1.0 the official board stays; there is no further tie-break.
+- At the default weights, 1.0 point corresponds e.g. to 5 signal vias, 50 mm signal track or 1/3 GND island.
 
-### Pareto-Sicht
+### Pareto view
 
-Der Bericht prüft für alle Läufe eines Aufrufs und die offizielle Platine, ob eine andere in **allen** weichen
-Kennzahlen mindestens gleich und in einer besser ist („dominiert“).
-- Nicht dominierte Läufe sind echte Kompromisse. Erst dort entscheiden die Gewichte.
-- Der Sieger einer gewichteten Summe mit positiven Gewichten ist immer Pareto-optimal.
-- Umgekehrt findet eine gewichtete Summe nicht jeden Kompromiss: Punkte in nicht-konvexen Teilen der Front
-  erreicht sie nicht (Das & Dennis 1997). Deshalb listet der Bericht die nicht dominierten Läufe mit auf, und
-  man kann einen davon von Hand übernehmen (`force=1`).
-- Im Prototyp sind alle drei Platinen nicht dominiert. Jede ist irgendwo besser, die Gewichte sind also nötig.
+For all runs of one call and the official board, the report checks whether another one is at least equal in
+**all** soft metrics and better in one ("dominated").
+- Non-dominated runs are genuine trade-offs. Only there do the weights decide.
+- The winner of a weighted sum with positive weights is always Pareto-optimal.
+- Conversely, a weighted sum does not find every trade-off: it cannot reach points in non-convex parts of the
+  front (Das & Dennis 1997). That is why the report also lists the non-dominated runs, and one of them can be
+  adopted by hand (`force=1`).
+- In the prototype all three boards are non-dominated. Each is better somewhere, so the weights are needed.
 
-### Sensitivität
+### Sensitivity
 
-Je Kennzahl gibt der Bericht aus:
-- **Punkte** `weight·(neu − alt)/scale` und **Anteil** an der Summe der Beträge;
-- **Kipp-Faktor**: Mit welchem Faktor müsste man das Gewicht dieser einen Kennzahl multiplizieren, damit die
-  Entscheidung kippt? Beispiel: „gnd_islands ×2,36“ heißt, mit Gewicht 7,1 statt 3 hätte variant4 gewonnen.
-  „-“ heißt, diese Kennzahl allein kann die Entscheidung nicht kippen.
-- **Robustheit**: Anteil von 2000 zufälligen Gewichtssätzen (jedes Gewicht log-gleichverteilt ×0,5 bis ×2),
-  bei denen der Kandidat angenommen würde. Unter ca. 10 % oder über 90 % ist die Entscheidung stabil.
+For each metric the report outputs:
+- **points** `weight·(new − old)/scale` and **share** of the sum of absolute values;
+- **flip factor**: by which factor would the weight of this one metric have to be multiplied for the
+  decision to flip? Example: "gnd_islands ×2.36" means that with weight 7.1 instead of 3, variant4 would have won.
+  "-" means this metric alone cannot flip the decision.
+- **robustness**: share of 2000 random weight sets (each weight log-uniformly ×0.5 to ×2)
+  for which the candidate would be accepted. Below about 10 % or above 90 % the decision is stable.
 
-## 2. Kennzahlen
+## 2. Metrics
 
-Gerechnet wird mit `kicad-cli pcb drc --format json --severity-all` (Schema `drc.v1.json`) und `pcbnew`
-(KiCad 9, SWIG). Die Flächen werden im Speicher neu gefüllt (`ZONE_FILLER`), die Datei bleibt unverändert.
-Spalte **Art**: H = hart (Grenzwert), W = weich (Gewicht/Skala), I = nur Information.
+Computed with `kicad-cli pcb drc --format json --severity-all` (schema `drc.v1.json`) and `pcbnew`
+(KiCad 9, SWIG). The zones are refilled in memory (`ZONE_FILLER`); the file stays unchanged.
+Column **Type**: H = hard (limit), S = soft (weight/scale), I = information only.
 
-| Kennzahl (`key`) | Definition, Berechnung | Einheit | Art | Skala | Gewicht | Begründung Gewicht |
+| Metric (`key`) | Definition, computation | Unit | Type | Scale | Weight | Reason for weight |
 |---|---|---|---|---:|---:|---|
-| `drc_errors` | DRC-Verstöße mit Schwere *error*, ohne Bibliotheksabgleich (wie heute) | Anzahl | H ≤ 0 | – | – | nicht fertigbar/prüfbar |
-| `unconnected` | `unconnected_items` des DRC | Anzahl | H ≤ 0 | – | – | Funktion |
-| `antenna_intrusions` | Bahn-/Via-Stücke fremder Netze in einer Sperrfläche `Antenne*` (auf deren Lagen), dazu Flächenfüllung darin > 0,01 mm²; erlaubt: `OUT_A` (Randstreifen zu BT1) | Anzahl | H ≤ 0 | – | – | Espressif: kein Kupfer unter der Antenne auf allen Lagen |
-| `power_width_violations` | Je definiertem Strompfad (Pad → Pad, Tabelle 3) der Weg mit dem kleinsten Widerstand durch Bahnen/Vias (Dijkstra). Verletzung, wenn mehr als `neckdown_allow_mm` = 2 mm Bahn schmaler sind als nach IPC-2221 für `current_a` bei 20 K nötig | Anzahl Pfade | H ≤ 0 | – | – | Erwärmung, Motorstrom bis 2 A (IPROPI-Grenze) |
-| `drc_warnings` | übrige DRC-Meldungen (lose Bahnen/Vias, Silk …) | Anzahl | W | 1 | 2 | jede ist Nacharbeit |
-| `gnd_islands` | GND-Flächenstücke ohne Via/Durchsteckpad (wie heute) | Anzahl | W | 1 | 3 | hängen nur an SMD-Pads/Bahnen, schwache Masse |
-| `signal_vias` | Vias außer GND | Anzahl | W | 10 | 2 | Lagenwechsel = Antipad in L2, Platz, Induktivität. **GND-Vias werden nicht bestraft** (heute zählen sie in `via_count` mit) |
-| `signal_length_mm` | Bahnlänge außer GND | mm | W | 50 | 1 | Umwege, Kopplung, Fläche |
-| `detour_worst5` | Mittel der 5 schlechtesten Netze: geroutete Länge / oktilinearer Minimalbaum der Pads (45°-Abstand `max+0,414·min`) | Verhältnis | W | 0,5 | 1 | findet einzelne irre Umwege, die in der Gesamtlänge untergehen |
-| `bends` | Richtungswechsel zwischen Bahnen gleichen Netzes/gleicher Lage (außer GND) | Anzahl | W | 50 | 0,5 | Optik, Handnacharbeit, geringe elektrische Wirkung |
-| `acute_angles` | Stöße gleichen Netzes unter 90° | Anzahl | W | 1 | 1 | Säurefallen (acid traps) |
-| `overlapping_segments` | Bahnen gleichen Netzes, die übereinander zurücklaufen (Winkel ≈ 0°) | Anzahl | W | 1 | 0,5 | Router-Rest, Aufräumen |
-| `via_in_pad` | Via in SMD-Pad, außer Liste (`U1:*` Modul-GND, `U2:*` Thermal-Pad) | Anzahl | W | 1 | 2 | Lot wird abgesaugt, kein gefülltes Via bestellt |
-| `tight_clearance` | Zweiter DRC mit Zusatzregel „Abstand ≥ clearance + 0,05 mm“ für Bahn/Via/Pad (nicht Fläche, nicht Pad–Pad); Anzahl Verstöße | Anzahl | W | 10 | 1 | Fertigungsreserve; konstante Anteile (Fine-Pitch-Vorrouten) heben sich in ΔS auf |
-| `power_drop_mv` | größter Spannungsabfall der Strompfade bei `peak_a`: Σ ρ·L/(w·t) je Bahn (t aus dem Lagenaufbau) + Via-Hülse (20 µm) | mV | W, Veto +30 | 20 | 2 | Motorleistung, Brown-out bei Anlauf |
-| `sense_coupling_mm` | Länge der Messnetze (ISEN, ISEN_ADC, VBAT_ADC), die näher als 0,6 mm (Kante–Kante) an OUT_A/OUT_B liegt, auf gleicher Lage oder auf Lagen ohne GND-Ebene dazwischen | mm | W, Veto +5 | 5 | 3 | PWM-Flanken koppeln in die ADC-/IPROPI-Leitung |
-| `sense_length_mm` | Gesamtlänge der Messnetze | mm | W | 10 | 1 | Antenne für Störungen, IPROPI-Knoten hochohmig |
-| `return_gap_mm` | Länge von Signalbahnen ohne GND unter sich. Mit Ebene: Füllung der nächsten Ebene (4 Lagen: In1) muss unter dem Punkt liegen. Ohne Ebene (2 Lagen): Nachbarlage. Das eigene Via-Antipad zählt nicht | mm | W | 2 | 3 | Rückstromweg, EMV, USB |
-| `antenna_proximity_mm` | Signalbahn (nicht GND, nicht erlaubt) innerhalb von 2 mm um die Antennen-Sperrflächen | mm | W, Veto +3 | 5 | 2 | Verstimmung/Einkopplung der Antenne |
-| `stitch_gap_p95_mm` | 95-%-Wert des Abstands von GND-Füllung der Außenlagen (0,25-mm-Raster) zum nächsten GND-Via/Durchsteckpad | mm | W | 1 | 1 | Flächenzipfel ohne Anbindung (Resonanz, Rückstrom) |
-| `gnd_vias_module` | GND-Vias im Umkreis von 1 mm um das Modul | Anzahl | W (−) | 4 | −0,5 | Espressif: viele GND-Vias am Modul; negativ = mehr ist besser |
-| `usb_vias` | Vias auf USB_D+/D− | Anzahl | W | 2 | 1 | Lagenwechsel im Paar |
-| `usb_skew_mm` | Längendifferenz D+/D− | mm | W | 5 | 0,5 | Full Speed (4–20 ns Flanken) unkritisch, Espressif nennt trotzdem gleiche Länge |
-| `usb_stubs` | offene Bahnenden auf D+/D− (nicht an Pad/Via/Bahn) | Anzahl | W | 1 | 1 | ESD durchgeschleift lassen (Kapitel 10) |
-| `ref_plane_mm2` | Fläche der GND-Ebene (In1) | mm² | I | 10 | 0 | korreliert mit `signal_vias` (Antipads) |
-| `thermal_vias_u2`, `gnd_vias`, `via_count`, `track_length_mm`, `detour_total`, `stitch_gap_max_mm`, `layer_length_mm`, `usb_len_*` | zur Information und für den Vergleich mit heute | – | I | – | 0 | – |
+| `drc_errors` | DRC violations with severity *error*, without library check (as today) | count | H ≤ 0 | – | – | not manufacturable/testable |
+| `unconnected` | `unconnected_items` of the DRC | count | H ≤ 0 | – | – | function |
+| `antenna_intrusions` | track/via pieces of other nets in a keep-out area `Antenna*` (on its layers), plus zone fill inside it > 0.01 mm²; allowed: `OUT_A` (edge strip to BT1) | count | H ≤ 0 | – | – | Espressif: no copper under the antenna on any layer |
+| `power_width_violations` | For each defined current path (pad → pad, table 3) the lowest-resistance route through tracks/vias (Dijkstra). Violation if more than `neckdown_allow_mm` = 2 mm of track is narrower than IPC-2221 requires for `current_a` at 20 K | count of paths | H ≤ 0 | – | – | heating, motor current up to 2 A (IPROPI limit) |
+| `drc_warnings` | remaining DRC messages (dangling tracks/vias, silk …) | count | S | 1 | 2 | each one is rework |
+| `gnd_islands` | GND fill fragments without via/through-hole pad (as today) | count | S | 1 | 3 | attached only to SMD pads/tracks, weak ground |
+| `signal_vias` | vias other than GND | count | S | 10 | 2 | layer change = antipad in L2, space, inductance. **GND vias are not penalized** (today they are included in `via_count`) |
+| `signal_length_mm` | track length other than GND | mm | S | 50 | 1 | detours, coupling, area |
+| `detour_worst5` | mean of the 5 worst nets: routed length / octilinear minimum spanning tree of the pads (45° distance `max+0.414·min`) | ratio | S | 0.5 | 1 | finds single crazy detours that get lost in the total length |
+| `bends` | direction changes between tracks of the same net/same layer (except GND) | count | S | 50 | 0.5 | looks, manual rework, little electrical effect |
+| `acute_angles` | same-net junctions below 90° | count | S | 1 | 1 | acid traps |
+| `overlapping_segments` | same-net tracks running back over each other (angle ≈ 0°) | count | S | 1 | 0.5 | router leftover, clean-up |
+| `via_in_pad` | via in an SMD pad, except list (`U1:*` module GND, `U2:*` thermal pad) | count | S | 1 | 2 | solder is wicked away, no filled via ordered |
+| `tight_clearance` | second DRC with an extra rule "clearance ≥ clearance + 0.05 mm" for track/via/pad (not zone, not pad–pad); number of violations | count | S | 10 | 1 | manufacturing margin; constant parts (fine-pitch pre-routes) cancel out in ΔS |
+| `power_drop_mv` | largest voltage drop of the current paths at `peak_a`: Σ ρ·L/(w·t) per track (t from the layer stack-up) + via barrel (20 µm) | mV | S, veto +30 | 20 | 2 | motor power, brown-out at start-up |
+| `sense_coupling_mm` | length of the sense nets (ISEN, ISEN_ADC, VBAT_ADC) that lies closer than 0.6 mm (edge to edge) to OUT_A/OUT_B, on the same layer or on layers without a GND plane in between | mm | S, veto +5 | 5 | 3 | PWM edges couple into the ADC/IPROPI line |
+| `sense_length_mm` | total length of the sense nets | mm | S | 10 | 1 | antenna for interference, IPROPI node is high-impedance |
+| `return_gap_mm` | length of signal tracks without GND beneath them. With a plane: the fill of the nearest plane (4 layers: In1) must lie under the point. Without a plane (2 layers): adjacent layer. The track's own via antipad does not count | mm | S | 2 | 3 | return path, EMC, USB |
+| `antenna_proximity_mm` | signal track (not GND, not allowed) within 2 mm of the antenna keep-out areas | mm | S, veto +3 | 5 | 2 | detuning of/coupling into the antenna |
+| `stitch_gap_p95_mm` | 95th percentile of the distance from outer-layer GND fill (0.25 mm grid) to the nearest GND via/through-hole pad | mm | S | 1 | 1 | fill tongues without connection (resonance, return current) |
+| `gnd_vias_module` | GND vias within 1 mm of the module | count | S (−) | 4 | −0.5 | Espressif: many GND vias at the module; negative = more is better |
+| `usb_vias` | vias on USB_D+/D− | count | S | 2 | 1 | layer change within the pair |
+| `usb_skew_mm` | length difference D+/D− | mm | S | 5 | 0.5 | Full Speed (4–20 ns edges) uncritical, Espressif still asks for equal length |
+| `usb_stubs` | open track ends on D+/D− (not at pad/via/track) | count | S | 1 | 1 | keep ESD routed through (section 10) |
+| `ref_plane_mm2` | area of the GND plane (In1) | mm² | I | 10 | 0 | correlates with `signal_vias` (antipads) |
+| `thermal_vias_u2`, `gnd_vias`, `via_count`, `track_length_mm`, `detour_total`, `stitch_gap_max_mm`, `layer_length_mm`, `usb_len_*` | for information and for comparison with today | – | I | – | 0 | – |
 
-**Nicht aufgenommen:**
-- **Impedanz:** USB-FS ist vorgeroutet. Sie wäre nur mit Feldlöser sinnvoll.
-- **Silk:** Silk-Meldungen laufen über `drc_warnings`.
-- **Paralleler Lauf USB:** Das Paar ist vorgeroutet und in allen Läufen gleich.
-- **Thermik des DRV8213 über Fläche:** Die Thermal-Vias legt der Generator fest. `thermal_vias_u2` steht nur
-  zur Information im Bericht.
+**Not included:**
+- **Impedance:** USB FS is pre-routed. It would only make sense with a field solver.
+- **Silk:** silk messages go through `drc_warnings`.
+- **USB parallel run:** the pair is pre-routed and identical in all runs.
+- **DRV8213 thermals via copper area:** the generator fixes the thermal vias. `thermal_vias_u2` is in the
+  report for information only.
 
-## 3. Konfigurationsdatei (Vorschlag `hardware/routing-score.toml`)
+## 3. Configuration file (proposal `hardware/routing-score.toml`)
 
-Englische Schlüssel. Der Nutzer ändert normalerweise nur `weight` (und `min_improvement`). `scale` und der
-Board-Teil ändern sich nur, wenn sich das Design ändert.
+English keys. The user normally only changes `weight` (and `min_improvement`). `scale` and the
+board part only change when the design changes.
 
 ```toml
 version = 1
 
 [decision]
-min_improvement = 1.0   # Punkte; ~5 Signal-Vias oder 50 mm Signalbahn
+min_improvement = 1.0   # points; ~5 signal vias or 50 mm signal track
 
-[hard]                  # Kennzahl = höchster zulässiger Wert
+[hard]                  # metric = maximum allowed value
 drc_errors = 0
 unconnected = 0
 antenna_intrusions = 0
 power_width_violations = 0
 
-# weight: Wichtigkeit (0 = nur Bericht, 1 normal, 3 wichtig, 5 kritisch, negativ = mehr ist besser)
-# scale:  so viel der Größe zählt als ein Punkt (vor Gewichtung)
-# max_regression: optionales Veto gegenüber der offiziellen Platine
+# weight: importance (0 = report only, 1 normal, 3 important, 5 critical, negative = more is better)
+# scale:  this much of the quantity counts as one point (before weighting)
+# max_regression: optional veto relative to the official board
 [soft]
 drc_warnings         = { weight = 2.0,  scale = 1 }
 gnd_islands          = { weight = 3.0,  scale = 1 }
@@ -229,7 +229,7 @@ coupling_gap_mm = 0.6
 clearance_margin_mm = 0.05
 
 [antenna]
-area_prefix = "Antenne"
+area_prefix = "Antenna"
 allowed_nets = ["/OUT_A"]
 margin_mm = 2.0
 
@@ -239,29 +239,29 @@ allowed = ["U2:*", "U1:*"]
 [thermal]
 copper_rise_k = 20
 ipc_k_external = 0.048
-ipc_k_internal = 0.024      # IPC-2221 konservativ; IPC-2152-Daten erlauben etwa 0,048
-neckdown_allow_mm = 2.0     # Stiche an Fine-Pitch-Pins (DRV8213 0,3 mm)
+ipc_k_internal = 0.024      # IPC-2221 conservative; IPC-2152 data allow about 0.048
+neckdown_allow_mm = 2.0     # stubs at fine-pitch pins (DRV8213 0.3 mm)
 resistivity_ohm_m = 1.72e-8
 via_plating_um = 20
 
-[[paths]]                   # current_a: Dauerstrom (Breite), peak_a: Spitze (Abfall)
+[[paths]]                   # current_a: continuous current (width), peak_a: peak (drop)
 name = "OUT_A U2 -> BT1"
 from = "U2:2"
 to = "BT1:1"
 current_a = 1.5
 peak_a = 2.0
-# ebenso: OUT_B U2:3 -> BT2:1, VSYS D2:1 -> U2:1, VBUS J4:A4 -> D2:2, BAT J5:1 -> Q1:3, VSYS Q1:2 -> U2:1
+# likewise: OUT_B U2:3 -> BT2:1, VSYS D2:1 -> U2:1, VBUS J4:A4 -> D2:2, BAT J5:1 -> Q1:3, VSYS Q1:2 -> U2:1
 ```
 
-**Strompfade:** 1,5 A Dauerstrom bei 20 K ergeben nach IPC-2221 mindestens **0,35 mm** außen (35 µm). Innen
-(15,2 µm) sind es 2,07 mm mit k = 0,024 bzw. 0,80 mm mit k = 0,048. **Motorstrom gehört also auf die
-Außenlagen.** Die 2 A sind die IPROPI-Stromgrenze (R1 1,24 k). Dauerstrom und Erwärmung sind nicht gemessen
-(unsicher): Erst eine Strommessung am Motor (hardware-konzept.md, offene Punkte) liefert belastbare Werte für
-`current_a`.
+**Current paths:** 1.5 A continuous current at 20 K requires at least **0.35 mm** on the outside (35 µm) according to
+IPC-2221. Inside (15.2 µm) it is 2.07 mm with k = 0.024 or 0.80 mm with k = 0.048. **So motor current belongs on the
+outer layers.** The 2 A is the IPROPI current limit (R1 1.24 k). Continuous current and heating have not been
+measured (uncertain): only a current measurement at the motor (hardware-concept.md, open items) will provide
+reliable values for `current_a`.
 
-## 4. Bericht
+## 4. Report
 
-`route_gate.py` gibt bei jeder Entscheidung aus (Beispiel aus dem Prototyp):
+`route_gate.py` outputs the following for every decision (example from the prototype):
 
 ```
 board           hard under_mm        S      dS  lexicographic(old gate)
@@ -292,164 +292,164 @@ Pareto (soft metrics with weight != 0):
   4l-variant4    non-dominated
 ```
 
-Die Kurzzeile im Log bleibt wie heute, zum Beispiel:
-`Neuer Lauf: S 99,3 (+3,1), hart 1 → verworfen (größere Verletzung power_width; Haupttreiber gnd_islands −3,0 / sense_length +1,9)`.
+The short line in the log stays as today, for example:
+`New run: S 99.3 (+3.1), hard 1 → rejected (larger violation power_width; main drivers gnd_islands −3.0 / sense_length +1.9)`.
 
-## 5. Prototyp-Ergebnisse (2026-11-03)
+## 5. Prototype results (2026-11-03)
 
-Gemessen wurden drei Platinen:
-- **2 Lagen:** Commit c45c6de;
-- **4 Lagen offiziell:** jetzt `hardware/main-board/louie-main.kicad_pcb`, inhaltsgleich mit dem früheren
+Three boards were measured:
+- **2 layers:** commit c45c6de;
+- **4 layers official:** now `hardware/main-board/louie-main.kicad_pcb`, identical in content to the former
   `main-board-4l`;
-- **4 Lagen variant4:** `build/main-board-4l/keep/variant4-0-open.kicad_pcb`.
+- **4 layers variant4:** `build/main-board-4l/keep/variant4-0-open.kicad_pcb`.
 
-Für jede galten die eigenen Projektregeln. Die Kennzahlen des heutigen Gates stimmen mit `routing.json` überein
-(116 Vias, 640,16 mm, 2 Inseln).
+Each was measured with its own project rules. The metrics of today's gate match `routing.json`
+(116 vias, 640.16 mm, 2 islands).
 
-| Kennzahl | 4L offiziell | 4L variant4 | 2L (c45c6de) |
+| Metric | 4L official | 4L variant4 | 2L (c45c6de) |
 |---|---:|---:|---:|
 | drc_errors / unconnected | 0 / 0 | 0 / 0 | 0 / **13** |
-| power_width_violations (zu schmal) | **1** (9,98 mm) | **1** (23,0 mm) | 0 |
+| power_width_violations (too narrow) | **1** (9.98 mm) | **1** (23.0 mm) | 0 |
 | gnd_islands | 2 | **1** | 2 |
 | signal_vias / gnd_vias | **70** / 46 | 74 / 50 | 29 / 44 |
-| signal_length_mm | **606,4** | 632,3 | 387,8 |
-| detour_worst5 | **2,02** | 2,22 | 1,51 |
+| signal_length_mm | **606.4** | 632.3 | 387.8 |
+| detour_worst5 | **2.02** | 2.22 | 1.51 |
 | bends / acute / overlapping | 252 / **3** / 10 | **237** / 4 / **8** | 152 / 14 / 5 |
 | via_in_pad (C15:2, J1:4, J5:2 ×2) | 4 | 4 | 11 |
-| tight_clearance | **230** | 245 | 41 (Regel 0,13) |
-| power_drop_mv (max, 2 A) / Q1→VM | 81,6 / **56,2** | 81,6 / 88,8 | 81,6 / 36,5 |
-| sense_coupling_mm | 1,67 | **1,16** | 1,66 |
-| sense_length_mm | **45,4** | 64,6 | 21,4 |
-| return_gap_mm | **0,3** | 1,1 | 78,2 (USB 28 mm) |
-| antenna_intrusions / proximity_mm | 0 / 1,5 | 0 / 1,5 | 0 / 5,9 |
-| stitch_gap_p95_mm | **3,29** | 3,30 | 3,85 |
+| tight_clearance | **230** | 245 | 41 (rule 0.13) |
+| power_drop_mv (max, 2 A) / Q1→VM | 81.6 / **56.2** | 81.6 / 88.8 | 81.6 / 36.5 |
+| sense_coupling_mm | 1.67 | **1.16** | 1.66 |
+| sense_length_mm | **45.4** | 64.6 | 21.4 |
+| return_gap_mm | **0.3** | 1.1 | 78.2 (USB 28 mm) |
+| antenna_intrusions / proximity_mm | 0 / 1.5 | 0 / 1.5 | 0 / 5.9 |
+| stitch_gap_p95_mm | **3.29** | 3.30 | 3.85 |
 | gnd_vias_module | 26 | **30** | 27 |
-| usb_skew_mm / usb_vias / usb_stubs | 7,2 / 6 / 0 | 7,2 / 6 / 0 | 7,2 / 6 / 0 |
-| **S** (Standardgewichte) | **96,2** | 99,3 | 201,9 |
+| usb_skew_mm / usb_vias / usb_stubs | 7.2 / 6 / 0 | 7.2 / 6 / 0 | 7.2 / 6 / 0 |
+| **S** (default weights) | **96.2** | 99.3 | 201.9 |
 
-**Welcher 4-Lagen-Stand gewinnt? Die offizielle Platine (Versuch 3).**
-1. **Harte Stufe:** Beide verletzen `power_width_violations`, Pfad Q1 → U2 VM. Nach Deb entscheidet die kleinere
-   Verletzung: offiziell 10 mm zu schmal (min. 0,2 mm, 3 Vias, 28 mΩ), variant4 23 mm (min. 0,25 mm, 5 Vias,
+**Which 4-layer state wins? The official board (attempt 3).**
+1. **Hard stage:** both violate `power_width_violations`, path Q1 → U2 VM. Following Deb, the smaller
+   violation decides: official 10 mm too narrow (min. 0.2 mm, 3 vias, 28 mΩ), variant4 23 mm (min. 0.25 mm, 5 vias,
    44 mΩ).
-2. **Weiche Stufe** (falls man den Pfad ausklammert): ΔS = +3,07 für variant4, also klar über der Schwelle.
-   - Gegen variant4 sprechen: Messleitungen +19 mm, ISEN_ADC-Umweg 2,9×, +15 Engstellen, +4 Signal-Vias,
-     +26 mm, Abfall +7 mV.
-   - Für variant4 sprechen: 1 GND-Insel weniger (−3 Punkte), 2 Doppelbahnen weniger, 4 GND-Vias mehr am Modul.
-3. **Robustheit:** 98,9 % der zufälligen Gewichtssätze behalten die offizielle Platine. Kippen würde es nur,
-   wenn `gnd_islands` mehr als das 2,4-Fache wiegt (Gewicht > 7).
-4. **Heutiges Gate:** Es hätte variant4 genommen, weil `gnd_islands` (1 < 2) vor Vias und Länge entscheidet.
+2. **Soft stage** (if the path is left out): ΔS = +3.07 for variant4, i.e. clearly above the threshold.
+   - Against variant4: sense lines +19 mm, ISEN_ADC detour 2.9×, +15 tight spots, +4 signal vias,
+     +26 mm, drop +7 mV.
+   - For variant4: 1 GND island fewer (−3 points), 2 doubled tracks fewer, 4 more GND vias at the module.
+3. **Robustness:** 98.9 % of the random weight sets keep the official board. It would only flip if
+   `gnd_islands` weighed more than 2.4 times as much (weight > 7).
+4. **Today's gate:** it would have taken variant4, because `gnd_islands` (1 < 2) decides before vias and length.
 
-Der 2-Lagen-Stand ist ein anderes Design (anderer Fingerabdruck) und wird im Gate nie gegen 4 Lagen
-verglichen. Er dient hier nur als Plausibilitätsprobe:
-- Die Kennzahl für den Rückstromweg erkennt die zerschnittene Unterseite (78 mm ohne Bezug, davon 28 mm USB).
-- Die Strompfade sind dort breit genug (Freerouting, Netzklasse Power 0,4 mm).
+The 2-layer state is a different design (different fingerprint) and is never compared against 4 layers in the
+gate. Here it only serves as a plausibility check:
+- The return-path metric detects the cut-up bottom side (78 mm without reference, 28 mm of it USB).
+- The current paths there are wide enough (Freerouting, net class Power 0.4 mm).
 
-## 6. Einbau in `route_gate.py` (Plan, nach Bestätigung der Gewichte)
+## 6. Integration into `route_gate.py` (plan, after the weights are confirmed)
 
-1. **Neues Modul** `hardware/scripts/route_score.py`: `measure_all(pcb, cfg)` (Inhalt von `score_metrics.py`),
+1. **New module** `hardware/scripts/route_score.py`: `measure_all(pcb, cfg)` (content of `score_metrics.py`),
    `evaluate(cfg, metrics, details)` → `(hard_excess, hard_total, under_mm, S, parts)`,
-   `decide(cfg, cand, official)` → `(accept, reason, report_lines)`. Konfiguration `hardware/routing-score.toml`;
-   optional pro Platine `[boards.main-board]` für Netze und Pfade.
-2. **`route_gate.measure()`** ruft `measure_all()` auf. Die bisherigen fünf Kennzahlen bleiben im Ergebnis
-   (`via_count`, `track_length_mm` …), damit `short()`/`slug()` und alte `routing.json` lesbar bleiben.
-3. **`rank()`** wird durch `decide()` ersetzt. `route.py` wählt den besten Versuch eines Aufrufs mit derselben
-   Funktion: erst zulässig, dann kleinste Verletzung, dann kleinster S. Dazu kommt eine Pareto-Liste im Log.
-4. **`routing.json`** bekommt zusätzlich:
+   `decide(cfg, cand, official)` → `(accept, reason, report_lines)`. Configuration `hardware/routing-score.toml`;
+   optionally per board `[boards.main-board]` for nets and paths.
+2. **`route_gate.measure()`** calls `measure_all()`. The previous five metrics stay in the result
+   (`via_count`, `track_length_mm` …), so that `short()`/`slug()` and old `routing.json` files remain readable.
+3. **`rank()`** is replaced by `decide()`. `route.py` picks the best attempt of one call with the same
+   function: feasible first, then smallest violation, then smallest S. A Pareto list in the log is added.
+4. **`routing.json`** additionally gets:
    - `"score": {"S": …, "hard": …, "parts": {…}}`;
-   - `"score_config_sha256"` (Hash der TOML);
+   - `"score_config_sha256"` (hash of the TOML);
    - `"metrics_version"`;
-   - `"details"` (Pfade, schlechteste Netze).
-   `"ranking"` entfällt bzw. wird `"decision": "hard+weighted"`.
-5. **Neu messen statt gespeicherten Werten trauen:** Weicht `score_config_sha256` oder `metrics_version` ab
-   (neue Gewichte, neue Kennzahl), misst das Gate die offizielle Platine neu (3,5 s). Gewichtsänderungen
-   wirken damit sofort und fair.
-6. **Befehle:**
-   - `route_gate.py score <board> [datei …]`: Bericht ohne Entscheidung, auch für mehrere Dateien aus
-     `build/<platine>/keep/`;
-   - `route_gate.py explain <board> <kandidat>`: Beitragstabelle, Kipp-Faktoren, Robustheit;
+   - `"details"` (paths, worst nets).
+   `"ranking"` is dropped or becomes `"decision": "hard+weighted"`.
+5. **Re-measure instead of trusting stored values:** if `score_config_sha256` or `metrics_version` differ
+   (new weights, new metric), the gate re-measures the official board (3.5 s). Weight changes thus take
+   effect immediately and fairly.
+6. **Commands:**
+   - `route_gate.py score <board> [file …]`: report without decision, also for several files from
+     `build/<board>/keep/`;
+   - `route_gate.py explain <board> <candidate>`: contribution table, flip factors, robustness;
    - `just route-score main-board`.
-7. **Unverändert bleiben:** Fingerabdruck, Ablage unter `rejected/`, Wiederherstellen und `force=1`. Die
-   Begründungstexte nennen statt „schlechter bei X“ die zwei größten Beiträge.
-8. **Doku:** In entwicklung.md die Abschnitte „Kennzahlen“ und „Entscheidung“ ersetzen. Dieses Dokument wird
-   nach der Umsetzung auf den Stand gekürzt (Entscheidungen), die Prototyp-Zahlen kommen in die Historie.
+7. **Unchanged:** fingerprint, storage under `rejected/`, restore and `force=1`. Instead of "worse at X",
+   the reason texts name the two largest contributions.
+8. **Docs:** replace the sections "Metrics" and "Decision" in development.md. After implementation this document
+   is cut down to the current state (decisions), and the prototype numbers move to the history.
 
-Laufzeit: Die Messung kostet 3,5 s pro Kandidat und Lauf, gegenüber 20–60 min Routing vernachlässigbar.
+Runtime: the measurement costs 3.5 s per candidate and run, negligible compared with 20–60 min of routing.
 
-## 7. Grenzen und offene Punkte
+## 7. Limits and open items
 
-- **Strompfad = ein Weg** (kleinster Widerstand). Parallele Wege und Flächen sind nicht eingerechnet, die
-  Rechnung ist also konservativ. VSYS hat keine Fläche.
-- **IPC-2221 ist konservativ.** KiCads eigener Rechner nutzt die Brooks/Adam-Anpassung an IPC-2152-Daten. Eine
-  Umstellung darauf ist möglich (Formel ΔT = K·I^a·W^b·Th^c). Für die Entscheidung zwischen zwei Läufen ändert
-  das wenig; für die harte Grenze wohl schon.
-- **Die Kopplung** ist nur ein geometrischer Abstandsbereich (0,6 mm), keine Feldberechnung. Für den
-  *Vergleich* von Läufen genügt das.
-- **`tight_clearance`** zählt DRC-Paare und nicht deren Länge. Fine-Pitch-Pads erzeugen einen festen Sockel
-  (ca. 200), der sich in ΔS aufhebt.
-- **SWIG-Bindings** sind ab KiCad 9 abgekündigt (Entfernung geplant für KiCad 11). Nachfolger ist die IPC-API
-  (`kicad-python`/`kipy`). Das betrifft das ganze Projekt, nicht nur den Score.
-- `kicad-cli pcb drc --refill-zones` gibt es erst nach KiCad 9. Deshalb füllt der Prototyp im Speicher neu.
-  Der DRC-Teil prüft (wie heute) die gespeicherte Füllung.
-- **Gewichte sind Meinungen.** Die Robustheitszeile zeigt, ob eine Entscheidung an ihnen hängt.
+- **Current path = one route** (lowest resistance). Parallel routes and zones are not included, so the
+  calculation is conservative. VSYS has no zone.
+- **IPC-2221 is conservative.** KiCad's own calculator uses the Brooks/Adam fit to IPC-2152 data. Switching
+  to it is possible (formula ΔT = K·I^a·W^b·Th^c). For the decision between two runs this changes
+  little; for the hard limit it probably does.
+- **Coupling** is only a geometric distance band (0.6 mm), not a field computation. For *comparing* runs
+  that is sufficient.
+- **`tight_clearance`** counts DRC pairs, not their length. Fine-pitch pads create a fixed base
+  (approx. 200) that cancels out in ΔS.
+- **SWIG bindings** are deprecated as of KiCad 9 (removal planned for KiCad 11). The successor is the IPC API
+  (`kicad-python`/`kipy`). This affects the whole project, not just the score.
+- `kicad-cli pcb drc --refill-zones` only exists after KiCad 9. That is why the prototype refills in memory.
+  The DRC part checks (as today) the stored fill.
+- **Weights are opinions.** The robustness line shows whether a decision depends on them.
 
-## 8. Befunde nebenbei (aus dem Prototyp, nicht behoben)
+## 8. Side findings (from the prototype, not fixed)
 
-1. **Batterie-Motorpfad zu schmal (4 Lagen, beide Stände).**
-   - Q1:2 (VSYS) → U2:1 läuft über `route_fix.py`-Bahnen mit 0,2/0,3 mm, teils auf In2 (15 µm).
-   - Bei 2 A ergibt das 56 mV (offiziell) bzw. 89 mV Abfall. Nach IPC-2221 trägt ein 0,2-mm-Stück auf In2 nur
-     etwa 0,3 A bei 20 K.
-   - Im Batteriebetrieb fließt der ganze Motorstrom so.
-   - Vorschlag: Q1:2 → C2/VSYS-Hauptbahn in `gen_main_pcb.py` mit 0,5 mm auf F.Cu vorrouten oder
-     `WIDTHS["/VSYS"]` für diesen Abschnitt auf 0,4 mm setzen. Danach neu routen.
-2. **Via in Pad:**
-   - C15:2 (0402, GND) hat ein Via im Pad, ebenso die Lötpads J1:4 und J5:2. Die Vias setzt vermutlich `stitch.py` bzw.
-     `route_fix.py` (GND-Anbindung).
-   - Bei 0402 droht Lotabsaugung und Tombstoning.
-   - Vorschlag: Bei der GND-Anbindung Vias nur neben SMD-Pads setzen (außer Liste).
-3. **Netzklassen-Muster in der `.kicad_pro` veraltet** (schon im 2-Lagen-Stand):
-   - `ISEN`/`/ISEN` → Power, `GND` in Power und Supply, `MOT_A`/`MOT_B` gibt es nicht mehr.
-   - Laut `gen_main_pcb.py` soll ISEN in der Standardklasse bleiben.
-   - Wirkung: keine DRC-Fehler, aber falsche Sollbreiten.
-4. **Doppelbahnen:** 8–10 Bahnen gleichen Netzes liegen übereinander zurück (`overlapping_segments`, +3V3 und
-   EN auf B.Cu). Das ist ein Router-Rest, elektrisch harmlos. Aufräumen vor der Fertigung.
-5. **USB:** D− ist 7,2 mm länger als D+ (vorgeroutet, in allen Ständen gleich). Für Full Speed unkritisch;
-   Espressif empfiehlt dennoch gleiche Länge.
+1. **Battery–motor path too narrow (4 layers, both states).**
+   - Q1:2 (VSYS) → U2:1 runs over `route_fix.py` tracks of 0.2/0.3 mm, partly on In2 (15 µm).
+   - At 2 A this gives 56 mV (official) or 89 mV drop. According to IPC-2221 a 0.2 mm piece on In2 carries only
+     about 0.3 A at 20 K.
+   - In battery operation the entire motor current flows this way.
+   - Proposal: pre-route Q1:2 → C2/VSYS main track in `gen_main_pcb.py` at 0.5 mm on F.Cu, or
+     set `WIDTHS["/VSYS"]` to 0.4 mm for this section. Then re-route.
+2. **Via in pad:**
+   - C15:2 (0402, GND) has a via in the pad, as do the solder pads J1:4 and J5:2. The vias are probably placed by `stitch.py` or
+     `route_fix.py` (GND connection).
+   - With 0402 there is a risk of solder wicking and tombstoning.
+   - Proposal: for the GND connection, place vias only next to SMD pads (except list).
+3. **Net class patterns in the `.kicad_pro` are outdated** (already in the 2-layer state):
+   - `ISEN`/`/ISEN` → Power, `GND` in Power and Supply, `MOT_A`/`MOT_B` no longer exist.
+   - According to `gen_main_pcb.py`, ISEN should stay in the default class.
+   - Effect: no DRC errors, but wrong target widths.
+4. **Doubled tracks:** 8–10 same-net tracks run back over each other (`overlapping_segments`, +3V3 and
+   EN on B.Cu). This is a router leftover, electrically harmless. Clean up before manufacturing.
+5. **USB:** D− is 7.2 mm longer than D+ (pre-routed, identical in all states). Uncritical for Full Speed;
+   Espressif nevertheless recommends equal length.
 
-## Quellen
+## Sources
 
-- KiCad 9 CLI (`pcb drc`, JSON, Schweregrade): https://docs.kicad.org/9.0/en/cli/cli.html (geprüft). DRC-Schema
-  https://schemas.kicad.org/drc.v1.json (geprüft). `--refill-zones` nur in den Entwicklungs-Docs:
-  https://docs.kicad.org/master/en/cli/cli.html (geprüft).
-- KiCad Custom Rules: https://docs.kicad.org/9.0/en/pcbnew/pcbnew.html#custom-design-rules (Abschnitt nicht
-  gelesen, Syntax im Prototyp mit KiCad 9.0.8 erprobt).
-- pcbnew-Python (ZONE, ZONE_FILLER): https://docs.kicad.org/doxygen-python-9.0/classpcbnew_1_1ZONE.html (nicht
-  geöffnet). Abkündigung SWIG / IPC-API: https://dev-docs.kicad.org/en/apis-and-binding/pcbnew/ (geprüft).
-- IPC-2221 Strombelastbarkeit I = k·ΔT^0,44·A^0,725, k = 0,048 außen / 0,024 innen (nicht geprüft, Standardformel).
-  IPC-2152: Innenlagen nicht so stark abzuwerten. Brooks/Adam, „Internal Trace Temperatures“, I-Connect007 2018:
+- KiCad 9 CLI (`pcb drc`, JSON, severities): https://docs.kicad.org/9.0/en/cli/cli.html (checked). DRC schema
+  https://schemas.kicad.org/drc.v1.json (checked). `--refill-zones` only in the development docs:
+  https://docs.kicad.org/master/en/cli/cli.html (checked).
+- KiCad custom rules: https://docs.kicad.org/9.0/en/pcbnew/pcbnew.html#custom-design-rules (section not
+  read, syntax tested in the prototype with KiCad 9.0.8).
+- pcbnew Python (ZONE, ZONE_FILLER): https://docs.kicad.org/doxygen-python-9.0/classpcbnew_1_1ZONE.html (not
+  opened). SWIG deprecation / IPC API: https://dev-docs.kicad.org/en/apis-and-binding/pcbnew/ (checked).
+- IPC-2221 current capacity I = k·ΔT^0.44·A^0.725, k = 0.048 external / 0.024 internal (not checked, standard formula).
+  IPC-2152: inner layers need not be derated as strongly. Brooks/Adam, "Internal Trace Temperatures", I-Connect007 2018:
   https://iconnect007.com/article/114225/brooks-bits-internal-trace-temperaturesmore-complicated-than-you-think/114228/pcb
-  (geprüft). KiCad-Rechner (Brooks/Adam-Anpassung):
-  https://docs.kicad.org/doxygen/tracks__width__versus__current__formula_8h_source.html (geprüft).
+  (checked). KiCad calculator (Brooks/Adam fit):
+  https://docs.kicad.org/doxygen/tracks__width__versus__current__formula_8h_source.html (checked).
 - USB Full Speed:
-  - Renesas R01AN0628EJ0100, Guidelines for Full-Speed USB2.0 Board Design (empfiehlt auch für FS 90 Ω ±15 %):
-    https://renesas.com/en/document/apn/full-speed-usb-guidelines-full-speed-usb20-board-design-rev100 (geprüft).
-  - TI SPRAAR7J High-Speed Interface Layout Guidelines: https://www.ti.com/lit/an/spraar7j/spraar7j.pdf (geprüft).
-  - FS-Flanken 4–20 ns (USB 2.0, nicht geprüft).
-- Espressif ESP32-C6 Hardware Design Guidelines, PCB-Layout:
+  - Renesas R01AN0628EJ0100, Guidelines for Full-Speed USB2.0 Board Design (recommends 90 Ω ±15 % even for FS):
+    https://renesas.com/en/document/apn/full-speed-usb-guidelines-full-speed-usb20-board-design-rev100 (checked).
+  - TI SPRAAR7J High-Speed Interface Layout Guidelines: https://www.ti.com/lit/an/spraar7j/spraar7j.pdf (checked).
+  - FS edges 4–20 ns (USB 2.0, not checked).
+- Espressif ESP32-C6 Hardware Design Guidelines, PCB layout:
   https://docs.espressif.com/projects/esp-hardware-design-guidelines/en/latest/esp32c6/pcb-layout-design.html
-  (geprüft)
-  - Antenne am Rand und ohne Kupfer auf allen Lagen, 15 mm Freiraum, dichte GND-Vias am Modul.
-  - USB: 90 Ω ±10 %, gleich lang, durchgehende Masse, wenige Vias.
-  - Siehe auch analyse-funk-controller.md.
-- TI DRV8213 Datenblatt SLVSGV9 (Layout 11.1: breite Bahnen VM/OUT/GND, Thermal-Pad mit Vias an innere
-  GND-Lagen; IPROPI 8.4.2.2): https://www.ti.com/lit/ds/symlink/drv8213.pdf (geprüft). Keine eigene Vorgabe zur
-  IPROPI-Leitungsführung; `sense_*` ist allgemeine Praxis.
-- Freerouting-Bewertung (Router- und Optimierer-Score):
-  https://github.com/freerouting/freerouting/blob/master/docs/scoring.md (geprüft).
-- TopoR (Länge und Vias als Ziel, beliebige Winkel): https://en.wikipedia.org/wiki/TopoR (geprüft).
+  (checked)
+  - Antenna at the edge and without copper on any layer, 15 mm clearance, dense GND vias at the module.
+  - USB: 90 Ω ±10 %, equal length, continuous ground, few vias.
+  - See also analysis-wireless-controllers.md.
+- TI DRV8213 datasheet SLVSGV9 (layout 11.1: wide tracks VM/OUT/GND, thermal pad with vias to inner
+  GND layers; IPROPI 8.4.2.2): https://www.ti.com/lit/ds/symlink/drv8213.pdf (checked). No specific guidance on
+  IPROPI routing; `sense_*` is general practice.
+- Freerouting scoring (router and optimizer score):
+  https://github.com/freerouting/freerouting/blob/master/docs/scoring.md (checked).
+- TopoR (length and vias as objective, any angle): https://en.wikipedia.org/wiki/TopoR (checked).
 - Deb, K. (2000): An efficient constraint handling method for genetic algorithms. CMAME 186(2–4), 311–338,
-  doi:10.1016/S0045-7825(99)00389-8 (bibliografisch geprüft).
+  doi:10.1016/S0045-7825(99)00389-8 (bibliographically checked).
 - Das, I.; Dennis, J. E. (1997): A closer look at drawbacks of minimizing weighted sums of objectives for Pareto
-  set generation. Structural Optimization 14, 63–69, doi:10.1007/BF01197559 (bibliografisch geprüft).
-- Säurefallen: https://resources.pcb.cadence.com/blog/are-acid-traps-still-a-problem-for-pcbs (nicht geöffnet).
-  Via-in-Pad/IPC-4761 Typ VII: https://sierraconnect.protoexpress.com/t/pcb-glossary-via-in-pad/3899 (nicht
-  geöffnet).
+  set generation. Structural Optimization 14, 63–69, doi:10.1007/BF01197559 (bibliographically checked).
+- Acid traps: https://resources.pcb.cadence.com/blog/are-acid-traps-still-a-problem-for-pcbs (not opened).
+  Via-in-pad/IPC-4761 type VII: https://sierraconnect.protoexpress.com/t/pcb-glossary-via-in-pad/3899 (not
+  opened).

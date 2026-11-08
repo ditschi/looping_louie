@@ -1,11 +1,11 @@
-"""Stitching-Vias: verbindet Pads von Flächennetzen (GND, VSYS) per Via mit ihrer Kupferfläche.
+"""Stitching vias: connect pads of zone nets (GND, VSYS) to their copper zone with a via.
 
-Für jedes betroffene Pad wird ringförmig um das Pad die nächstgelegene Via-Position gesucht, an
-der Via und Zuleitung keinen anderen Netzen zu nahe kommen, die nicht in einer Sperrfläche liegt
-und (auf der Gegenlage) innerhalb einer Fläche desselben Netzes.
+For each affected pad, the nearest via position is searched in rings around the pad where the via and
+its feed track do not come too close to other nets, which is not inside a keepout area and (on the
+opposite layer) lies inside a zone of the same net.
 
-4 Lagen: Gegenlage ist immer die durchgehende GND-Lage In1; Vias werden auf allen vier Lagen auf Abstand
-geprüft.
+4 layers: the opposite layer is always the continuous GND layer In1; vias are checked for clearance on
+all four layers.
 """
 import json
 import math
@@ -24,15 +24,15 @@ def mm(v):
 
 
 def cu_layers(board):
-    """Kupferlagen der Platine (2: F/B, 4: F/In1/In2/B)."""
+    """Copper layers of the board (2: F/B, 4: F/In1/In2/B)."""
     if board.GetCopperLayerCount() >= 4:
         return [pcbnew.F_Cu, pcbnew.In1_Cu, pcbnew.In2_Cu, pcbnew.B_Cu]
     return [pcbnew.F_Cu, pcbnew.B_Cu]
 
 
 def plane_layer(board, layer):
-    """Lage, auf der ein Via von `layer` aus die Fläche erreichen soll: bei 4 Lagen die GND-Lage In1,
-    sonst die Gegenlage."""
+    """Layer on which a via from `layer` should reach the zone: the GND layer In1 on 4 layers,
+    otherwise the opposite layer."""
     if board.GetCopperLayerCount() >= 4:
         return pcbnew.In1_Cu
     return pcbnew.B_Cu if layer == pcbnew.F_Cu else pcbnew.F_Cu
@@ -46,7 +46,7 @@ def _copper_items(board):
 def _collides(board, items, shape, layer, net):
     for item in items:
         same_net = item.GetNetCode() == net.GetNetCode() and net.GetNetCode() != 0
-        if same_net and item.GetClass() != "PCB_VIA":  # Vias immer prüfen (Bohrabstand)
+        if same_net and item.GetClass() != "PCB_VIA":  # always check vias (hole clearance)
             continue
         if not item.IsOnLayer(layer):
             continue
@@ -55,11 +55,11 @@ def _collides(board, items, shape, layer, net):
     return False
 
 
-HOLE_CLEARANCE = 0.3  # Lochabstand (DRC 0,25 mm) mit Reserve
+HOLE_CLEARANCE = 0.3  # hole clearance (DRC 0.25 mm) with margin
 
 
 def _near_hole(board, pos):
-    """Liegt das Via zu nah an einer Bohrung (auch NPTH ohne Kupfer, z. B. Stifte der USB-Buchse)?"""
+    """Is the via too close to a drill hole (including NPTH without copper, e.g. pegs of the USB connector)?"""
     for pad in board.GetPads():
         drill = pad.GetDrillSize()
         if drill.x <= 0:
@@ -78,7 +78,7 @@ def _inside_board(board, pos):
 
 
 def _in_rule_area(board, pos):
-    """Liegt das Via (mit Radius und Abstand) ganz oder teilweise in einer Sperrfläche für Vias?"""
+    """Does the via (with radius and clearance) lie fully or partly inside a via keepout area?"""
     r = mm(VIA_D / 2)
     probes = [pos] + [pcbnew.VECTOR2I(pos.x + dx, pos.y + dy) for dx, dy in ((r, 0), (-r, 0), (0, r), (0, -r))]
     return any(z.GetIsRuleArea() and z.GetDoNotAllowVias() and z.Outline().Contains(q)
@@ -86,13 +86,13 @@ def _in_rule_area(board, pos):
 
 
 def _in_zone(board, pos, layer, net):
-    """Liegt pos (mit Via-Radius) in der gefüllten Fläche des Netzes auf dieser Lage?"""
+    """Does pos (with via radius) lie inside the filled zone of the net on this layer?"""
     return any(not z.GetIsRuleArea() and z.GetNetCode() == net.GetNetCode() and z.IsOnLayer(layer)
                and z.HitTestFilledArea(layer, pos, mm(VIA_D / 2)) for z in board.Zones())
 
 
 def stitch_pad(board, pad, items):
-    """Setzt ein Via mit Zuleitung neben das Pad. Gibt True zurück, wenn eine Position gefunden wurde."""
+    """Place a via with feed track next to the pad. Return True if a position was found."""
     net = pad.GetNet()
     pad_layer = pcbnew.F_Cu if pad.IsOnLayer(pcbnew.F_Cu) else pcbnew.B_Cu
     other = plane_layer(board, pad_layer)
@@ -131,7 +131,7 @@ def stitch_pad(board, pad, items):
 
 
 def unconnected_pads(board_file, nets):
-    """Pads der angegebenen Netze, die laut DRC nicht verbunden sind: Liste (Referenz, Padnummer)."""
+    """Pads of the given nets that DRC reports as unconnected: list of (reference, pad number)."""
     with tempfile.TemporaryDirectory() as tmp:
         report = Path(tmp) / "drc.json"
         subprocess.run(["kicad-cli", "pcb", "drc", "--format", "json", "-o", str(report), str(board_file)],
@@ -141,7 +141,7 @@ def unconnected_pads(board_file, nets):
     for v in data.get("unconnected_items", []):
         for item in v.get("items", []):
             desc = item.get("description", "")
-            # z. B. "Pad 2 [/GND] von C10 auf F.Cu" bzw. englisch "Pad 2 [/GND] of C10 on F.Cu"
+            # e.g. "Pad 2 [/GND] of C10 on F.Cu" (German KiCad: "Pad 2 [/GND] von C10 auf F.Cu")
             parts = desc.split()
             if parts[:1] == ["Pad"] and len(parts) >= 5 and parts[2].strip("[]") in nets:
                 result.add((parts[4], parts[1]))
@@ -149,7 +149,7 @@ def unconnected_pads(board_file, nets):
 
 
 def stitch(board_file, nets, all_pads=False):
-    """Stitching für die Netze; all_pads=True: jedes Pad dieser Netze (vor dem Routing)."""
+    """Stitching for the nets; all_pads=True: every pad of these nets (before routing)."""
     board = pcbnew.LoadBoard(str(board_file))
     pcbnew.ZONE_FILLER(board).Fill(board.Zones())
     if all_pads:
@@ -178,8 +178,8 @@ def stitch(board_file, nets, all_pads=False):
 
 
 def stitch_grid(board_file, net_name="/GND", pitch=1.6):
-    """Via-Stitching im Raster: überall, wo oben und unten gefüllte Fläche des Netzes liegt und ein
-    Via mit Abstand passt, ein Via setzen. Verbindet Flächeninseln mit der Gegenlage."""
+    """Grid via stitching: place a via wherever filled zone of the net lies on top and bottom and a via
+    fits with clearance. Connects zone islands to the opposite layer."""
     board = pcbnew.LoadBoard(str(board_file))
     filler = pcbnew.ZONE_FILLER(board)
     filler.Fill(board.Zones())
@@ -217,7 +217,7 @@ def stitch_grid(board_file, net_name="/GND", pitch=1.6):
 
 
 def _stitch_islands(board, zones, net, items):
-    """Je Flächeninsel ohne eigenes Via: feine Suche nach einer Via-Stelle mit Fläche auf der Gegenlage."""
+    """For each zone island without its own via: fine search for a via spot with zone on the opposite layer."""
     vias = [t for t in board.GetTracks() if t.GetClass() == "PCB_VIA" and t.GetNetCode() == net.GetNetCode()]
     added = 0
     for zone in zones:
@@ -259,7 +259,7 @@ def _stitch_islands(board, zones, net, items):
                                 placed = True
                         x += mm(0.25)
                     y += mm(0.25)
-                for pad in island_pads:  # Ausweg: Via mit Stichleitung direkt neben einem Pad der Insel
+                for pad in island_pads:  # fallback: via with stub track right next to a pad of the island
                     if placed:
                         break
                     if stitch_pad(board, pad, items):

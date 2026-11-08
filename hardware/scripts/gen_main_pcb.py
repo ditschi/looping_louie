@@ -1,26 +1,26 @@
 #!/usr/bin/env python3
-"""Überträgt den Schaltplan auf die Platine und platziert die Bauteile nach placement.py.
+"""Transfers the schematic to the board and places the components according to placement.py.
 
-- liest die Netzliste des Schaltplans (kicad-cli)
-- setzt Footprints mit Netzen und Schaltplan-Verknüpfung (für den DRC-Abgleich)
-- setzt Designregeln, Netzklassen und die Sperrfläche unter der Antenne
-- routet vorab nur die kritischen Bahnen (Motorausgänge, VSYS/VBUS/BAT_IN, USB-Paar, kurze Brücken);
-  den Rest übernimmt der eigene Router route_fix.py (just route)
+- reads the schematic netlist (kicad-cli)
+- places footprints with nets and schematic links (for the DRC parity check)
+- sets design rules, net classes and the keepout area under the antenna
+- pre-routes only the critical tracks (motor outputs, VSYS/VBUS/BAT_IN, USB pair, short bridges);
+  the rest is done by the own router route_fix.py (just route)
 
-Muss mit dem System-Python laufen, das das KiCad-Modul pcbnew enthält.
-Aufruf (über just):  just pcb  → hardware/main-board/louie-main.kicad_pcb
-  - 4 Lagen (Standard seit 2026-11-03, die 2-Lagen-Variante ist verworfen, Stand in Git c45c6de):
-    Lagenaufbau JLC04081H-3313, Regeln RULES, louie-main.kicad_dru; docs/hauptplatine-c6.md Kapitel 11.
-    Die Platine wird jedes Mal neu angelegt (Umriss aus board_outline.py), Platzierung aus placement.py.
-  - PCB_OUT=<datei.kicad_pcb>: stattdessen dorthin schreiben, offizielle Dateien bleiben unverändert
-    (route_gate.py: Fingerabdruck der ungerouteten Platine).
-  - gen_main_pcb.py --sync-links [datei]  (just pcb-sync): nur die Verknüpfung der Footprints zum Schaltplan
-    (Symbol-UUID, Wert, DNP) erneuern, Layout und Routing bleiben (nach just schematic; seit 2026-11-04 sind die
-    Symbol-UUIDs fest, dann ändert sich nichts).
+Must run with the system Python that contains the KiCad module pcbnew.
+Usage (via just):  just pcb  → hardware/main-board/louie-main.kicad_pcb
+  - 4 layers (default since 2026-11-03, the 2-layer variant is discarded, state in Git c45c6de):
+    stackup JLC04081H-3313, rules RULES, louie-main.kicad_dru; docs/main-board-c6.md chapter 11.
+    The board is created from scratch every time (outline from board_outline.py), placement from placement.py.
+  - PCB_OUT=<file.kicad_pcb>: write there instead, the official files stay unchanged
+    (route_gate.py: fingerprint of the unrouted board).
+  - gen_main_pcb.py --sync-links [file]  (just pcb-sync): only renew the link of the footprints to the schematic
+    (symbol UUID, value, DNP), layout and routing stay (after just schematic; since 2026-11-04 the
+    symbol UUIDs are fixed, then nothing changes).
 
-Achtung: entfernt alle Footprints, Leiterbahnen und Zonen der Platine und setzt sie neu. Die bisherige Platine
-wird vorher nach build/<platine>/keep/before-pcb-<zeit>.kicad_pcb gesichert (das Routing-Gate stellt das
-bisherige Routing von dort wieder her, wenn ein neuer Lauf schlechter ist; docs/entwicklung.md).
+Warning: removes all footprints, tracks and zones of the board and places them anew. The previous board
+is backed up first to build/<board>/keep/before-pcb-<time>.kicad_pcb (the routing gate restores the
+previous routing from there if a new run is worse; docs/development.md).
 """
 import datetime
 import os
@@ -38,37 +38,37 @@ HARDWARE = Path(__file__).resolve().parent.parent
 BOARD_DIR = HARDWARE / "main-board"
 SCH = BOARD_DIR / "louie-main.kicad_sch"
 PCB = BOARD_DIR / "louie-main.kicad_pcb"
-LAYERS = 4  # Kupferlagen (F.Cu, In1.Cu = GND-Lage, In2.Cu, B.Cu)
+LAYERS = 4  # copper layers (F.Cu, In1.Cu = GND plane, In2.Cu, B.Cu)
 KICAD_FOOTPRINTS = Path("/usr/share/kicad/footprints")
 PROJECT_FP_LIBS = {"lcsc": HARDWARE / "lib" / "lcsc.pretty", "louie": HARDWARE / "lib" / "louie.pretty"}
 
-ORIGIN = (100.0, 75.0)  # Platinenmitte (wie board_outline.py)
-import board_outline  # noqa: E402  Umriss (Breite 14,1 mm, Zungen an den Enden, Aussparung vor J4)
+ORIGIN = (100.0, 75.0)  # board centre (as in board_outline.py)
+import board_outline  # noqa: E402  outline (width 14.1 mm, tongues at the ends, recess in front of J4)
 BOARD_L, BOARD_W = board_outline.LENGTH_MM, board_outline.WIDTH_MM
 
-# Designregeln (docs/hauptplatine-c6.md 11.2): JLC-Mehrlagen 0,09/0,09 mm, Via 0,15/0,25 mm, innen Via–Kupfer
-# 0,2 mm, PTH–Kupfer innen 0,3 mm, Rand 0,2 mm. Hier großzügig: 0,15/0,15 mm (+67 %), Standardbahn 0,2 mm,
-# Via 0,3/0,5 mm (kein Aufpreis, Restring 0,1 mm = 2 × JLC-Minimum, kein Via-in-Pad; 0,6 mm Durchmesser ließ im
-# Probe-Routing deutlich mehr offen). Loch–Kupfer: Vias 0,25 mm (JLC 0,2 mm), Bauteilbohrungen 0,28 mm außen
-# (JLC PTH–Bahn 0,28) und 0,3 mm innen (JLC) über louie-main.kicad_dru (DRU).
+# Design rules (docs/main-board-c6.md 11.2): JLC multilayer 0.09/0.09 mm, via 0.15/0.25 mm, inner via–copper
+# 0.2 mm, PTH–copper inner 0.3 mm, edge 0.2 mm. Generous here: 0.15/0.15 mm (+67 %), default track 0.2 mm,
+# via 0.3/0.5 mm (no surcharge, annular ring 0.1 mm = 2 × JLC minimum, no via-in-pad; 0.6 mm diameter left
+# considerably more open in trial routing). Hole–copper: vias 0.25 mm (JLC 0.2 mm), component holes 0.28 mm outer
+# (JLC PTH–track 0.28) and 0.3 mm inner (JLC) via louie-main.kicad_dru (DRU).
 RULES = dict(clearance=0.15, track=0.2, track_min=0.15, via_d=0.5, via_drill=0.3, edge=0.3, hole_clearance=0.25,
              hole_to_hole=0.25, annular=0.1)
-# Abweichungen von placement.py (Referenz -> (x, y, Drehung, Seite)), docs/hauptplatine-c6.md 11.4:
-# R15 um 180° gedreht, damit sein GND-Pad aus der Tasche zwischen den VBUS-Bahnen (rundum VBUS/VBUS_DET, darunter
-# das USB-Paar auf B.Cu) herauskommt und ein Via zur GND-Lage bekommt. Lage und Fläche unverändert.
+# Deviations from placement.py (reference -> (x, y, rotation, side)), docs/main-board-c6.md 11.4:
+# R15 rotated by 180°, so that its GND pad gets out of the pocket between the VBUS tracks (VBUS/VBUS_DET all around,
+# below it the USB pair on B.Cu) and gets a via to the GND plane. Position and area unchanged.
 PLACEMENT_OVERRIDES = {"R15": (11.2, -4.49, 180, "F")}
 DRU = """(version 1)
-# Erzeugt von gen_main_pcb.py (4 Lagen), docs/hauptplatine-c6.md 11.2. JLC Mehrlagen: Via-Bohrung zu Kupfer 0,2 mm
-# (Platinen-Minimum hier 0,25 mm), Bauteilbohrung zu Bahn 0,28 mm, Bauteilbohrung zu Kupfer innen 0,3 mm.
-(rule "Bauteilbohrung Loch-Kupfer"
+# Generated by gen_main_pcb.py (4 layers), docs/main-board-c6.md 11.2. JLC multilayer: via hole to copper 0.2 mm
+# (board minimum here 0.25 mm), component hole to track 0.28 mm, component hole to copper inner 0.3 mm.
+(rule "Component hole to copper"
     (condition "A.Type == 'Pad' && A.Pad_Type != 'SMD'")
     (constraint hole_clearance (min 0.28mm)))
-(rule "Bauteilbohrung Loch-Kupfer innen"
+(rule "Component hole to copper inner"
     (layer inner)
     (condition "A.Type == 'Pad' && A.Pad_Type != 'SMD'")
     (constraint hole_clearance (min 0.3mm)))
 """
-# Lagenaufbau JLC04081H-3313 (0,8 mm, außen 1 oz, innen 0,5 oz): (Name, Typ, Dicke mm, Material, Er, tan d)
+# Stackup JLC04081H-3313 (0.8 mm, outer 1 oz, inner 0.5 oz): (name, type, thickness mm, material, Er, tan d)
 STACKUP = [
     ("F.Cu", "copper", 0.035, None, None, None),
     ("dielectric 1", "prepreg", 0.0994, "FR4 3313", 4.1, 0.02),
@@ -78,35 +78,35 @@ STACKUP = [
     ("dielectric 3", "prepreg", 0.0994, "FR4 3313", 4.1, 0.02),
     ("B.Cu", "copper", 0.035, None, None, None),
 ]
-# Netzklassen (setup_rules ersetzt alle Muster aus der .kicad_pro, sonst bleiben alte Einträge stehen):
-# Power = Netze mit Motor- bzw. Einspeisestrom bis 2 A (Hauptwege vorgeroutet), dazu VLED (LED-Kette bis 0,5 A).
-# ISEN (IPROPI) und alle übrigen Signale bleiben in der Standardklasse. Die Breite der Klasse ist nur der
-# Vorgabewert im GUI; was route_fix.py legt, steht dort in WIDTHS.
+# Net classes (setup_rules replaces all patterns from the .kicad_pro, otherwise old entries remain):
+# Power = nets with motor or supply current up to 2 A (main paths pre-routed), plus VLED (LED chain up to 0.5 A).
+# ISEN (IPROPI) and all other signals stay in the default class. The width of the class is only the
+# default value in the GUI; what route_fix.py lays down is defined there in WIDTHS.
 POWER_NETS = ["/VSYS", "/BAT_IN", "/VBUS_J4", "/OUT_A", "/OUT_B", "/VLED", "/VLED_SW"]
 SUPPLY_NETS = ["/+3V3", "/GND"]
-POWER_TRACK = 0.4  # ca. 1,5 A bei 35 µm Kupfer; an den 0,5-mm-Pins des DRV8213 nur kurze 0,3-mm-Stiche
-STUB_TRACK = 0.3   # Stiche an Fine-Pitch-Pins
-MAIN_TRACK = 0.5   # vorgeroutete VSYS-Hauptbahn (Schottky -> Puffer -> VM)
-# Randstreifen im Antennenbereich, frei für die Leiterbahn OUT_A zum Endkontakt BT1. Kante -y, weil der
-# DRV8213 an der Modulecke -y sitzt: OUT_A läuft so ohne Kreuzung unten am Rand entlang.
+POWER_TRACK = 0.4  # approx. 1.5 A at 35 µm copper; at the 0.5 mm pins of the DRV8213 only short 0.3 mm stubs
+STUB_TRACK = 0.3   # stubs at fine-pitch pins
+MAIN_TRACK = 0.5   # pre-routed VSYS main track (Schottky -> buffer -> VM)
+# Edge strip in the antenna area, free for the OUT_A track to end contact BT1. Edge -y, because the
+# DRV8213 sits at the -y module corner: OUT_A thus runs along the edge on the bottom without crossing.
 ANTENNA_TRACK_STRIP = 1.2
 ANTENNA_TRACK_SIDE = -1
-SIGNAL_TRACK = 0.15  # vorgeroutete Signal-Stiche
-SUPPLY_TRACK = 0.25  # 3V3, GND (passt noch an die 0,5-mm-Pins von LIS2DH12/DRV8213)
-EDGE_TRACK_Y = BOARD_W / 2 - 0.6  # Abstand der Randbahnen OUT_A/OUT_B von der Mitte (unten)
-COL1_X = -1.9  # 0402-Reihe an den rechten Modulpins (placement.COL1)
+SIGNAL_TRACK = 0.15  # pre-routed signal stubs
+SUPPLY_TRACK = 0.25  # 3V3, GND (still fits the 0.5 mm pins of LIS2DH12/DRV8213)
+EDGE_TRACK_Y = BOARD_W / 2 - 0.6  # distance of the edge tracks OUT_A/OUT_B from the centre (bottom)
+COL1_X = -1.9  # 0402 row at the right module pins (placement.COL1)
 
 
 
-# Feste GND-Vias neben Pads (Referenz, Pad, dx, dy in mm)
+# fixed GND vias next to pads (reference, pad, dx, dy in mm)
 GROUND_VIAS = []
-# GND-Pins des DRV8213 (Pin 4 GND, Pin 7 GAINSEL) direkt aufs Thermal-Pad (dessen Vias führen nach unten)
+# GND pins of the DRV8213 (pin 4 GND, pin 7 GAINSEL) directly onto the thermal pad (its vias lead to the bottom)
 EP_TIES = [("U2", "4", "9"), ("U2", "7", "9")]
 
 
 def load_placement():
-    """Platzierungstabelle aus placement.py plus PLACEMENT_OVERRIDES: Referenz -> (x, y, Drehung, Seite).
-    Koordinaten in mm relativ zur Platinenmitte, x entlang der Länge, Seite "F" oder "B"."""
+    """Placement table from placement.py plus PLACEMENT_OVERRIDES: reference -> (x, y, rotation, side).
+    Coordinates in mm relative to the board centre, x along the length, side "F" or "B"."""
     import placement
     return {**placement.PLACEMENT, **PLACEMENT_OVERRIDES}
 
@@ -148,7 +148,7 @@ def load_footprint(lib_id):
     lib = PROJECT_FP_LIBS.get(nick, KICAD_FOOTPRINTS / f"{nick}.pretty")
     fp = pcbnew.FootprintLoad(str(lib), name)
     if fp is None:
-        raise RuntimeError(f"Footprint {lib_id} nicht gefunden")
+        raise RuntimeError(f"Footprint {lib_id} not found")
     fp.SetFPID(pcbnew.LIB_ID(nick, name))
     return fp
 
@@ -166,8 +166,8 @@ def setup_rules(board):
     ds = board.GetDesignSettings()
     board.SetCopperLayerCount(LAYERS)
     ds.SetCopperLayerCount(LAYERS)
-    # In1 = durchgehende GND-Lage (für Freerouting "power": keine Signale, GND per Via an die Fläche),
-    # In2 = Signallage mit GND-Füllung
+    # In1 = continuous GND plane (for Freerouting "power": no signals, GND to the plane by via),
+    # In2 = signal layer with GND fill
     board.SetLayerType(pcbnew.In1_Cu, pcbnew.LT_POWER)
     board.SetLayerName(pcbnew.In1_Cu, "In1.Cu")
     board.SetLayerType(pcbnew.In2_Cu, pcbnew.LT_SIGNAL)
@@ -180,8 +180,8 @@ def setup_rules(board):
     ds.m_HoleToHoleMin = mm(RULES["hole_to_hole"])
     ds.m_ViasMinAnnularWidth = mm(RULES["annular"])
     ns = ds.m_NetSettings
-    # Muster und Klassen aus der vorhandenen .kicad_pro verwerfen (früher blieben MOT_A/MOT_B, ISEN in Power und
-    # GND in zwei Klassen stehen)
+    # discard patterns and classes from the existing .kicad_pro (previously MOT_A/MOT_B, ISEN remained in Power and
+    # GND in two classes)
     ns.ClearNetclassPatternAssignments()
     ns.ClearNetclasses()
     default = ns.GetDefaultNetclass()
@@ -197,7 +197,7 @@ def setup_rules(board):
     ns.SetNetclass("Power", power)
     for net in POWER_NETS:
         ns.SetNetclassPatternAssignment(net, "Power")
-    # 3V3 und GND: Zuleitungen zu den 0402-Pads
+    # 3V3 and GND: feed lines to the 0402 pads
     supply = pcbnew.NETCLASS("Supply")
     supply.SetClearance(mm(RULES["clearance"]))
     supply.SetTrackWidth(mm(SUPPLY_TRACK))
@@ -209,9 +209,9 @@ def setup_rules(board):
 
 
 def ignore_silk_edge(pro_file):
-    """DRC-Prüfung „Bestückungsdruck an der Platinenkante“ abschalten: Der Pin-1-Kreis des Moduls (Bibliotheks-Footprint)
-    liegt außerhalb des Modulkörpers und seit der 14,1 mm breiten Platine auf der Kante; der Hersteller schneidet den
-    Druck an der Kante ohnehin ab. Den Footprint zu ändern ergäbe eine Abweichung von der Bibliothek."""
+    """Disable the DRC check "silkscreen at board edge": the pin 1 circle of the module (library footprint)
+    lies outside the module body and, since the 14.1 mm wide board, on the edge; the manufacturer clips the
+    silkscreen at the edge anyway. Changing the footprint would deviate from the library."""
     import json
     if not pro_file.exists():
         return
@@ -223,8 +223,8 @@ def ignore_silk_edge(pro_file):
 
 
 def write_stackup(pcb_file):
-    """Lagenaufbau in die .kicad_pcb schreiben (die Stackup-Klassen sind in der Python-API nicht nutzbar).
-    pcbnew übernimmt den Block beim nächsten Laden/Speichern (route.py)."""
+    """Write the stackup into the .kicad_pcb (the stackup classes are not usable in the Python API).
+    pcbnew takes over the block on the next load/save (route.py)."""
     text = Path(pcb_file).read_text()
     start = text.find("\t\t(stackup")
     if start >= 0:
@@ -245,9 +245,9 @@ def write_stackup(pcb_file):
 
 
 def prepare_project(pcb_file):
-    """Projekt neben pcb_file vorbereiten: Regeldatei (DRU) schreiben; liegt pcb_file nicht in
-    hardware/main-board/ (PCB_OUT), dazu Bibliothekstabellen, Projektdatei und eine Kopie des Schaltplans (für den
-    Schaltplan-Abgleich). Die Platine wird jedes Mal neu angelegt (Umriss aus board_outline.py)."""
+    """Prepare the project next to pcb_file: write the rule file (DRU); if pcb_file is not in
+    hardware/main-board/ (PCB_OUT), also library tables, project file and a copy of the schematic (for the
+    schematic parity check). The board is created from scratch every time (outline from board_outline.py)."""
     target = pcb_file.parent
     target.mkdir(parents=True, exist_ok=True)
     if target.resolve() != BOARD_DIR.resolve():
@@ -266,20 +266,22 @@ def prepare_project(pcb_file):
 
 
 def antenna_keepout(board, module):
-    """Sperrflächen unter dem Antennenteil des ESP-Moduls (docs/analyse-funk-controller.md 2.3, L2):
+    """Keepout areas under the antenna part of the ESP module (docs/analysis-wireless-controllers.md 2.3, L2).
+    All zone names start with "Antenna": routing-score.toml (area_prefix) and test_route_fix.py find the areas by
+    this prefix.
 
-    - "Antenne": alle Lagen, keine Kupferfläche, keine Vias, keine Leiterbahnen
-    - "Antenne Rand": Randstreifen (ANTENNA_TRACK_STRIP), alle Lagen, keine Kupferfläche und keine Vias,
-      Leiterbahnen erlaubt (OUT_A zum Endkontakt). Früher sparte die Sperrfläche den Streifen ganz aus,
-      dann lag oben ein GND-Streifen unter der Antenne.
-    - "Antenne unten": keine Bauteile/Pads auf der Unterseite
-    - "Antenne Ende": Platinenende vor der Antenne, keine Fläche und keine Vias, Endkontakt erlaubt
+    - "Antenna": all layers, no copper pour, no vias, no tracks
+    - "Antenna edge": edge strip (ANTENNA_TRACK_STRIP), all layers, no copper pour and no vias,
+      tracks allowed (OUT_A to the end contact). Previously the keepout left the strip out entirely,
+      then there was a GND strip on top under the antenna.
+    - "Antenna bottom": no components/pads on the bottom side
+    - "Antenna end": board end in front of the antenna, no pour and no vias, end contact allowed
     """
     crt = module.GetCourtyard(pcbnew.F_CrtYd).BBox()
     pad_left = min(p.GetBoundingBox().GetLeft() for p in module.Pads())
     pad_right = max(p.GetBoundingBox().GetRight() for p in module.Pads())
-    # Die Antenne liegt auf der Seite, auf der das Modul am weitesten über die Pads hinausragt.
-    # Die Sperrfläche reicht von dort bis zum Platinenende.
+    # The antenna is on the side where the module protrudes furthest beyond the pads.
+    # The keepout reaches from there to the board end.
     if pad_left - crt.GetLeft() > crt.GetRight() - pad_right:
         x0, x1 = crt.GetLeft(), pad_left - mm(0.5)
     else:
@@ -309,24 +311,24 @@ def antenna_keepout(board, module):
             outline.Append(x, y)
         board.Add(zone)
 
-    rule_area("Antenne", pcbnew.LSET.AllCuMask(), False, main_y)
-    rule_area("Antenne Rand", pcbnew.LSET.AllCuMask(), False, strip_y, tracks=False)
+    rule_area("Antenna", pcbnew.LSET.AllCuMask(), False, main_y)
+    rule_area("Antenna edge", pcbnew.LSET.AllCuMask(), False, strip_y, tracks=False)
     bottom = pcbnew.LSET()
     bottom.AddLayer(pcbnew.B_Cu)
-    rule_area("Antenne unten", bottom, True, main_y)
+    rule_area("Antenna bottom", bottom, True, main_y)
     if x0 > mm(ORIGIN[0] - BOARD_L / 2):
-        rule_area("Antenne Ende", pcbnew.LSET.AllCuMask(), False, (top, bot),
+        rule_area("Antenna end", pcbnew.LSET.AllCuMask(), False, (top, bot),
                   xa=mm(ORIGIN[0] - BOARD_L / 2), xb=x0, tracks=False)
     return pcbnew.ToMM(x1 - x0)
 
 
 def edge_keepout(board, width=RULES["edge"] + 0.02):
-    """Randstreifen ohne Leiterbahnen und Vias (Freerouting kennt den Kantenabstand nicht)."""
+    """Edge strip without tracks and vias (Freerouting does not know the edge clearance)."""
     x0, x1 = mm(ORIGIN[0] - BOARD_L / 2), mm(ORIGIN[0] + BOARD_L / 2)
     y0, y1 = mm(ORIGIN[1] - BOARD_W / 2), mm(ORIGIN[1] + BOARD_W / 2)
     w = mm(width)
     rects = [(x0, y0, x1, y0 + w), (x0, y1 - w, x1, y1), (x0, y0, x0 + w, y1), (x1 - w, y0, x1, y1)]
-    # Zungen an den Enden: die weggeschnittenen Ecken (|x| > Körper, |y| > Zunge) samt Randabstand sperren
+    # tongues at the ends: block the cut-away corners (|x| > body, |y| > tongue) including edge clearance
     xl = board_outline.LENGTH_MM / 2 - board_outline.TONGUE_L
     t2 = board_outline.TONGUE_W / 2
     for sx in (-1, 1):
@@ -334,14 +336,14 @@ def edge_keepout(board, width=RULES["edge"] + 0.02):
             xa, xb = sorted((mm(ORIGIN[0] + sx * (xl - width)), mm(ORIGIN[0] + sx * BOARD_L / 2)))
             ya, yb = sorted((mm(ORIGIN[1] + sy * (t2 - width)), mm(ORIGIN[1] + sy * BOARD_W / 2)))
             rects.append((xa, ya, xb, yb))
-    # Aussparung vor J4 (Kante +y)
+    # recess in front of J4 (edge +y)
     ra, rb = sorted(board_outline.RECESS_X)
     rects.append((mm(ORIGIN[0] + ra - width), mm(ORIGIN[1] + BOARD_W / 2 - board_outline.RECESS_DEPTH - width),
                   mm(ORIGIN[0] + rb + width), y1))
     for xa, ya, xb, yb in rects:
         zone = pcbnew.ZONE(board)
         zone.SetIsRuleArea(True)
-        zone.SetZoneName("Rand")
+        zone.SetZoneName("Edge")
         zone.SetLayerSet(pcbnew.LSET.AllCuMask())
         zone.SetDoNotAllowTracks(True)
         zone.SetDoNotAllowVias(True)
@@ -356,12 +358,12 @@ def edge_keepout(board, width=RULES["edge"] + 0.02):
 
 
 def plane_keepout(board):
-    """Sperrfläche „GND-Lage“ auf In1 über die ganze Platine, nur Leiterbahnen verboten (Vias und Fläche
-    erlaubt). Freerouting beachtet den Lagentyp "power" nicht und legte sonst Signale auf In1; KiCad exportiert die
-    Fläche als wire_keepout. Der DRC hält In1 damit auch später frei von Bahnen."""
+    """Keepout area "GND plane" on In1 over the whole board, only tracks forbidden (vias and pour
+    allowed). Freerouting ignores the layer type "power" and would otherwise put signals on In1; KiCad exports the
+    area as wire_keepout. The DRC thus also keeps In1 free of tracks later on."""
     zone = pcbnew.ZONE(board)
     zone.SetIsRuleArea(True)
-    zone.SetZoneName("GND-Lage")
+    zone.SetZoneName("GND plane")
     layers = pcbnew.LSET()
     layers.AddLayer(pcbnew.In1_Cu)
     zone.SetLayerSet(layers)
@@ -380,7 +382,7 @@ def plane_keepout(board):
 
 
 def thermal_vias(board, driver, gnd):
-    """Zwei Vias im Thermal-Pad (Pad 9, 0,9 × 1,6 mm) des DRV8213 zur Massefläche unten."""
+    """Two vias in the thermal pad (pad 9, 0.9 × 1.6 mm) of the DRV8213 to the ground pour on the bottom."""
     ep = next(p for p in driver.Pads() if p.GetNumber() == "9")
     c = ep.GetPosition()
     long_y = ep.GetBoundingBox().GetHeight() > ep.GetBoundingBox().GetWidth()
@@ -389,7 +391,7 @@ def thermal_vias(board, driver, gnd):
 
 
 def add_track(board, net, layer, width, *points):
-    """Gesperrte Leiterbahn durch die Punkte (absolute Koordinaten in nm)."""
+    """Locked track through the points (absolute coordinates in nm)."""
     for a, b in zip(points, points[1:]):
         track = pcbnew.PCB_TRACK(board)
         track.SetStart(pcbnew.VECTOR2I(*a))
@@ -416,12 +418,12 @@ def pad_of(footprint, number):
 
 
 def module_ground_vias(board, module):
-    """GND-Vias in den Mittel-Pads des ESP-Moduls (wie von Espressif für die Massefläche empfohlen);
-    die obere Massefläche erreicht die Pads unter dem Modul nicht.
+    """GND vias in the centre pads of the ESP module (as recommended by Espressif for the ground plane);
+    the top ground pour does not reach the pads under the module.
 
-    Je Teil-Pad ein Via in der Mitte. Liegt dort unten ein Pad (J6 unter dem Modul), wird das Via in x
-    verschoben (bis 1 mm, z. B. in die Lücke zwischen zwei J6-Pads); findet sich keine freie Stelle oder läge es
-    näher als 1 mm an einem anderen Via, entfällt es."""
+    One via in the centre of each sub-pad. If there is a pad on the bottom there (J6 under the module), the via is
+    shifted in x (up to 1 mm, e.g. into the gap between two J6 pads); if no free spot is found or it would be
+    closer than 1 mm to another via, it is omitted."""
     others = [p for fp in board.GetFootprints() if fp.GetReference() != module.GetReference()
               for p in fp.Pads() if p.IsOnLayer(pcbnew.B_Cu) or p.GetDrillSize().x > 0]
     keep = mm(RULES["via_d"] / 2 + RULES["clearance"] + 0.05)
@@ -445,7 +447,7 @@ def module_ground_vias(board, module):
 
 
 def ground_via_at_pad(board, footprint, number, dx, dy, width=0.4):
-    """Festes GND-Via neben einem Pad (dx/dy in mm relativ zur Padmitte) mit Stichleitung."""
+    """Fixed GND via next to a pad (dx/dy in mm relative to the pad centre) with a stub track."""
     pad = pad_of(footprint, number)
     q = pad.GetPosition()
     v = (q.x + mm(dx), q.y + mm(dy))
@@ -454,9 +456,9 @@ def ground_via_at_pad(board, footprint, number, dx, dy, width=0.4):
 
 
 def preroute_supply(board, fps):
-    """VSYS-Hauptbahn vorab (0,5 mm): Kathode der Schottky D2 -> C1 -> C2 (senkrecht an den linken
-    Pads), Abzweig C1 -> C4 -> VM-Pin 1 des DRV8213. Der Rest von VSYS (Q1, LDO, Teiler) und BAT_IN/VBUS
-    laufen über Freerouting in der Netzklasse Power."""
+    """VSYS main track in advance (0.5 mm): cathode of Schottky D2 -> C1 -> C2 (vertical at the left
+    pads), branch C1 -> C4 -> VM pin 1 of the DRV8213. The rest of VSYS (Q1, LDO, divider) and BAT_IN/VBUS
+    are routed by Freerouting in the Power net class."""
     def at(ref, num):
         q = pad_of(fps[ref], num).GetPosition()
         return q.x, q.y
@@ -469,21 +471,21 @@ def preroute_supply(board, fps):
 
 
 def preroute_outputs(board, driver, contact_a, contact_b):
-    """Ausgänge des DRV8213 vorab: OUT1 (Pin 2, OUT_A) und OUT2 (Pin 3, OUT_B) je mit 0,3-mm-Stich auf ein
-    Via, unten mit 0,4 mm am Rand -y entlang: OUT_A nach links unter Modul und Antenne (Randstreifen) zum
-    Endkontakt BT1, OUT_B nach rechts zum Endkontakt BT2. Erwartet Drehung 180° (Pins 1–4 zeigen nach +x)."""
-    assert round(driver.GetOrientationDegrees()) % 360 == 180, "preroute_outputs erwartet Drehung 180°"
+    """Outputs of the DRV8213 in advance: OUT1 (pin 2, OUT_A) and OUT2 (pin 3, OUT_B) each with a 0.3 mm stub to a
+    via, on the bottom with 0.4 mm along the -y edge: OUT_A to the left under module and antenna (edge strip) to
+    end contact BT1, OUT_B to the right to end contact BT2. Expects rotation 180° (pins 1–4 point to +x)."""
+    assert round(driver.GetOrientationDegrees()) % 360 == 180, "preroute_outputs expects rotation 180°"
     pa, pb = pad_of(driver, "2").GetPosition(), pad_of(driver, "3").GetPosition()
     out_a, out_b = pad_of(driver, "2").GetNet(), pad_of(driver, "3").GetNet()
     edge_y = mm(ORIGIN[1] - EDGE_TRACK_Y)
-    # OUT_A: Via rechts neben dem Pin, unten schräg unter dem Treiber hindurch zum Rand, dann nach links
+    # OUT_A: via right of the pin, on the bottom diagonally under the driver to the edge, then to the left
     va = (pa.x + mm(1.15), pa.y)
     add_track(board, out_a, pcbnew.F_Cu, STUB_TRACK, (pa.x, pa.y), va)
     add_via(board, out_a, *va)
     ca = next(iter(contact_a.Pads())).GetPosition()
     add_track(board, out_a, pcbnew.B_Cu, POWER_TRACK, va, (va[0] - mm(0.75), edge_y), (ca.x + mm(0.8), edge_y),
               (ca.x, edge_y + mm(0.8)), (ca.x, ca.y))
-    # OUT_B: Stich schräg nach rechts unten (am GND-Pin 4 vorbei), Via, unten am Rand nach rechts
+    # OUT_B: stub diagonally to the lower right (past GND pin 4), via, on the bottom along the edge to the right
     vb = (pb.x + mm(1.7), pb.y - mm(0.4))
     add_track(board, out_b, pcbnew.F_Cu, STUB_TRACK, (pb.x, pb.y), (pb.x + mm(0.6), pb.y),
               (pb.x + mm(1.0), vb[1]), vb)
@@ -494,27 +496,28 @@ def preroute_outputs(board, driver, contact_a, contact_b):
 
 
 def rel(x, y):
-    """Punkt relativ zur Platinenmitte (mm) als absolute Koordinate (nm)."""
+    """Point relative to the board centre (mm) as absolute coordinate (nm)."""
     return mm(ORIGIN[0] + x), mm(ORIGIN[1] + y)
 
 
 def preroute_vbus(board, fps):
-    """VBUS (bis 2 A) vorab:
-    - linkes VBUS-Padpaar (A4/B9): bandseitig oben mit 0,5 mm schräg zur Anode der Schottky D2
-    - die beiden VBUS-Padpaare untereinander über die Körperseite: je ein Via hinter dem Pad (außerhalb der
-      Bohrungen), unten verbunden. Das Band vor den Datenpads bleibt so unten frei für D-/D+ (ESD-Durchschleifung).
-    - ESD U5 Pin 5 (VBUS) oben waagerecht zwischen den D+/D--Vias hindurch an die Schrägbahn"""
+    """VBUS (up to 2 A) in advance:
+    - left VBUS pad pair (A4/B9): on the band side on top with 0.5 mm diagonally to the anode of Schottky D2
+    - the two VBUS pad pairs with each other via the body side: one via behind each pad (outside the
+      holes), connected on the bottom. The band in front of the data pads thus stays free on the bottom for D-/D+
+      (ESD flow-through).
+    - ESD U5 pin 5 (VBUS) on top horizontally between the D+/D- vias to the diagonal track"""
     usb = fps["J4"]
     net = pad_of(usb, "A4").GetNet()
     left, right = sorted((pad_of(usb, n) for n in ("A4", "B4")), key=lambda p: p.GetPosition().x)
     ql, qr = left.GetPosition(), right.GetPosition()
     half = left.GetBoundingBox().GetHeight() // 2
-    band, body = ql.y - half, ql.y + half          # Padenden: Band (-y) und Körper (+y)
-    # senkrecht nach -y bis unter die ESD, dann waagerecht in die Anode: oberhalb bleibt Platz für R14/R15
+    band, body = ql.y - half, ql.y + half          # pad ends: band (-y) and body (+y)
+    # vertically to -y until below the ESD, then horizontally into the anode: above it there is room for R14/R15
     an = pad_of(fps["D2"], "2").GetPosition()
     y_run = an.y - mm(0.25)
     add_track(board, net, pcbnew.F_Cu, MAIN_TRACK, (ql.x, band), (ql.x, y_run), (an.x, y_run))
-    # Körperseite: Vias rechts unten neben den Pads (Bohrungen der Buchse bei x ±2,9 / y -0,2 freihalten)
+    # body side: vias to the lower right of the pads (keep the receptacle holes at x ±2.9 / y -0.2 free)
     vl = (ql.x + mm(0.55), body + mm(0.82))
     vr = (qr.x - mm(0.55), body + mm(0.82))
     add_track(board, net, pcbnew.F_Cu, 0.3, (ql.x, body), vl)
@@ -522,20 +525,21 @@ def preroute_vbus(board, fps):
     add_via(board, net, *vl)
     add_via(board, net, *vr)
     add_track(board, net, pcbnew.B_Cu, MAIN_TRACK, vl, vr)
-    # ESD Pin 5 waagerecht an die senkrechte VBUS-Bahn
+    # ESD pin 5 horizontally to the vertical VBUS track
     p5 = pad_of(fps["U5"], "5").GetPosition()
     add_track(board, net, pcbnew.F_Cu, 0.3, (p5.x, p5.y), (ql.x, p5.y))
-    # VBUS-Teiler R14 (oben im Band): VBUS-Pad rechts an die senkrechte Bahn
+    # VBUS divider R14 (top, in the band): right VBUS pad to the vertical track
     r14 = pad_of(fps["R14"], "1").GetPosition()
     add_track(board, net, pcbnew.F_Cu, 0.25, (r14.x, r14.y), (ql.x, r14.y))
 
 
 def preroute_vbus_branches(board, fps):
-    """VBUS zum Gate von Q1 (Kante +y, ohne Laststrom, 0,25 mm) und VBUS_DET aus dem Band nach Norden:
-    - VBUS: Via über der Anode der Schottky, unten nordwestlich (westlich am USB-Paar und rechts an JP1 vorbei),
-      Via rechts neben dem Gate-Pad (zwischen den J2-Pads 4 und 5 unten), oben ans Gate. Auf In2 war es eine zweite
-      Wand parallel zur VSYS-Bahn unten; dann kam der Router kaum noch von West nach Ost (hauptplatine-c6.md 11.7).
-    - VBUS_DET: R14–R15 direkt; den Weg zum Modul (Pad 9) routet route_fix.py"""
+    """VBUS to the gate of Q1 (edge +y, no load current, 0.25 mm) and VBUS_DET out of the band to the north:
+    - VBUS: via above the anode of the Schottky, on the bottom to the north-west (west of the USB pair and right
+      past JP1), via right of the gate pad (between J2 pads 4 and 5 on the bottom), on top to the gate. On In2 it
+      was a second wall parallel to the VSYS track on the bottom; then the router could hardly get from west to east
+      (main-board-c6.md 11.7).
+    - VBUS_DET: R14–R15 directly; the path to the module (pad 9) is routed by route_fix.py"""
     net = pad_of(fps["J4"], "A4").GetNet()
     an = pad_of(fps["D2"], "2")
     a = rel(8.3, -2.5)
@@ -553,7 +557,7 @@ def preroute_vbus_branches(board, fps):
 
 
 def preroute_right_end(board, fps):
-    """Rechtes Ende: OUT_B von R4 per Via auf die OUT_B-Bahn unten, 3V3 von R4 nach C15."""
+    """Right end: OUT_B from R4 by via to the OUT_B track on the bottom, 3V3 from R4 to C15."""
     r4o, r4v, c15 = pad_of(fps["R4"], "1"), pad_of(fps["R4"], "2"), pad_of(fps["C15"], "1")
     q = r4o.GetPosition()
     v = (q.x, q.y - mm(0.62))
@@ -564,8 +568,8 @@ def preroute_right_end(board, fps):
 
 
 def preroute_cc(board, fps):
-    """CC1 (A5) über die Körperseite der Buchse zu R12 links neben J4 (das Band ist für D-/D+ belegt);
-    CC2 (B5) bandseitig zu R13."""
+    """CC1 (A5) via the body side of the receptacle to R12 left of J4 (the band is occupied by D-/D+);
+    CC2 (B5) on the band side to R13."""
     usb = fps["J4"]
     a5, b5 = pad_of(usb, "A5"), pad_of(usb, "B5")
     half = a5.GetBoundingBox().GetHeight() // 2
@@ -581,14 +585,14 @@ def preroute_cc(board, fps):
 
 
 def preroute_battery_vsys(board, fps):
-    """Batteriestrom zum Motor (Q1 Drain-Seite VSYS → Puffer C1/C2 → VM), bis 2 A, nur Außenlagen (docs/routing-score.md
-    8.1: früher routete route_fix.py diesen Weg mit 0,2–0,3 mm, teils auf In2). Q1 Pin 2 oben zu zwei Vias am
-    Rand +y, unten mit 0,5 mm (IPC-2221: 1,5 A bei 20 K brauchen außen 0,35 mm) zwischen den J2-Pads 3/4 hindurch
-    nach Süden, zwei Vias rechts neben C2 Pin 1, oben in dessen Pad (und über die Bahn C1–C2 weiter zu VM)."""
+    """Battery current to the motor (Q1 drain side VSYS → buffer C1/C2 → VM), up to 2 A, outer layers only
+    (docs/routing-score.md 8.1: previously route_fix.py routed this path with 0.2–0.3 mm, partly on In2). Q1 pin 2
+    on top to two vias at edge +y, on the bottom with 0.5 mm (IPC-2221: 1.5 A at 20 K needs 0.35 mm outer) between
+    J2 pads 3/4 to the south, two vias right of C2 pin 1, on top into its pad (and via the C1–C2 track on to VM)."""
     net = pad_of(fps["Q1"], "2").GetNet()
     d = pad_of(fps["Q1"], "2").GetPosition()
     top, top2 = rel(4.67, 5.8), rel(4.67, 5.0)
-    low, low2 = rel(5.0, -0.05), rel(5.0, -0.75)  # rechts neben C2 Pin 1; die Lücke C1/C2 bleibt für Signale frei
+    low, low2 = rel(5.0, -0.05), rel(5.0, -0.75)  # right of C2 pin 1; the gap C1/C2 stays free for signals
     add_track(board, net, pcbnew.F_Cu, MAIN_TRACK, (d.x, d.y), top, top2)
     add_via(board, net, *top)
     add_via(board, net, *top2)
@@ -601,8 +605,9 @@ def preroute_battery_vsys(board, fps):
 
 
 def preroute_vled(board, fps):
-    """Unterseite, optional: VLED_SW (Ausgang Lastschalter U6 Pin 6 → Lötbrücke JP1 und PTC F1, bis 0,5 A) mit 0,4 mm
-    auf B.Cu unter den VSYS-Vias neben C2 hindurch. route_fix.py fand den Weg um die VSYS-Bahn nicht zuverlässig."""
+    """Bottom side, optional: VLED_SW (output of load switch U6 pin 6 → solder jumper JP1 and PTC F1, up to 0.5 A)
+    with 0.4 mm on B.Cu under the VSYS vias next to C2. route_fix.py did not reliably find the path around the VSYS
+    track."""
     out = pad_of(fps["U6"], "6")
     net = out.GetNet()
     q = out.GetPosition()
@@ -615,8 +620,8 @@ def preroute_vled(board, fps):
 
 
 def preroute_vbat_escape(board, fps):
-    """VBAT_ADC: Stich von R6 Pin 2 zu einem Via links daneben (unter R6 liegt unten J6, rechts R6 Pin 1 und R8);
-    ohne dieses Via fand route_fix.py für R6–R7/U1 keinen Weg."""
+    """VBAT_ADC: stub from R6 pin 2 to a via to its left (below R6 on the bottom is J6, to the right R6 pin 1 and
+    R8); without this via route_fix.py found no path for R6–R7/U1."""
     pad = pad_of(fps["R6"], "2")
     q = pad.GetPosition()
     v = rel(-0.95, -0.15)
@@ -625,8 +630,8 @@ def preroute_vbat_escape(board, fps):
 
 
 def preroute_bat_in(board, fps):
-    """BAT_IN (bis 2 A) vorab: Akku-Pad J5.1 unten zum Kabel-Pad J1.1 und zwischen den Laschen von J4
-    hindurch zu einem Via neben dem Drain von Q1."""
+    """BAT_IN (up to 2 A) in advance: battery pad J5.1 on the bottom to cable pad J1.1 and between the tabs of J4
+    to a via next to the drain of Q1."""
     net = pad_of(fps["J5"], "1").GetNet()
     j5, j1 = pad_of(fps["J5"], "1").GetPosition(), pad_of(fps["J1"], "1").GetPosition()
     d = pad_of(fps["Q1"], "3").GetPosition()
@@ -641,17 +646,17 @@ def preroute_bat_in(board, fps):
 
 
 def preroute_ties(board, fps):
-    """Kurze Verbindungen, an denen Freerouting scheitert:
-    - U4 (LIS2DH12): VDD Pin 9–10
-    - U3 (AP2112K): VIN – EN um den GND-Pin herum
-    - OUT_A zu den Erkennungswiderständen R3/R5: auf In2 vom Ausgangs-Via nach oben, Via, dann R3.1 – R5.1
+    """Short connections where Freerouting fails:
+    - U4 (LIS2DH12): VDD pin 9–10
+    - U3 (AP2112K): VIN – EN around the GND pin
+    - OUT_A to the detection resistors R3/R5: on In2 from the output via upwards, via, then R3.1 – R5.1
     """
-    # LIS2DH12: 3V3 (2–9) und GND (3–8) unter dem Gehäuse verbunden; so gehen nur SCL, 3V3, SDA, INT nach außen
+    # LIS2DH12: 3V3 (2–9) and GND (3–8) connected under the package; so only SCL, 3V3, SDA, INT go outside
     for ref, a, b in (("U4", "9", "10"), ("U4", "2", "9"), ("U4", "3", "8")):
         pa, pb = pad_of(fps[ref], a), pad_of(fps[ref], b)
         add_track(board, pa.GetNet(), pcbnew.F_Cu, 0.2, (pa.GetPosition().x, pa.GetPosition().y),
                   (pb.GetPosition().x, pb.GetPosition().y))
-    # LDO: VIN (1) und EN (3) liegen auf derselben Seite, dazwischen GND (2) -> links außen herum
+    # LDO: VIN (1) and EN (3) are on the same side, GND (2) in between -> around the outside on the left
     vin, en = pad_of(fps["U3"], "1"), pad_of(fps["U3"], "3")
     x = vin.GetBoundingBox().GetLeft() - mm(0.35)
     c8 = pad_of(fps["C8"], "1").GetPosition()
@@ -663,24 +668,24 @@ def preroute_ties(board, fps):
     va = (out_a.GetPosition().x + mm(1.15), out_a.GetPosition().y)
     r3, r5 = pad_of(fps["R3"], "1").GetPosition(), pad_of(fps["R5"], "1").GetPosition()
     v = (r3.x + mm(0.27), r3.y - mm(0.85))
-    # auf In2 (früher B.Cu): die Unterseite bleibt für J7 frei
+    # on In2 (previously B.Cu): the bottom side stays free for J7
     add_track(board, out_a.GetNet(), pcbnew.In2_Cu, STUB_TRACK, va, (v[0], va[1]), v)
     add_via(board, out_a.GetNet(), *v)
     add_track(board, out_a.GetNet(), pcbnew.F_Cu, 0.25, v, (r3.x, r3.y), (r5.x, r5.y))
 
 
 def preroute_usb(board, fps):
-    """USB D+/D- vorab, ESD U5 durchgeschleift (ST DS4260 Fig. 7 „optimized layout“, Fig. 18):
-    J4 → U5 Buchsenseite (rechts, Pin 1 D+ / Pin 3 D-) → unter dem Gehäuse gerade hinüber → U5 Modulseite
-    (links, Pin 6 / Pin 4) → Via → unten im Bereich der Buchse → Via → oben im Kanal zum Modul (Pads 18/17).
-    Kein Abzweig/Stich.
+    """USB D+/D- in advance, ESD U5 flow-through (ST DS4260 Fig. 7 "optimized layout", Fig. 18):
+    J4 → U5 receptacle side (right, pin 1 D+ / pin 3 D-) → straight across under the package → U5 module side
+    (left, pin 6 / pin 4) → via → on the bottom in the receptacle area → via → on top in the channel to the module
+    (pads 18/17). No branch/stub.
 
-    - D+ (A6–B6) über die bandseitigen Padenden verbunden, von B6 schräg auf Pin 1
-    - D- (B7–A7) über die körperseitigen Padenden verbunden; von B7 Via, unten unter U5 hindurch zu Pin 3
-    Erwartet U5 mit Drehung 180°.
+    - D+ (A6–B6) connected via the band-side pad ends, from B6 diagonally to pin 1
+    - D- (B7–A7) connected via the body-side pad ends; from B7 via, on the bottom under U5 to pin 3
+    Expects U5 with rotation 180°.
     """
     usb, mod, esd = fps["J4"], fps["U1"], fps["U5"]
-    assert round(esd.GetOrientationDegrees()) % 360 == 180, "preroute_usb erwartet U5 mit 180°"
+    assert round(esd.GetOrientationDegrees()) % 360 == 180, "preroute_usb expects U5 with 180°"
 
     def p(fp, num):
         q = pad_of(fp, num).GetPosition()
@@ -692,14 +697,14 @@ def preroute_usb(board, fps):
     y_band, y_body = a6[1] - half - mm(0.3), a6[1] + half + mm(0.3)
     w = 0.2
     e1, e3, e4, e6 = p(esd, "1"), p(esd, "3"), p(esd, "4"), p(esd, "6")
-    # Paarverbindungen an J4
+    # pair connections at J4
     add_track(board, dp, pcbnew.F_Cu, w, a6, (a6[0], y_band), (b6[0], y_band), b6)
     add_track(board, dm, pcbnew.F_Cu, w, b7, (b7[0], y_body), (a7[0], y_body), a7)
     # D+: B6 → Pin 1 → Pin 6 → Via
     vp = (e6[0] - mm(1.51), e6[1] - mm(0.15))
     add_track(board, dp, pcbnew.F_Cu, w, (b6[0], y_band), (e1[0] - mm(0.45), e1[1] + mm(0.45)), e1, e6, vp)
     add_via(board, dp, *vp)
-    # D-: B7 → Via → unten → Via rechts neben Pin 3 → Pin 3 → Pin 4 → Via
+    # D-: B7 → via → bottom → via right of pin 3 → pin 3 → pin 4 → via
     v1 = (b7[0] - mm(0.1), b7[1] - half - mm(0.93))
     v2 = (e3[0] + mm(1.06), e3[1] + mm(0.35))
     vm = (e4[0] - mm(1.56), e4[1] + mm(0.35))
@@ -709,25 +714,25 @@ def preroute_usb(board, fps):
     add_via(board, dm, *v2)
     add_track(board, dm, pcbnew.F_Cu, w, v2, e3, e4, vm)
     add_via(board, dm, *vm)
-    # unten: Paar schräg aus dem Band, waagerecht vor der Lötlasche S1 (Durchsteckpad) vorbei, links davon
-    # senkrecht nach oben, dann waagerecht bis vor C10/R7 und per Via nach oben in den Kanal zwischen
-    # C2/R5 und der Kondensatorreihe C8–C10 (y = +0,83 D+, +1,11 D-). Unten bleibt so nur der Bereich
-    # an der Buchse belegt; die Platinenmitte bleibt unten frei für Nord-Süd-Verbindungen.
+    # bottom: pair diagonally out of the band, horizontally past the solder tab S1 (through-hole pad), left of it
+    # vertically upwards, then horizontally up to C10/R7 and by via up into the channel between
+    # C2/R5 and the capacitor row C8–C10 (y = +0.83 D+, +1.11 D-). On the bottom only the area at the
+    # receptacle is thus occupied; the board centre stays free on the bottom for north-south connections.
     m17, m18 = p(mod, "17"), p(mod, "18")
     tab = min((q for q in usb.Pads() if q.GetNumber() == "S1"), key=lambda q: (q.GetPosition().x, q.GetPosition().y))
     x_tab = tab.GetBoundingBox().GetLeft()
     yp1, ym1 = tab.GetBoundingBox().GetTop() - mm(0.47), tab.GetBoundingBox().GetTop() - mm(0.97)
     xp1, xm1 = x_tab - mm(0.33), x_tab - mm(0.83)
     yp, ym = mm(ORIGIN[1] - 0.6), mm(ORIGIN[1] - 1.05)
-    up_p, up_m = rel(8.6, 0.4), rel(7.9, 1.4)      # Vias in den Kanal
+    up_p, up_m = rel(8.6, 0.4), rel(7.9, 1.4)      # vias into the channel
     add_track(board, dp, pcbnew.B_Cu, w, vp, (vp[0] - (yp1 - vp[1]), yp1), (xp1, yp1), (xp1, yp), (up_p[0], yp), up_p)
     add_track(board, dm, pcbnew.B_Cu, w, vm, (vm[0] - (ym1 - vm[1]), ym1), (xm1, ym1), (xm1, ym), (up_m[0], ym), up_m)
     add_via(board, dp, *up_p)
     add_via(board, dm, *up_m)
-    wk = 0.15  # im Kanal schmaler, damit eine dritte Bahn Platz hat
-    cp = mm(ORIGIN[1] + 0.85)  # 0,15 mm Abstand zu R5
+    wk = 0.15  # narrower in the channel so that a third track fits
+    cp = mm(ORIGIN[1] + 0.85)  # 0.15 mm clearance to R5
     cm = cp + mm(wk + RULES["clearance"])  # +1,13
-    xc = mm(ORIGIN[0] - 1.1)  # Ende des Kanals vor der 0402-Reihe
+    xc = mm(ORIGIN[0] - 1.1)  # end of the channel in front of the 0402 row
     add_track(board, dp, pcbnew.F_Cu, wk, up_p, (up_p[0] - (cp - up_p[1]), cp), (xc, cp),
               (xc - (cp - m18[1]), m18[1]), m18)
     add_track(board, dm, pcbnew.F_Cu, wk, up_m, (up_m[0] - (up_m[1] - cm), cm), (m17[0] + mm(0.6), cm),
@@ -735,14 +740,14 @@ def preroute_usb(board, fps):
 
 
 def copper_zones(board, gnd):
-    """Kupferflächen: GND auf allen Lagen über die ganze Platine. In1 ist die durchgehende GND-Lage (keine
-    Signale), In2 GND-Füllung zwischen den Signalen.
+    """Copper pours: GND on all layers over the whole board. In1 is the continuous GND plane (no
+    signals), In2 GND fill between the signals.
 
-    (Eine VSYS-Fläche unten wurde verworfen: Freerouting zerschneidet sie mit Signalen in Inseln.)
+    (A VSYS pour on the bottom was discarded: Freerouting cuts it into islands with signals.)
     """
     x0, x1 = ORIGIN[0] - BOARD_L / 2, ORIGIN[0] + BOARD_L / 2
     y0, y1 = ORIGIN[1] - BOARD_W / 2, ORIGIN[1] + BOARD_W / 2
-    zones = [(pcbnew.F_Cu, gnd, "GND oben", x0, x1, 0), (pcbnew.B_Cu, gnd, "GND unten", x0, x1, 0),
+    zones = [(pcbnew.F_Cu, gnd, "GND top", x0, x1, 0), (pcbnew.B_Cu, gnd, "GND bottom", x0, x1, 0),
              (pcbnew.In1_Cu, gnd, "GND In1", x0, x1, 0), (pcbnew.In2_Cu, gnd, "GND In2", x0, x1, 0)]
     for layer, net, name, xa, xb, prio in zones:
         zone = pcbnew.ZONE(board)
@@ -752,7 +757,7 @@ def copper_zones(board, gnd):
         zone.SetAssignedPriority(prio)
         zone.SetLocalClearance(mm(0.2))
         zone.SetMinThickness(mm(0.2))
-        # voll angebunden: die kleinen GND-Pads (0402, USB-C, LGA) bekämen sonst nur eine Speiche
+        # fully connected: the small GND pads (0402, USB-C, LGA) would otherwise get only one spoke
         zone.SetPadConnection(pcbnew.ZONE_CONNECTION_FULL)
         zone.SetThermalReliefGap(mm(0.2))
         zone.SetThermalReliefSpokeWidth(mm(0.3))
@@ -765,7 +770,7 @@ def copper_zones(board, gnd):
 
 
 def backup(pcb_file):
-    """Bisherige Platine sichern, bevor sie überschrieben wird (build/<platine>/keep/)."""
+    """Back up the previous board before it is overwritten (build/<board>/keep/)."""
     if pcb_file.exists():
         keep = HARDWARE.parent / "build" / pcb_file.parent.name / "keep"
         keep.mkdir(parents=True, exist_ok=True)
@@ -773,13 +778,13 @@ def backup(pcb_file):
 
 
 def sync_links(pcb_file):
-    """Footprints der vorhandenen Platine mit dem Schaltplan verknüpfen (Pfad = Symbol-UUID, Wert, DNP), ohne Lage,
-    Netze oder Routing anzufassen. Fehlt ein Bauteil auf einer Seite, bricht es ab (dann just pcb)."""
+    """Link the footprints of the existing board to the schematic (path = symbol UUID, value, DNP) without touching
+    position, nets or routing. If a component is missing on either side, it aborts (then just pcb)."""
     comps, _ = read_netlist()
     board = pcbnew.LoadBoard(str(pcb_file))
     refs = {fp.GetReference(): fp for fp in board.GetFootprints()}
     if set(refs) != set(comps):
-        raise SystemExit(f"Bauteile weichen ab ({sorted(set(refs) ^ set(comps))}) – just pcb nötig")
+        raise SystemExit(f"Components differ ({sorted(set(refs) ^ set(comps))}) – just pcb required")
     changed = 0
     for ref, comp in comps.items():
         fp = refs[ref]
@@ -791,7 +796,7 @@ def sync_links(pcb_file):
             changed += 1
     if changed:
         pcbnew.SaveBoard(str(pcb_file), board)
-    print(f"{pcb_file.name}: {changed} von {len(comps)} Footprints neu mit dem Schaltplan verknüpft")
+    print(f"{pcb_file.name}: {changed} of {len(comps)} footprints re-linked to the schematic")
 
 
 def main():
@@ -807,7 +812,7 @@ def main():
     comps, nets = read_netlist()
     missing = set(comps) - set(placement)
     if missing:
-        raise SystemExit(f"Keine Platzierung für: {', '.join(sorted(missing))}")
+        raise SystemExit(f"No placement for: {', '.join(sorted(missing))}")
 
     board = prepare_project(pcb_file)
     clear_board(board)
@@ -833,7 +838,7 @@ def main():
         x, y, rot, side = placement[ref]
         fp.SetPosition(pos(x, y))
         fp.SetOrientationDegrees(rot)
-        # Bezeichner nur auf der Fab-Ebene: für Bestückungsdruck ist auf 13,5 mm kein Platz
+        # designators only on the Fab layer: there is no room for silkscreen on 13.5 mm
         fp.Reference().SetLayer(pcbnew.F_Fab)
         fp.Reference().SetTextSize(pcbnew.VECTOR2I(mm(0.5), mm(0.5)))
         fp.Reference().SetTextThickness(mm(0.08))
@@ -842,9 +847,9 @@ def main():
         if side == "B":
             fp.Flip(fp.GetPosition(), pcbnew.FLIP_DIRECTION_LEFT_RIGHT)
             fp.Reference().SetLayer(pcbnew.B_Fab)
-        if comp["dnp"]:  # optional unten: nicht bestücken (Bestückungsliste/Stückliste mit --exclude-dnp)
+        if comp["dnp"]:  # optional on the bottom: do not populate (placement file/BOM with --exclude-dnp)
             fp.SetDNP(True)
-        if comp["no_bom"]:  # z. B. JP1 (Lötbrücke auf 0603-Pads): wie im Schaltplan nicht in Stückliste/Bestückung
+        if comp["no_bom"]:  # e.g. JP1 (solder jumper on 0603 pads): as in the schematic not in BOM/placement
             fp.SetExcludedFromBOM(True)
             fp.SetExcludedFromPosFiles(True)
         footprints[ref] = fp
@@ -863,7 +868,7 @@ def main():
     preroute_ties(board, footprints)
     preroute_bat_in(board, footprints)
     preroute_battery_vsys(board, footprints)
-    # preroute_vled(board, footprints)  # seit 2026-11-06 liegt die J7-Gruppe unter USB-C, route_fix verbindet sie
+    # preroute_vled(board, footprints)  # since 2026-11-06 the J7 group is under USB-C, route_fix connects it
     preroute_vbat_escape(board, footprints)
     module_vias = module_ground_vias(board, footprints["U1"])
     for ref, num, ep_num in EP_TIES:
@@ -879,8 +884,8 @@ def main():
     top = sum(1 for p in placement.values() if p[3] == "F")
     shown = pcb_file.relative_to(HARDWARE.parent) if pcb_file.is_relative_to(HARDWARE.parent) else pcb_file
     dnp = sum(1 for c in comps.values() if c["dnp"])
-    print(f"{shown}: {LAYERS} Lagen, {len(comps)} Bauteile ({top} oben, {len(comps) - top} unten, davon {dnp} DNP), "
-          f"Antennen-Sperrfläche {keepout:.1f} mm, {module_vias} GND-Vias im Modul-Pad")
+    print(f"{shown}: {LAYERS} layers, {len(comps)} components ({top} top, {len(comps) - top} bottom, {dnp} of them DNP), "
+          f"antenna keepout {keepout:.1f} mm, {module_vias} GND vias in the module pad")
 
 
 if __name__ == "__main__":

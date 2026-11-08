@@ -2,7 +2,7 @@
 	(version 20241229)
 	(generator "louie")
 	(layer "F.Cu")
-	(descr "6 SMD-Lötpads im 2,00-mm-Raster (Stiftleiste oder Litzen). Keine Bestückung.")
+	(descr "6 SMD solder pads at 2.00 mm pitch (pin header or stranded wires). Not populated.")
 	(tags "solder pad header")
 	(property "Reference" "REF**" (at 0 -1.6 0) (layer "F.Fab") (effects (font (size 0.5 0.5) (thickness 0.08))))
 	(property "Value" "SolderPads_1x06" (at 0 1.6 0) (layer "F.Fab") (hide yes) (effects (font (size 0.5 0.5) (thickness 0.08))))

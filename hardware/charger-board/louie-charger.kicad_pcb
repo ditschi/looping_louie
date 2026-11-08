@@ -79,7 +79,7 @@
 	)
 	(net 0 "")
 	(net 1 "/BAT")
-	(net 2 "/BRUECKE")
+	(net 2 "/BRIDGE")
 	(net 3 "/CC1")
 	(net 4 "/CC2")
 	(net 5 "/GND")
@@ -109,7 +109,7 @@
 				)
 			)
 		)
-		(property "Value" "Akku -"
+		(property "Value" "Battery -"
 			(at 0 2.05 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -1381,7 +1381,7 @@
 				)
 			)
 		)
-		(property "Value" "Akku +"
+		(property "Value" "Battery +"
 			(at 0 2.05 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -2066,7 +2066,7 @@
 		(layer "F.Cu")
 		(uuid "678815ea-9ba4-417e-99bd-a64e445fec4b")
 		(at 120.4 75.5)
-		(descr "4 SMD-Lötpads für Litzen (Kabel zur Ladeplatine), Raster 2,0 mm. Keine Bestückung.")
+		(descr "4 SMD solder pads for stranded wires (cable to the charger board), 2.0 mm pitch. Not populated.")
 		(tags "solder pad wire")
 		(property "Reference" "J103"
 			(at 0 0 0)
@@ -2079,7 +2079,7 @@
 				)
 			)
 		)
-		(property "Value" "Kabel Hauptplatine"
+		(property "Value" "Main board cable"
 			(at 0 4.4 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -2460,7 +2460,7 @@
 				)
 			)
 		)
-		(property "Value" "rot"
+		(property "Value" "red"
 			(at 0 1.43 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -3937,7 +3937,7 @@
 				(justify mirror)
 			)
 		)
-		(property "Value" "Kontakt"
+		(property "Value" "Contact"
 			(at 0 -2.05 0)
 			(layer "B.Fab")
 			(hide yes)
@@ -4076,7 +4076,7 @@
 			(at 0 0 180)
 			(size 2 2)
 			(layers "B.Cu" "B.Mask")
-			(net 2 "/BRUECKE")
+			(net 2 "/BRIDGE")
 			(uuid "c143afd8-7701-43dd-87eb-6961a788aa6b")
 		)
 		(embedded_fonts no)
@@ -4099,7 +4099,7 @@
 				(justify mirror)
 			)
 		)
-		(property "Value" "Kontakt"
+		(property "Value" "Contact"
 			(at 0 -2.05 0)
 			(layer "B.Fab")
 			(hide yes)
@@ -4238,7 +4238,7 @@
 			(at 0 0 180)
 			(size 2 2)
 			(layers "B.Cu" "B.Mask")
-			(net 2 "/BRUECKE")
+			(net 2 "/BRIDGE")
 			(uuid "1c1f4a9b-b95c-4f79-82c3-852d723d4d6c")
 		)
 		(embedded_fonts no)
@@ -4327,7 +4327,7 @@
 		(layer "Edge.Cuts")
 		(uuid "27b6d420-e37a-4821-ab57-201162bcb417")
 	)
-	(gr_text "LADEN"
+	(gr_text "CHARGE"
 		(at 93 71.4 0)
 		(layer "F.SilkS")
 		(uuid "de323436-05e3-4a83-a961-11907f056929")
@@ -4415,7 +4415,7 @@
 			)
 		)
 	)
-	(gr_text "Brücke"
+	(gr_text "Bridge"
 		(at 100 80.45 0)
 		(layer "B.SilkS")
 		(uuid "3372f769-bb17-4ca7-a459-ec39a6f399a3")
@@ -4427,7 +4427,7 @@
 			(justify mirror)
 		)
 	)
-	(gr_text "Louie Lader v0.1"
+	(gr_text "Louie Charger v0.1"
 		(at 100 73 0)
 		(layer "B.SilkS")
 		(uuid "e96a57aa-5357-47e9-8276-7ea643548fb7")
@@ -6477,7 +6477,7 @@
 		(net_name "/GND")
 		(layer "F.Cu")
 		(uuid "0304055d-d4f1-4528-a731-8aa9db10c596")
-		(name "GND oben")
+		(name "GND top")
 		(hatch edge 0.5)
 		(connect_pads yes
 			(clearance 0.25)
@@ -6909,7 +6909,7 @@
 		(net_name "/GND")
 		(layer "B.Cu")
 		(uuid "c7f268bf-bc48-44cb-819b-526c05cc20d9")
-		(name "GND unten")
+		(name "GND bottom")
 		(hatch edge 0.5)
 		(connect_pads yes
 			(clearance 0.25)

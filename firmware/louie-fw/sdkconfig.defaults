@@ -1,0 +1,23 @@
+# Shared settings for all boards (docs/firmware-architecture.md 2). Board-specific files follow when the board
+# firmware needs them (console on USB-Serial-JTAG, partition table per flash size).
+
+# Rust needs more main task stack than C (default 3 KB)
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+CONFIG_ESP_SYSTEM_EVENT_TASK_STACK_SIZE=4096
+CONFIG_FREERTOS_IDLE_TASK_STACKSIZE=4096
+CONFIG_PTHREAD_TASK_STACK_SIZE_DEFAULT=4096
+
+# Dev board and target module: 8 MB flash (WROOM-1-N8 / MINI-1-H8)
+CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
+
+# Console: primary UART0 (CH343 port on the Waveshare board, keys for the probes), secondary USB-Serial-JTAG
+# (output only). The UART port stays connected in deep sleep, USB-Serial-JTAG does not.
+CONFIG_ESP_CONSOLE_UART_DEFAULT=y
+CONFIG_ESP_CONSOLE_SECONDARY_USB_SERIAL_JTAG=y
+
+# Watchdogs: interrupt WDT resets on its own; task WDT panics so that a hanging loop resets (4.1)
+CONFIG_ESP_INT_WDT=y
+CONFIG_ESP_TASK_WDT_PANIC=y
+
+# Brownout detector on, so that the reset reason shows supply dips
+CONFIG_ESP_BROWNOUT_DET=y

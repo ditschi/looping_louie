@@ -545,7 +545,7 @@
       },
       {
         "netclass": "Power",
-        "pattern": "/BRUECKE"
+        "pattern": "/BRIDGE"
       },
       {
         "netclass": "USB_Power",

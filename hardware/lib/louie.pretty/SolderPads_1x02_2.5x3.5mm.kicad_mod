@@ -2,7 +2,7 @@
 	(version 20241229)
 	(generator "louie")
 	(layer "F.Cu")
-	(descr "2 große SMD-Lötpads 2,5 × 3,5 mm, 1 mm Abstand, für Litzen 0,25–0,5 mm² (Zelle direkt: 1 = +, 2 = −). Keine Bestückung.")
+	(descr "2 large SMD solder pads 2.5 × 3.5 mm, 1 mm gap, for stranded wires 0.25–0.5 mm² (cell direct: 1 = +, 2 = −). Not populated.")
 	(tags "solder pad wire battery")
 	(property "Reference" "REF**" (at 0 -2.4 0) (layer "F.Fab") (effects (font (size 0.5 0.5) (thickness 0.08))))
 	(property "Value" "SolderPads_1x02_2.5x3.5mm" (at 0 2.4 0) (layer "F.Fab") (hide yes) (effects (font (size 0.5 0.5) (thickness 0.08))))

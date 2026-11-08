@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Holt Symbole, Footprints und 3D-Modelle aller LCSC-Teile aus bom/teile.csv
-in die Projektbibliothek hardware/lib/lcsc.*
+"""Fetches symbols, footprints and 3D models of all LCSC parts from bom/parts.csv
+into the project library hardware/lib/lcsc.*
 
-Aufruf (über just):  just parts            # nur fehlende Teile
-                     just parts-update     # alle neu holen
+Usage (via just):  just parts            # missing parts only
+                   just parts-update     # fetch all again
 """
 import csv
 import re
@@ -13,34 +13,34 @@ import time
 from pathlib import Path
 
 HARDWARE = Path(__file__).resolve().parent.parent
-BOM = HARDWARE / "bom" / "teile.csv"
+BOM = HARDWARE / "bom" / "parts.csv"
 LIB = HARDWARE / "lib" / "lcsc"
-PAUSE_S = 3  # die EasyEDA-API sperrt bei zu schnellen Abfragen (HTTP 403)
+PAUSE_S = 3  # the EasyEDA API blocks requests that come too fast (HTTP 403)
 
 
 def lcsc_ids():
     with BOM.open(newline="") as f:
         for row in csv.DictReader(f):
-            if row["bibliothek"] == "lcsc" and row["lcsc"]:
-                yield row["lcsc"], row["bauteil"]
+            if row["library"] == "lcsc" and row["lcsc"]:
+                yield row["lcsc"], row["part"]
 
 
 def fetch(lcsc_id, overwrite):
     cmd = ["easyeda2kicad", "--full", "--project-relative", f"--lcsc_id={lcsc_id}", "--output", str(LIB)]
     if overwrite:
         cmd.append("--overwrite")
-    # cwd = hardware/, damit --project-relative "${KIPRJMOD}/lib/..." schreibt
+    # cwd = hardware/, so that --project-relative writes "${KIPRJMOD}/lib/..."
     result = subprocess.run(cmd, cwd=HARDWARE, capture_output=True, text=True)
     output = result.stdout + result.stderr
     if "already exists" in output:
-        return "vorhanden"
+        return "present"
     if "[ERROR]" in output or result.returncode != 0:
-        return "FEHLER: " + " | ".join(line for line in output.splitlines() if "ERROR" in line)
-    return "geholt"
+        return "ERROR: " + " | ".join(line for line in output.splitlines() if "ERROR" in line)
+    return "fetched"
 
 
 def fix_model_paths():
-    """Die KiCad-Projekte liegen in hardware/<platine>/, die Bibliothek in hardware/lib/."""
+    """The KiCad projects live in hardware/<board>/, the library in hardware/lib/."""
     for mod in (LIB.parent / "lcsc.pretty").glob("*.kicad_mod"):
         text = mod.read_text()
         fixed = re.sub(r"\$\{KIPRJMOD\}/lib/", "${KIPRJMOD}/../lib/", text)
@@ -48,11 +48,11 @@ def fix_model_paths():
             mod.write_text(fixed)
 
 
-# Eigene Footprints, abgeleitet von geholten: (neuer Name, Vorlage, 3D-Modell, LCSC-Nummer).
-# ESP32-C6-MINI-1: EasyEDA liefert die Pads um bis zu 20 µm neben dem 0,8-mm-Raster; die Pads des
-# C3-MINI-1 sind identisch zum C6 (KiCad RF_Module:ESP32-C6-MINI-1, max. 5 µm), deshalb die C3-Datei
-# mit dem 3D-Modell des C6 (siehe docs/hauptplatine-c6.md 2.1). Den KiCad-Footprint nicht verwenden:
-# sein Courtyard enthält eine 43 × 20 mm große Antennen-Sperrzone.
+# Own footprints derived from fetched ones: (new name, template, 3D model, LCSC number).
+# ESP32-C6-MINI-1: EasyEDA delivers the pads up to 20 µm off the 0.8 mm grid; the pads of the
+# C3-MINI-1 are identical to the C6 (KiCad RF_Module:ESP32-C6-MINI-1, max. 5 µm), hence the C3 file
+# with the 3D model of the C6 (see docs/main-board-c6.md 2.1). Do not use the KiCad footprint:
+# its courtyard contains a 43 × 20 mm antenna keepout zone.
 DERIVED = [
     ("WIFIM-SMD_ESP32-C6-MINI-1", "WIFIM-SMD_ESP32-C3-MINI-1",
      "WIFIM-SMD_61P-L16.6-W13.2-P0.80-ESP32-C6-MINI-1-N4", "C42403058"),
@@ -64,7 +64,7 @@ def derive_footprints():
     for name, template, model, lcsc in DERIVED:
         src = pretty / f"{template}.kicad_mod"
         if not src.exists() or not (LIB.parent / "lcsc.3dshapes" / f"{model}.wrl").exists():
-            print(f"{name}: Vorlage oder 3D-Modell fehlt")
+            print(f"{name}: template or 3D model missing")
             continue
         text = src.read_text().replace(template, name)
         text = re.sub(r'\(property "LCSC Part" "[^"]*"\)', f'(property "LCSC Part" "{lcsc}")', text)
@@ -72,11 +72,11 @@ def derive_footprints():
         (pretty / f"{name}.kicad_mod").write_text(text)
 
 
-# KiCad-Footprints mit fehlendem 3D-Modell: Kopie nach louie.pretty mit dem Modell eines LCSC-Teils.
-# (KiCad-Footprint, Ziel, Modell, Versatz x/y/z, Drehung z, Bestückungsdruck entfernen)
-# HRO TYPE-C-31-M-12: Modell um 0,85 mm verschoben, damit die Vorderkante wie im KiCad-Footprint bei
-# +3,7 mm liegt (Modell-Y zeigt zur Footprint-Rückseite); der Umriss im
-# Bestückungsdruck läuft über die Platinenkante.
+# KiCad footprints with a missing 3D model: copy to louie.pretty with the model of an LCSC part.
+# (KiCad footprint, target, model, offset x/y/z, rotation z, remove silkscreen)
+# HRO TYPE-C-31-M-12: model shifted by 0.85 mm so that the front edge lies at +3.7 mm as in the KiCad
+# footprint (model Y points to the footprint rear side); the outline in the
+# silkscreen runs over the board edge.
 KICAD_DERIVED = [
     ("Connector_USB/USB_C_Receptacle_HRO_TYPE-C-31-M-12", "USB_C_Receptacle_HRO_TYPE-C-31-M-12",
      "USB-C_SMD-TYPE-C-31-M-12_1", (0, -0.85, 0), 180, True),
@@ -91,7 +91,7 @@ def derive_kicad_footprints():
         lib, fp = src.split("/")
         path = KICAD_FP / f"{lib}.pretty" / f"{fp}.kicad_mod"
         if not path.exists():
-            print(f"{name}: {path} fehlt")
+            print(f"{name}: {path} missing")
             continue
         text = path.read_text().replace(f'(footprint "{fp}"', f'(footprint "{name}"', 1)
         m = text.find("(model ")
@@ -115,8 +115,8 @@ def derive_kicad_footprints():
 
 
 def fix_courtyards():
-    """EasyEDA-Courtyards sind teils kleiner als die Pads (z. B. SMAF). Rechteckiges Courtyard auf
-    Pads + 0,25 mm erweitern, damit Platzierungsprüfung und DRC stimmen."""
+    """EasyEDA courtyards are sometimes smaller than the pads (e.g. SMAF). Extend the rectangular courtyard to
+    pads + 0.25 mm so that the placement check and the DRC are correct."""
     for mod in (LIB.parent / "lcsc.pretty").glob("*.kicad_mod"):
         text = mod.read_text()
         crt = re.findall(r"\(fp_line \(start ([-\d.]+) ([-\d.]+)\) \(end ([-\d.]+) ([-\d.]+)\) \(layer F\.CrtYd\)", text)
@@ -150,7 +150,7 @@ def main():
         if i:
             time.sleep(PAUSE_S)
         status = fetch(lcsc_id, overwrite)
-        failed |= status.startswith("FEHLER")
+        failed |= status.startswith("ERROR")
         print(f"{lcsc_id:<10} {name:<22} {status}")
     fix_model_paths()
     fix_courtyards()

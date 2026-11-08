@@ -127,7 +127,7 @@ coupling_gap_mm = 0.6
 clearance_margin_mm = 0.05
 
 [antenna]
-area_prefix = "Antenne"          # rule areas whose name starts with this
+area_prefix = "Antenna"          # rule areas whose name starts with this
 allowed_nets = []
 margin_mm = 2.0
 
@@ -165,7 +165,7 @@ ref = "U1"
 thermal_pad = "U2:9"
 
 # Current paths: pad -> pad on one net; current_a = continuous current (width check), peak_a = peak (voltage drop).
-# Motor current up to 2 A (IPROPI limit, R1 1.24 k); continuous current not measured yet (hardware-konzept.md).
+# Motor current up to 2 A (IPROPI limit, R1 1.24 k); continuous current not measured yet (hardware-concept.md).
 [[boards.main-board.paths]]
 name = "OUT_A U2 -> BT1"
 from = "U2:2"

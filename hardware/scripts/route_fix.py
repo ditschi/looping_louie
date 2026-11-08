@@ -1,82 +1,105 @@
-"""Labyrinth-Router für die 4-Lagen-Hauptplatine (docs/hauptplatine-c6.md Kapitel 11).
+"""Maze router for the 4-layer main board (docs/main-board-c6.md chapter 11).
 
-Freerouting lässt auf der 4-Lagen-Platine 10–20 Signalverbindungen offen (Kapitel 11.4). Dieses Skript routet
-die Verbindungen selbst:
+Freerouting leaves 10–20 signal connections open on the 4-layer board (chapter 11.4). This script routes the
+connections itself:
 
-- Grundlage ist die Liste offener Verbindungen aus dem KiCad-DRC (Pad–Pad, Pad–Bahn, Bahn–Bahn).
-- Für jede Verbindung sucht ein A* im 0,05-mm-Raster einen Weg über die Signallagen F.Cu, In2.Cu und B.Cu
-  (In1 ist die GND-Lage und bleibt frei). Lagenwechsel nur an Stellen, an denen ein Via 0,3/0,5 mm auf allen
-  vier Lagen Platz hat (Abstand, Bohrungen, Sperrflächen der Antenne und des Rands).
-- Hindernisse werden geometrisch gerastert: fremde Bahnen und Pads mit Abstand 0,15 mm (+ Reserve), Vias,
-  Bohrungen mit Loch–Kupfer-Abstand, Sperrflächen ohne Bahnen bzw. ohne Vias.
-- Kosten: Länge, Knicke, Vias; Innenlage In2 billiger als die Außenlagen; F.Cu unter dem Funkmodul teuer,
-  vor jedem Signal-Randpad des Moduls eine Fluchtgasse, die fremde Netze meiden.
-- Aufreißen und neu routen (rip-up and reroute) mit Verlaufskosten nach PathFinder: eigene Bahnen sind weiche
-  Hindernisse; nur wenn ein Weg anders nicht geht, werden die störenden Netze entfernt und später neu geroutet.
-- Danach GND: Flächeninseln ohne Via bekommen von einem ihrer Pads eine kurze Bahn zu einem Via auf die GND-Lage.
-- Bleibt etwas offen, beginnt route_all() von vorn und routet die offenen Netze zuerst.
-- Bahnbreite je Netz (WIDTHS): VSYS 0,4 mm, nie unter 0,3 mm (Teiler/Testpunkt 0,15 mm), BAT_IN/VLED 0,4 mm,
-  3V3 0,25 mm (Engstellen 0,15 mm), sonst 0,15 mm.
+- The basis is the list of open connections from the KiCad DRC (pad–pad, pad–track, track–track).
+- For each connection an A* on a 0.05 mm grid searches a path over the signal layers F.Cu, In2.Cu and B.Cu
+  (In1 is the GND layer and stays free). Layer changes only at spots where a 0.3/0.5 mm via fits on all four
+  layers (clearance, drill holes, keepout areas of the antenna and the board edge).
+- Obstacles are rasterized geometrically: foreign tracks and pads with 0.15 mm clearance (+ margin), vias,
+  drill holes with hole–copper clearance, keepout areas without tracks or without vias.
+- Costs: length, bends, vias; inner layer In2 cheaper than the outer layers; F.Cu under the radio module
+  expensive, in front of each signal edge pad of the module an escape lane that foreign nets avoid.
+- Rip-up and reroute with PathFinder history costs: own tracks are soft obstacles; only if a path is not possible
+  otherwise are the interfering nets removed and rerouted later.
+- Then GND: zone islands without a via get a short track from one of their pads to a via onto the GND layer.
+- If something stays open, route_all() starts over and routes the open nets first.
+- Track width per net (WIDTHS): VSYS 0.4 mm, never below 0.3 mm (divider/test point 0.15 mm), BAT_IN/VLED 0.4 mm,
+  3V3 0.25 mm (bottlenecks 0.15 mm), otherwise 0.15 mm.
 
-Nicht bitgenau wiederholbar: Die Reihenfolge der offenen Verbindungen kommt aus dem KiCad-DRC und hängt von den
-(zufälligen) UUIDs neu gebauter Bahnen ab; bei gleich langen Verbindungen entscheidet diese Reihenfolge. Wiederholte
-Läufe mit gleichen Kosten streuen deshalb (docs/hauptplatine-c6.md 11.4). Ob das Ergebnis regelkonform ist,
-entscheidet am Ende der KiCad-DRC (just drc).
+Not bit-exactly repeatable: the order of the open connections depends on the (random) UUIDs of newly built tracks;
+for connections of equal length and for several items at the same anchor point this order decides. Repeated runs
+with the same costs therefore scatter (docs/main-board-c6.md 11.4). SEED > 0 additionally scatters the order on
+purpose (route.py: attempts beyond the cost variants). Whether the result complies with the rules is decided at the
+end by the KiCad DRC (just drc).
 
-Aufruf: über route.py main-board oder direkt: route_fix.py <platine.kicad_pcb> [netze] [mindestlänge]
+Run time (2026-11-07): the open connections come from the KiCad connectivity in-process (open_connections, same
+edges as the DRC, without kicad-cli per round); rasterized obstacles are cached per geometry (Grid._patch); A*
+works on flat indices. None of the three changes the search result (cross-check: test_route_fix.py).
+
+Usage: via route.py main-board or directly: route_fix.py <board.kicad_pcb> [nets] [min_length]
 """
 import heapq
 import json
 import math
+import random
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 
 import numpy as np
 import pcbnew
 
 GRID = 0.05          # mm
-CLEAR = 0.158        # Abstand 0,15 mm + Reserve (Rasterfehler < 0,005 mm)
-HOLE_CLEAR = 0.31    # Bauteilbohrung–Kupfer innen 0,3 mm + Reserve
-VIA_HOLE_CLEAR = 0.26  # Via-Bohrung–Kupfer 0,25 mm + Reserve
-EDGE = 0.32          # Kupfer–Rand 0,3 mm + Reserve
-VIA_D, VIA_DRILL = 0.5, 0.3  # wie RULES_4L in gen_main_pcb.py
-SKIP_NETS = {"/GND"}  # GND über die Fläche In1 und stitch.py
-# Bahnbreiten je Netz (erst die erste, an Engstellen die weiteren). Die letzte ist die Mindestbreite des Netzes:
-# darunter wird nie geroutet (früher VSYS 0,2 mm, docs/routing-score.md 8.1). Die Motor-Hauptwege (Schottky/Q1 →
-# Puffer → VM, OUT_A/OUT_B, VBUS, BAT_IN) sind in gen_main_pcb.py mit 0,4–0,5 mm auf den Außenlagen vorgeroutet;
-# hier nur LDO-Eingang (bis ca. 0,4 A), Lastschalter U6/JP1 und VLED (bis 0,5 A, PTC F1). 0,3 mm trägt nach
-# IPC-2221 (20 K) außen ca. 0,7 A, innen (In2, 15 µm) ca. 0,37 A; deshalb VLED mindestens 0,4 mm.
+CLEAR = 0.158        # clearance 0.15 mm + margin (grid error < 0.005 mm)
+HOLE_CLEAR = 0.31    # component hole–copper inner 0.3 mm + margin
+VIA_HOLE_CLEAR = 0.26  # via hole–copper 0.25 mm + margin
+EDGE = 0.32          # copper–edge 0.3 mm + margin
+VIA_D, VIA_DRILL = 0.5, 0.3  # like RULES_4L in gen_main_pcb.py
+SKIP_NETS = {"/GND"}  # GND through the In1 zone and stitch.py
+# Track widths per net (the first one first, the others at bottlenecks). The last one is the net's minimum width:
+# nothing is ever routed below it (formerly VSYS 0.2 mm, docs/routing-score.md 8.1). The main motor paths
+# (Schottky/Q1 → buffer → VM, OUT_A/OUT_B, VBUS, BAT_IN) are pre-routed in gen_main_pcb.py with 0.4–0.5 mm on the
+# outer layers; here only the LDO input (up to about 0.4 A), load switch U6/JP1 and VLED (up to 0.5 A, PTC F1).
+# Per IPC-2221 (20 K) 0.3 mm carries about 0.7 A outside, about 0.37 A inside (In2, 15 µm); so VLED at least 0.4 mm.
 WIDTHS = {"/VSYS": (0.4, 0.3), "/BAT_IN": (0.4,), "/+3V3": (0.25, 0.15), "/VLED": (0.4,), "/VLED_SW": (0.4,)}
-# Pads mit µA-Strom in Leistungsnetzen (Spannungsteiler VSYS, Testpunkt): dort reicht die Mindestbahn
+# pads with µA current in power nets (voltage divider VSYS, test point): the minimum track suffices there.
+# The strings match the DRC/_describe() item description (German KiCad locale: "von" = "of").
 LOW_CURRENT_PADS = {"Pad 1 [/VSYS] von R6", "Pad 1 [/VSYS] von TP1"}
 W_MIN = 0.15
-VIA_COST = 30        # in Rasterschritten (1,5 mm)
+VIA_COST = 30        # in grid steps (1.5 mm)
 BEND_COST = 2
 LAYER_COST = {pcbnew.F_Cu: 1.3, pcbnew.In2_Cu: 1.0, pcbnew.B_Cu: 1.15}
-# F.Cu unter dem Funkmodul ist der einzige Ausweg für die Randpads (Abstand zwischen den Pads 0,4 mm, dazwischen
-# passt keine Bahn); dort teuer, damit Bahnen nicht längs vor den Pads laufen, sondern bald per Via abtauchen.
+# F.Cu under the radio module is the only way out for the edge pads (gap between the pads 0.4 mm, no track fits in
+# between); expensive there so that tracks do not run along in front of the pads but dive down through a via soon.
 MODULE_REF, MODULE_F_COST = "U1", 8.0
-# Fluchtgasse vor jedem Signal-Randpad des Moduls (nach innen, Länge in mm): für fremde Netze teuer und ohne Vias
+# escape lane in front of each signal edge pad of the module (inwards, length in mm): expensive and without vias
+# for foreign nets
 ESCAPE_LEN, ESCAPE_HALF, ESCAPE_COST = 1.4, 0.3, 40.0
-# Aufreißen und neu routen: eigene Bahnen fremder Netze sind „weiche“ Hindernisse mit Zusatzkosten; findet der
-# Weg nur durch sie hindurch, werden diese Netze entfernt und später neu geroutet (je Netz höchstens RIP_MAX mal).
+# Rip-up and reroute: own tracks of foreign nets are "soft" obstacles with extra cost; if the path only goes through
+# them, these nets are removed and rerouted later (at most RIP_MAX times per net).
 RIP_COST, RIP_MAX, HIST_COST = 60.0, 10, 10.0
-# Höchstzahl Routing-Schritte je Durchlauf (Verbindung routen, aufreißen, GND-Insel). Seit den optionalen Teilen
-# unten (2026-11-04) braucht ein Durchlauf mehr als die früheren 300 Schritte.
+# Maximum number of routing steps per pass (route a connection, rip up, GND island). Since the optional parts
+# below (2026-11-04) a pass needs more than the former 300 steps.
 MAX_ROUNDS = 800
-# Erweiterungen 2026-11-06 (hauptplatine-c6.md 11.7), je abschaltbar:
-# ENDPOINT_VIAS: Liegt am Anschluss (Bahn oder Pad) ein Via desselben Netzes (z. B. am Ende einer Vorroute), gilt es auf
-#   allen Signallagen als Start/Ziel – vorher startete der Router nur auf der Lage der Bahn.
-# VIA_UNDER_BODIES: "bottom" = Vias zwischen den Pads unter Bauteilkörpern unten (nicht bestückte DNP-Teile) erlaubt,
-#   unter Bauteilen oben nur, wenn ihr Courtyard es zulässt (Modul-Pad, Thermal-Pad: wie bisher); "none" = unter keinem
-#   Bauteilkörper. Via-in-Pad bleibt immer gesperrt, die Antennen-Sperrflächen ebenso.
-# ISLAND_AREA_SEARCH: Für eine GND-Insel ohne Via die Via-Stelle in der ganzen Füllfläche der Insel suchen, nicht nur
-#   von einem Pad aus; außerdem darf die Bahn in einer schon angebundenen GND-Füllung derselben Lage enden.
+# Extensions 2026-11-06 (main-board-c6.md 11.7), each can be switched off:
+# ENDPOINT_VIAS: if a via of the same net sits at the terminal (track or pad) (e.g. at the end of a pre-route), it
+#   counts as start/target on all signal layers – before, the router started only on the track's layer.
+# VIA_UNDER_BODIES: "bottom" = vias between the pads under component bodies on the bottom (unpopulated DNP parts)
+#   allowed, under components on top only where their courtyard permits (module pad, thermal pad: as before);
+#   "none" = under no component body. Via-in-pad always stays blocked, as do the antenna keepout areas.
+# ISLAND_AREA_SEARCH: for a GND island without a via, search the via spot in the whole fill area of the island, not
+#   only from one pad; in addition the track may end in an already connected GND fill on the same layer.
+# GND_FANOUT_FIRST: before signal routing every GND SMD pad without a via nearby gets a short stub to its own via
+#   onto the GND layer In1 (gnd_fanout); the signals avoid them. The island connection at the end stays as a
+#   fallback.
+# OVAL_DRILLS: block slotted holes (e.g. tabs of the USB-C connector) as a capsule instead of a circle.
+GND_FANOUT_FIRST = True
+OVAL_DRILLS = True
 ENDPOINT_VIAS = True
 VIA_UNDER_BODIES = "bottom"
 ISLAND_AREA_SEARCH = True
-ORDER = "lang"  # lange Verbindungen zuerst (im Versuch am besten: 1 offen statt 14 bei "kurz")
+ORDER = "long"  # long connections first (best in the experiment: 1 open instead of 14 with "short")
+ORDER_ALIASES = {"lang": "long", "kurz": "short", "modul": "module"}  # old German values
+# SEED > 0: weight the length of each connection for the order with a fixed factor per net (1 ± SEED_JITTER).
+# Gives more attempts their own order; SEED = 0 is the order without scatter.
+SEED, SEED_JITTER = 0, 0.25
+# CONN = "fast": open connections from the in-process connectivity (about 0.05 s), "drc": from kicad-cli (about 1 s)
+CONN = "fast"
+# run time per sub-step in seconds (for the trace in fix(trace=...))
+TIMES = {"conn": 0.0, "masks": 0.0, "astar": 0.0}
 SIGNAL_LAYERS = [pcbnew.F_Cu, pcbnew.In2_Cu, pcbnew.B_Cu]
 
 
@@ -93,8 +116,96 @@ def drc_unconnected(pcb):
     return data.get("unconnected_items", [])
 
 
+def _describe(x):
+    """Description of an item as in the (German-locale) DRC report; "[net]" and "von Ref" ("of Ref") are used.
+    The German words are kept on purpose so that both sources give the same strings (see LOW_CURRENT_PADS)."""
+    net, layer = x.GetNetname(), x.GetLayerName()
+    if x.GetClass() == "PAD":
+        return f"Pad {x.GetNumber()} [{net}] von {x.GetParentFootprint().GetReference()} auf {layer}"
+    if x.GetClass() == "PCB_VIA":
+        return f"Via [{net}] auf F.Cu - B.Cu"
+    return f"Leiterbahn [{net}] auf {layer}, Länge {pcbnew.ToMM(x.GetLength()):.4f} mm"
+
+
+def ratsnest(board, skip_nets=SKIP_NETS):
+    """Open connections of the nets without copper zone as item pairs, like the KiCad ratsnest: clusters from the
+    connectivity, then a minimum spanning tree over the anchors (pad center, track ends, via) with Kruskal. For
+    edges of equal length (several items at the same point) KiCad prefers tracks; which of several tracks depends,
+    there as here, on the order in the file. Returns None if a signal net has a copper zone (then the DRC
+    applies)."""
+    if any(not z.GetIsRuleArea() and z.GetNetname() not in skip_nets for z in board.Zones()):
+        return None
+    board.BuildConnectivity()
+    conn = board.GetConnectivity()
+    by_net = {}
+    for x in list(board.GetPads()) + list(board.GetTracks()):
+        if x.GetNetCode() > 0 and x.GetNetname() not in skip_nets:
+            by_net.setdefault(x.GetNetCode(), []).append(x)
+    rank = {"PCB_TRACK": 0, "PCB_ARC": 0, "PAD": 1, "PCB_VIA": 2}
+    out = []
+    for items in by_net.values():
+        uids = {x.m_Uuid.AsString() for x in items}
+        cluster, k = {}, 0
+        for x in items:
+            if x.m_Uuid.AsString() in cluster:
+                continue
+            cluster[x.m_Uuid.AsString()] = k
+            stack = [x]
+            while stack:
+                y = stack.pop()
+                for z in list(conn.GetConnectedTracks(y)) + list(conn.GetConnectedPads(y)):
+                    u = z.m_Uuid.AsString()
+                    if u in uids and u not in cluster:
+                        cluster[u] = k
+                        stack.append(z)
+            k += 1
+        if k < 2:
+            continue
+        anchors = []  # (x, y, cluster, item)
+        for x in sorted(items, key=lambda x: rank.get(x.GetClass(), 3)):
+            pts = [x.GetStart(), x.GetEnd()] if rank.get(x.GetClass()) == 0 else [x.GetPosition()]
+            anchors += [(q.x, q.y, cluster[x.m_Uuid.AsString()], x) for q in pts]
+        edges = sorted(((ax - bx) ** 2 + (ay - by) ** 2, i, j)
+                       for i, (ax, ay, ac, _) in enumerate(anchors)
+                       for j, (bx, by, bc, _) in enumerate(anchors[i + 1:], i + 1) if ac != bc)
+        parent = list(range(k))
+
+        def find(a):
+            while parent[a] != a:
+                parent[a] = parent[parent[a]]
+                a = parent[a]
+            return a
+        for _, i, j in edges:
+            ra, rb = find(anchors[i][2]), find(anchors[j][2])
+            if ra != rb:
+                parent[ra] = rb
+                out.append((anchors[i][3], anchors[j][3]))
+    return out
+
+
+def open_connections(pcb, board=None):
+    """Open connections in the format of drc_unconnected (items: uuid, description, pos in mm). CONN = "fast":
+    ratsnest() in-process (same count and same spanning tree length as the DRC, cross-check in
+    test_route_speed.py); otherwise, or with copper zones on signal nets, the KiCad DRC (reads the file pcb).
+    board: already loaded board (saves LoadBoard, see fix())."""
+    t0 = time.perf_counter()
+    pairs = ratsnest(board if board is not None else pcbnew.LoadBoard(str(pcb))) if CONN == "fast" else None
+    if pairs is None:
+        result = drc_unconnected(pcb)
+    else:
+        result = [{"items": [{"uuid": x.m_Uuid.AsString(), "description": _describe(x),
+                              "pos": {"x": pcbnew.ToMM(x.GetPosition().x), "y": pcbnew.ToMM(x.GetPosition().y)}}
+                             for x in pair]} for pair in pairs]
+    TIMES["conn"] += time.perf_counter() - t0
+    return result
+
+
 class Grid:
-    """Raster über die Platine mit Hilfsfunktionen zum Eintragen von Hindernissen."""
+    """Grid over the board with helper functions for entering obstacles. The rasterized shapes (circle, segment,
+    polygon, rectangle) are cached per geometry and radius (pads and most tracks do not change from round to
+    round); the result is bit-identical to recomputing."""
+    CACHE_BYTES = 200_000_000
+    _cache, _cache_key, _cache_bytes = {}, None, 0
 
     def __init__(self, board):
         box = board.GetBoardEdgesBoundingBox()
@@ -104,6 +215,19 @@ class Grid:
         xs = self.x0 + np.arange(self.nx) * GRID
         ys = self.y0 + np.arange(self.ny) * GRID
         self.X, self.Y = np.meshgrid(xs, ys)
+        if Grid._cache_key != (self.x0, self.y0, self.nx, self.ny):  # different grid: clear the cache
+            Grid._cache, Grid._cache_key, Grid._cache_bytes = {}, (self.x0, self.y0, self.nx, self.ny), 0
+
+    def _patch(self, m, key, compute):
+        """m[s] |= shape; shape (slice s, bool array) from the cache or compute()."""
+        hit = Grid._cache.get(key)
+        if hit is None:
+            hit = compute()
+            if Grid._cache_bytes > Grid.CACHE_BYTES:
+                Grid._cache, Grid._cache_bytes = {}, 0
+            Grid._cache[key] = hit
+            Grid._cache_bytes += hit[1].nbytes + 200
+        m[hit[0]] |= hit[1]
 
     def empty(self):
         return np.zeros((self.ny, self.nx), dtype=bool)
@@ -116,28 +240,37 @@ class Grid:
         return slice(i0, i1), slice(j0, j1)
 
     def circle(self, m, p, r):
+        self._patch(m, ("c", p.x, p.y, r), lambda: self._circle(p, r))
+
+    def _circle(self, p, r):
         cx, cy = pcbnew.ToMM(p.x), pcbnew.ToMM(p.y)
         s = self._sel(cx - r, cy - r, cx + r, cy + r)
-        m[s] |= (self.X[s] - cx) ** 2 + (self.Y[s] - cy) ** 2 < r ** 2
+        return s, (self.X[s] - cx) ** 2 + (self.Y[s] - cy) ** 2 < r ** 2
 
     def segment(self, m, a, b, r):
+        self._patch(m, ("s", a.x, a.y, b.x, b.y, r), lambda: self._segment(a, b, r))
+
+    def _segment(self, a, b, r):
         ax, ay, bx, by = (pcbnew.ToMM(v) for v in (a.x, a.y, b.x, b.y))
         s = self._sel(min(ax, bx) - r, min(ay, by) - r, max(ax, bx) + r, max(ay, by) + r)
         dx, dy = bx - ax, by - ay
         ll = dx * dx + dy * dy
         X, Y = self.X[s], self.Y[s]
         t = np.clip(((X - ax) * dx + (Y - ay) * dy) / ll, 0, 1) if ll > 0 else 0
-        m[s] |= (X - ax - t * dx) ** 2 + (Y - ay - t * dy) ** 2 < r ** 2
+        return s, (X - ax - t * dx) ** 2 + (Y - ay - t * dy) ** 2 < r ** 2
 
     def polygon(self, m, pts, r):
-        """Konvexes oder beliebiges Polygon (Liste (x, y) in mm), um r aufgeweitet: Inneres + Kanten-Schläuche."""
+        """Convex or arbitrary polygon (list of (x, y) in mm), grown by r: interior + edge tubes."""
+        self._patch(m, ("p", tuple(pts), r), lambda: self._polygon(pts, r))
+
+    def _polygon(self, pts, r):
         xs = np.array([p[0] for p in pts])
         ys = np.array([p[1] for p in pts])
         s = self._sel(xs.min() - r, ys.min() - r, xs.max() + r, ys.max() + r)
         X, Y = self.X[s], self.Y[s]
         inside = np.zeros(X.shape, dtype=bool)
         n = len(pts)
-        for k in range(n):  # Strahl-Test
+        for k in range(n):  # ray casting test
             x1, y1, x2, y2 = xs[k], ys[k], xs[(k + 1) % n], ys[(k + 1) % n]
             cond = (y1 > Y) != (y2 > Y)
             with np.errstate(divide="ignore", invalid="ignore"):
@@ -150,13 +283,17 @@ class Grid:
             ll = dx * dx + dy * dy
             t = np.clip(((X - ax) * dx + (Y - ay) * dy) / ll, 0, 1) if ll > 0 else 0
             near = near | ((X - ax - t * dx) ** 2 + (Y - ay - t * dy) ** 2 < r ** 2)
-        m[s] |= near
+        return s, near
 
     def rect(self, m, box, r):
+        key = ("r", box.GetLeft(), box.GetTop(), box.GetRight(), box.GetBottom(), r)
+        self._patch(m, key, lambda: self._rect(box, r))
+
+    def _rect(self, box, r):
         xa, ya = pcbnew.ToMM(box.GetLeft()) - r, pcbnew.ToMM(box.GetTop()) - r
         xb, yb = pcbnew.ToMM(box.GetRight()) + r, pcbnew.ToMM(box.GetBottom()) + r
         s = self._sel(xa, ya, xb, yb)
-        m[s] |= (self.X[s] > xa) & (self.X[s] < xb) & (self.Y[s] > ya) & (self.Y[s] < yb)
+        return s, (self.X[s] > xa) & (self.X[s] < xb) & (self.Y[s] > ya) & (self.Y[s] < yb)
 
     def border(self, m, r):
         k = int(math.ceil(r / GRID))
@@ -173,7 +310,7 @@ class Grid:
 
 
 class Obstacles:
-    """Hindernisse eines Platinenstands; masks() liefert die Sperrraster für ein Netz und eine Bahnbreite."""
+    """Obstacles of a board state; masks() returns the blocking grids for a net and a track width."""
 
     def __init__(self, board):
         self.board = board
@@ -187,7 +324,7 @@ class Obstacles:
             g.rect(m, module.GetCourtyard(pcbnew.F_CrtYd).BBox(), 0)
             g.extra_cost[m] = MODULE_F_COST
             c = module.GetPosition()
-            self.escapes = []  # (Netzcode, Rechteck in mm)
+            self.escapes = []  # (net code, rectangle in mm)
             for pad in module.Pads():
                 if not pad.GetNetname() or pad.GetNetname() == "/GND" or pad.GetNumber() == "49" \
                         or pad.GetNetname().startswith("unconnected"):
@@ -197,7 +334,7 @@ class Obstacles:
                 x0, x1 = pcbnew.ToMM(b.GetLeft()), pcbnew.ToMM(b.GetRight())
                 y0, y1 = pcbnew.ToMM(b.GetTop()), pcbnew.ToMM(b.GetBottom())
                 qx, qy = pcbnew.ToMM(q.x), pcbnew.ToMM(q.y)
-                if abs(dy) > abs(dx):  # Pad an einer Längskante: Gasse in y-Richtung
+                if abs(dy) > abs(dx):  # pad on a long edge: lane in y direction
                     ya, yb = (y1, y1 + ESCAPE_LEN) if dy > 0 else (y0 - ESCAPE_LEN, y0)
                     rect = (qx - ESCAPE_HALF, ya, qx + ESCAPE_HALF, yb)
                 else:
@@ -220,9 +357,10 @@ class Obstacles:
         return self.pad_polys[key]
 
     def masks(self, net, half, soft_items=()):
-        """Sperrraster je Signallage für die Mittellinie einer Bahn mit halber Breite `half`, und das
-        Via-Raster (True = dort darf kein Via-Mittelpunkt liegen). Elemente in soft_items (UUIDs) landen statt
-        dessen in self.soft (je Lage) und self.soft_via."""
+        """Blocking grid per signal layer for the center line of a track with half width `half`, and the via grid
+        (True = no via center may lie there). Items in soft_items (UUIDs) go into self.soft (per layer) and
+        self.soft_via instead."""
+        t0 = time.perf_counter()
         g, code = self.grid, net.GetNetCode()
         hard_track = {L: g.empty() for L in SIGNAL_LAYERS}
         hard_via = g.empty()
@@ -235,7 +373,7 @@ class Obstacles:
             track, via = (self.soft, self.soft_via) if soft else (hard_track, hard_via)
             if t.GetClass() == "PCB_VIA":
                 p = t.GetPosition()
-                if same:  # Lochabstand 0,25 mm zum eigenen Via
+                if same:  # hole clearance 0.25 mm to the own via
                     g.circle(via, p, VIA_DRILL + 0.3)
                     continue
                 g.circle(via, p, max(2 * rv + CLEAR, VIA_DRILL / 2 + VIA_HOLE_CLEAR + rv))
@@ -252,13 +390,13 @@ class Obstacles:
         track, via = hard_track, hard_via
         for pad in self.board.GetPads():
             drill = pad.GetDrillSize()
-            if drill.x > 0:  # Bohrung: Loch–Kupfer auf allen Lagen
-                r = pcbnew.ToMM(max(drill.x, drill.y)) / 2 + HOLE_CLEAR
+            if drill.x > 0:  # drill hole: hole–copper on all layers; slot as capsule (OVAL_DRILLS)
+                a, b, r = drill_capsule(pad)
                 for L in SIGNAL_LAYERS:
-                    g.circle(track[L], pad.GetPosition(), r + half)
-                g.circle(via, pad.GetPosition(), r + rv)
+                    g.segment(track[L], a, b, r + half)
+                g.segment(via, a, b, r + rv)
             if pad.GetNetCode() == code and code != 0:
-                if drill.x <= 0:  # kein Via ins eigene SMD-Pad (kein Via-in-Pad)
+                if drill.x <= 0:  # no via into the own SMD pad (no via-in-pad)
                     for L in (pcbnew.F_Cu, pcbnew.B_Cu):
                         if pad.IsOnLayer(L):
                             for pts in self._pad_pts(pad, L):
@@ -268,10 +406,13 @@ class Obstacles:
                 if pad.IsOnLayer(L):
                     for pts in self._pad_pts(pad, L):
                         g.polygon(track[L], pts, CLEAR + half)
+            # via hole to the copper of a through-hole pad: project rule "component hole to copper" 0.28 mm (inner
+            # 0.3 mm) instead of 0.25 mm – in round M a via was 0.275 mm from the J4 tab S1
+            hole_cu = HOLE_CLEAR if drill.x > 0 else VIA_HOLE_CLEAR
             for L in cu_of(pad):
                 for pts in self._pad_pts(pad, L):
-                    g.polygon(via, pts, max(CLEAR + rv, VIA_DRILL / 2 + VIA_HOLE_CLEAR))
-        if VIA_UNDER_BODIES == "none":  # Vias unter keinem Bauteilkörper (Courtyard), wie vor 2026-11-06 nicht verlangt
+                    g.polygon(via, pts, max(CLEAR + rv, VIA_DRILL / 2 + hole_cu))
+        if VIA_UNDER_BODIES == "none":  # vias under no component body (courtyard), not required as before 2026-11-06
             for fp in self.board.GetFootprints():
                 side = pcbnew.F_CrtYd if fp.GetSide() == pcbnew.F_Cu else pcbnew.B_CrtYd
                 box = fp.GetCourtyard(side).BBox()
@@ -297,7 +438,26 @@ class Obstacles:
             fcost[sl][inside] = ESCAPE_COST
             via[sl] |= inside
         g.fcost = fcost
+        TIMES["masks"] += time.perf_counter() - t0
         return track, via
+
+
+def drill_capsule(pad):
+    """Drill hole as a capsule: center line (a, b) and radius including hole–copper clearance. Round hole: a = b.
+    With OVAL_DRILLS = False, as before, a circle with the large diameter (too small for slots: at the J4 tab S1
+    5 µm were missing)."""
+    d = pad.GetDrillSize()
+    q = pad.GetPosition()
+    big, small = max(d.x, d.y), min(d.x, d.y)
+    if not OVAL_DRILLS or big == small:
+        r = pcbnew.ToMM(big) / 2 + HOLE_CLEAR
+        return q, q, r
+    import math
+    half = (big - small) / 2
+    ang = math.radians(pad.GetOrientation().AsDegrees()) + (0 if d.x >= d.y else math.pi / 2)
+    dx, dy = int(half * math.cos(ang)), int(-half * math.sin(ang))
+    return (pcbnew.VECTOR2I(q.x - dx, q.y - dy), pcbnew.VECTOR2I(q.x + dx, q.y + dy),
+            pcbnew.ToMM(small) / 2 + HOLE_CLEAR)
 
 
 def cu_of(pad):
@@ -309,86 +469,159 @@ STEPS = [(0, 1, 1.0), (1, 0, 1.0), (0, -1, 1.0), (-1, 0, 1.0), (1, 1, 1.414), (1
 
 
 def astar(grid, track, via, sources, targets, max_expand=1_000_000, goal_via=False, area_sources=(), area_targets=()):
-    """A* über (Lage, Zeile, Spalte). sources/targets: Liste (Lage, Zelle). Gibt Liste (Lage, Zelle) zurück.
-    goal_via=True: kein Ziel, sondern die nächste Stelle auf der Startlage, an der ein Via Platz hat
-    (Anbindung eines GND-Pads an die GND-Lage In1)."""
+    """A* over (layer, row, column). sources/targets: list of (layer, cell). Returns a list of (layer, cell).
+    goal_via=True: no target, but the nearest spot on the start layer where a via fits
+    (connecting a GND pad to the GND layer In1).
+    States as flat index l·ny·nx + i·nx + j (same order as the tuple (l, (i, j)), hence the same decision at
+    equal cost), grids as Python lists, heuristic row by row with numpy (same floating-point operations as the
+    per-cell formula): same path as the former version with tuples and single numpy accesses, only faster
+    (cross-check in test_route_fix.py)."""
+    t0 = time.perf_counter()
+    try:
+        return _astar(grid, track, via, sources, targets, max_expand, goal_via, area_sources, area_targets)
+    finally:
+        TIMES["astar"] += time.perf_counter() - t0
+
+
+def _reachable(blocked, via_ok, sources, tset, nn):
+    """Is there any path at all from a source to a target? Connected components of the free cells per layer
+    (8-neighborhood as in astar), joined at via spots where both layers are free. Without a path A* would
+    otherwise search the whole reachable area before giving up; the result (None) is the same."""
+    from scipy import ndimage
+    nl = blocked.shape[0]
+    labels = np.zeros(blocked.shape, dtype=np.int64)
+    offset = 0
+    for l in range(nl):
+        lab, n = ndimage.label(~blocked[l], structure=np.ones((3, 3), dtype=bool))
+        labels[l] = np.where(lab > 0, lab + offset, 0)
+        offset += n
+    parent = np.arange(offset + 1)
+
+    def find(a):
+        while parent[a] != a:
+            parent[a] = parent[parent[a]]
+            a = parent[a]
+        return a
+    for l in range(nl):
+        for l2 in range(l + 1, nl):
+            both = via_ok & (labels[l] > 0) & (labels[l2] > 0)
+            for a, b in np.unique(np.stack([labels[l][both], labels[l2][both]], axis=1), axis=0):
+                ra, rb = find(a), find(b)
+                if ra != rb:
+                    parent[ra] = rb
+    flat = labels.ravel()
+    src = {find(labels[SIGNAL_LAYERS.index(L), c[0], c[1]]) for L, c in sources}
+    return any(find(flat[t]) in src for t in tset)
+
+
+def _astar(grid, track, via, sources, targets, max_expand, goal_via, area_sources, area_targets):
     layers = SIGNAL_LAYERS
     li = {L: k for k, L in enumerate(layers)}
     blocked = np.stack([track[L] for L in layers])
     k = 1
-    for L, c in list(sources) + list(targets):  # eigene Anschlusspunkte freigeben
+    for L, c in list(sources) + list(targets):  # free the own terminal points
         blocked[li[L], max(0, c[0] - k):c[0] + k + 1, max(0, c[1] - k):c[1] + k + 1] = False
-    # Flächen-Startpunkte (ISLAND_AREA_SEARCH): nur freie Zellen, nichts freigeben
+    # area start points (ISLAND_AREA_SEARCH): only free cells, free nothing
     sources = list(sources) + [(L, c) for L, c in area_sources if not blocked[li[L], c[0], c[1]]]
-    via_ok = ~via
-    tset = {(li[L], c) for L, c in targets}
-    # Flächen-Ziele (ISLAND_AREA_SEARCH: angebundene GND-Füllung): nur freie Zellen, nichts freigeben
-    tset |= {(li[L], c) for L, c in area_targets if not blocked[li[L], c[0], c[1]]}
-    tl = list({c for _, c in targets})
     ny, nx = grid.ny, grid.nx
+    nn = ny * nx
+    tset = {li[L] * nn + c[0] * nx + c[1] for L, c in targets}
+    # area targets (ISLAND_AREA_SEARCH: connected GND fill): only free cells, free nothing
+    tset |= {li[L] * nn + c[0] * nx + c[1] for L, c in area_targets if not blocked[li[L], c[0], c[1]]}
+    if not goal_via and not _reachable(blocked, ~via, sources, tset, nn):
+        return None
+    tl = list({c for _, c in targets})
+    ti = np.array([t[0] for t in tl], dtype=np.int64)
+    tj = np.array([t[1] for t in tl], dtype=np.int64)
+    cols = np.arange(nx, dtype=np.int64)
+    hrows = [None] * ny
 
-    def h(c):
+    def hrow(i):
+        """Heuristic of a row: min over the targets of max(|di|, |dj|) + 0.414·min(|di|, |dj|)."""
+        di = np.abs(i - ti)[:, None]
+        dj = np.abs(cols[None, :] - tj[:, None])
+        row = (np.maximum(di, dj) + 0.414 * np.minimum(di, dj)).min(axis=0).tolist()
+        hrows[i] = row
+        return row
+
+    def h(i, j):
         if goal_via:
             return 0
-        return min(max(abs(c[0] - t[0]), abs(c[1] - t[1])) + 0.414 * min(abs(c[0] - t[0]), abs(c[1] - t[1]))
-                   for t in tl)
+        row = hrows[i]
+        return (row if row is not None else hrow(i))[j]
 
+    nl = len(layers)
+    blk = blocked.ravel().tolist()
+    via_ok = (~via).ravel().tolist()
     cost_l = [LAYER_COST[L] for L in layers]
-    extra = grid.fcost
-    soft = np.stack([grid.soft[L] for L in layers]) if hasattr(grid, "soft") else np.zeros_like(blocked)
-    soft_via = grid.soft_via if hasattr(grid, "soft_via") else np.zeros_like(via)
-    hist = grid.hist if hasattr(grid, "hist") else np.zeros(blocked.shape)
-    best, prev, dirs = {}, {}, {}
+    extra = grid.fcost.ravel().tolist()
+    soft = (np.stack([grid.soft[L] for L in layers]) if hasattr(grid, "soft") else np.zeros_like(blocked)).ravel().tolist()
+    soft_via = (grid.soft_via if hasattr(grid, "soft_via") else np.zeros_like(via)).ravel().tolist()
+    hist = (grid.hist if hasattr(grid, "hist") else np.zeros(blocked.shape)).ravel().tolist()
+    best = [1e18] * (nl * nn)
+    prev, dirs = {}, {}
     heap = []
     for L, c in sources:
-        s = (li[L], c)
+        s = li[L] * nn + c[0] * nx + c[1]
         best[s] = 0
         dirs[s] = -1
-        heapq.heappush(heap, (h(c), 0, s))
+        heapq.heappush(heap, (h(c[0], c[1]), 0, s))
+    steps = [(di, dj, di * nx + dj, cost) for di, dj, cost in STEPS]
+    heappush, heappop = heapq.heappush, heapq.heappop
     n_exp = 0
     while heap:
-        _, g, s = heapq.heappop(heap)
-        if s in tset or (goal_via and via_ok[s[1]] and g > 0):
+        _, g, s = heappop(heap)
+        l, cell = divmod(s, nn)
+        if s in tset or (goal_via and via_ok[cell] and g > 0):
             path = [s]
             while s in prev:
                 s = prev[s]
                 path.append(s)
-            return [(layers[l], c) for l, c in path[::-1]]
-        if g > best.get(s, 1e18):
+            out = []
+            for s in path[::-1]:
+                l, cell = divmod(s, nn)
+                out.append((layers[l], divmod(cell, nx)))
+            return out
+        if g > best[s]:
             continue
         n_exp += 1
         if n_exp > max_expand:
             return None
-        l, c = s
+        ci, cj = divmod(cell, nx)
         d = dirs[s]
-        for kk, (di, dj, cost) in enumerate(STEPS):
-            n = (c[0] + di, c[1] + dj)
-            if not (0 <= n[0] < ny and 0 <= n[1] < nx) or blocked[l, n[0], n[1]]:
+        base = l * nn
+        lc = cost_l[l]
+        for kk, (di, dj, dn, cost) in enumerate(steps):
+            ni, nj = ci + di, cj + dj
+            if not (0 <= ni < ny and 0 <= nj < nx):
                 continue
-            ng = g + cost * (extra[n] if l == 0 else cost_l[l]) + (BEND_COST if d not in (-1, kk) else 0) \
-                + (RIP_COST if soft[l, n[0], n[1]] else 0) + hist[l, n[0], n[1]]
-            ns = (l, n)
-            if ng < best.get(ns, 1e18):
+            ncell = cell + dn
+            ns = base + ncell
+            if blk[ns]:
+                continue
+            ng = g + cost * (extra[ncell] if l == 0 else lc) + (BEND_COST if d not in (-1, kk) else 0) \
+                + (RIP_COST if soft[ns] else 0) + hist[ns]
+            if ng < best[ns]:
                 best[ns] = ng
                 prev[ns] = s
                 dirs[ns] = kk
-                heapq.heappush(heap, (ng + h(n), ng, ns))
-        if via_ok[c] and not goal_via:
-            for l2 in range(len(layers)):
-                if l2 == l or blocked[l2, c[0], c[1]]:
+                heappush(heap, (ng + h(ni, nj), ng, ns))
+        if via_ok[cell] and not goal_via:
+            for l2 in range(nl):
+                ns = l2 * nn + cell
+                if l2 == l or blk[ns]:
                     continue
-                ng = g + VIA_COST + (RIP_COST if soft_via[c] or soft[l2, c[0], c[1]] else 0)
-                ns = (l2, c)
-                if ng < best.get(ns, 1e18):
+                ng = g + VIA_COST + (RIP_COST if soft_via[cell] or soft[ns] else 0)
+                if ng < best[ns]:
                     best[ns] = ng
                     prev[ns] = s
                     dirs[ns] = -1
-                    heapq.heappush(heap, (ng + h(c), ng, ns))
+                    heappush(heap, (ng + h(ci, cj), ng, ns))
     return None
 
 
 def end_cells(board, grid, item):
-    """Anschlusszellen eines DRC-Elements: (Lage, Zelle)-Liste und Netz."""
+    """Terminal cells of a DRC item: list of (layer, cell) and net."""
     obj = next((o for o in list(board.GetTracks()) + list(board.GetPads()) if o.m_Uuid.AsString() == item["uuid"]),
                None)
     if obj is None:
@@ -403,13 +636,13 @@ def end_cells(board, grid, item):
     s, e = obj.GetStart(), obj.GetEnd()
     n = max(1, int((e - s).EuclideanNorm() / mm(0.25)))
     cells = [(obj.GetLayer(), grid.cell(pcbnew.VECTOR2I(int(s.x + (e.x - s.x) * k / n), int(s.y + (e.y - s.y) * k / n))))
-             for k in range(n + 1)]  # Punkte entlang der Bahn
+             for k in range(n + 1)]  # points along the track
     return cells + endpoint_via_cells(board, grid, obj), obj.GetNet()
 
 
 def endpoint_via_cells(board, grid, obj):
-    """ENDPOINT_VIAS: Vias desselben Netzes, die das Element (Bahnende bzw. Pad) berühren, als Anschluss auf allen
-    Signallagen. Gesperrte (vorgeroutete) Vias zählen genauso; das Element selbst bleibt unverändert."""
+    """ENDPOINT_VIAS: vias of the same net that touch the item (track end or pad) as terminals on all signal
+    layers. Locked (pre-routed) vias count the same; the item itself stays unchanged."""
     if not ENDPOINT_VIAS:
         return []
     code = obj.GetNetCode()
@@ -430,7 +663,7 @@ def endpoint_via_cells(board, grid, obj):
 
 
 def simplify(path):
-    """Nur Knickpunkte und Lagenwechsel behalten."""
+    """Keep only bend points and layer changes."""
     out = [path[0]]
     for i in range(1, len(path) - 1):
         (l0, a), (l1, b), (l2, c) = path[i - 1], path[i], path[i + 1]
@@ -441,7 +674,7 @@ def simplify(path):
 
 
 def build(board, grid, net, path, width, start_pt=None, end_pt=None):
-    """Bahnen und Vias aus dem Zellweg; erster/letzter Punkt exakt auf den Anschluss (Pad-/Bahnpunkt)."""
+    """Tracks and vias from the cell path; first/last point exactly on the terminal (pad/track point)."""
     pts = [grid.point(c) for _, c in path]
     if start_pt is not None:
         pts[0] = start_pt
@@ -470,15 +703,15 @@ def build(board, grid, net, path, width, start_pt=None, end_pt=None):
 
 
 def connect(board, obstacles, item_a, item_b, rippable=None):
-    """Weg suchen und bauen. rippable: {uuid: Netzname} eigener Bahnen, die aufgerissen werden dürfen.
-    Gibt (Beschreibung, aufgerissene Netznamen, neue UUIDs) oder None zurück."""
+    """Search and build a path. rippable: {uuid: net name} of own tracks that may be ripped up.
+    Returns (description, ripped net names, new UUIDs) or None."""
     grid = obstacles.grid
     src, net = end_cells(board, grid, item_a)
     dst, _ = end_cells(board, grid, item_b)
     if not src or not dst:
         return None
     rippable = rippable or {}
-    for soft_items in ({}, rippable):  # erst ohne Aufreißen, dann mit
+    for soft_items in ({}, rippable):  # first without rip-up, then with
         if soft_items is rippable and not rippable:
             break
         widths = WIDTHS.get(net.GetNetname(), (W_MIN,))
@@ -514,18 +747,18 @@ def connect(board, obstacles, item_a, item_b, rippable=None):
             new = {t.m_Uuid.AsString() for t in board.GetTracks()} - before
             nvias = sum(1 for (la, _), (lb, _) in zip(path, path[1:]) if la != lb)
             layers = sorted({pcbnew.BOARD.GetStandardLayerName(L) for L, _ in path})
-            # Verlauf (PathFinder): umkämpfte Zellen werden für alle teurer, das bricht Pendel-Zyklen
+            # history (PathFinder): contested cells become more expensive for everyone, this breaks oscillation cycles
             if ripped and hasattr(grid, "hist"):
                 for L, c in conflict:
                     for l in ([SIGNAL_LAYERS.index(L)] if L is not None else range(len(SIGNAL_LAYERS))):
                         grid.hist[l, max(0, c[0] - 3):c[0] + 4, max(0, c[1] - 3):c[1] + 4] += HIST_COST
-            return f"{'/'.join(layers)}, {nvias} Vias, {width} mm", ripped, new
+            return f"{'/'.join(layers)}, {nvias} vias, {width} mm", ripped, new
     return None
 
 
 def connect_gnd(board, obstacles, pad, rippable=None, exclude=()):
-    """GND-Pad über eine kurze Bahn auf seiner Lage an ein neues Via (In1 ist GND) oder an vorhandenes GND-Kupfer
-    (Via, Pad außerhalb von exclude) anbinden. Gibt (Beschreibung, aufgerissene Gruppen, neue UUIDs) oder None."""
+    """Connect a GND pad via a short track on its layer to a new via (In1 is GND) or to existing GND copper
+    (via, pad outside exclude). Returns (description, ripped groups, new UUIDs) or None."""
     grid = obstacles.grid
     net = pad.GetNet()
     layer = pcbnew.F_Cu if pad.IsOnLayer(pcbnew.F_Cu) else pcbnew.B_Cu
@@ -533,12 +766,12 @@ def connect_gnd(board, obstacles, pad, rippable=None, exclude=()):
     code = net.GetNetCode()
     dst = [(layer, grid.cell(t.GetPosition())) for t in board.GetTracks()
            if t.GetClass() == "PCB_VIA" and t.GetNetCode() == code]
-    # Ziel nur Vias (sie erreichen die GND-Lage In1) und Durchsteckpads; ein SMD-Pad kann selbst in einer Insel liegen
+    # targets only vias (they reach the GND layer In1) and through-hole pads; an SMD pad may itself lie in an island
     dst += [(layer, grid.cell(p.GetPosition())) for p in board.GetPads()
             if p.GetNetCode() == code and p.IsOnLayer(layer) and p.GetDrillSize().x > 0]
     rippable = rippable or {}
     area = island_cells(board, grid, pad, layer) if ISLAND_AREA_SEARCH else []
-    # Ziel auch die GND-Füllung derselben Lage, die schon ein Via hat (eine kurze Bahn genügt dann)
+    # also target the GND fill on the same layer that already has a via (a short track suffices then)
     linked = linked_fill_cells(board, grid, code, layer) if ISLAND_AREA_SEARCH else []
     for soft_items in ({}, rippable):
         if soft_items is rippable and not rippable:
@@ -547,7 +780,7 @@ def connect_gnd(board, obstacles, pad, rippable=None, exclude=()):
             track, via = obstacles.masks(net, width / 2, soft_items)
             grid.soft, grid.soft_via = obstacles.soft, obstacles.soft_via
             path = astar(grid, track, via, src, dst, max_expand=60_000, goal_via=True, area_targets=linked)
-            if not path and area:  # Via-Stelle irgendwo in der Füllfläche der Insel
+            if not path and area:  # via spot anywhere in the fill area of the island
                 path = astar(grid, track, via, [], [], max_expand=60_000, goal_via=True, area_sources=area)
             if not path:
                 continue
@@ -574,12 +807,12 @@ def connect_gnd(board, obstacles, pad, rippable=None, exclude=()):
                 v.SetLocked(True)
                 board.Add(v)
             new = {t.m_Uuid.AsString() for t in board.GetTracks()} - before
-            return f"GND-{'Bahn' if to_copper else 'Via'}, {width} mm", ripped, new
+            return f"GND {'track' if to_copper else 'via'}, {width} mm", ripped, new
     return None
 
 
 def island_cells(board, grid, pad, layer, step=2):
-    """Rasterzellen der gefüllten GND-Fläche auf `layer`, in der `pad` liegt (jede `step`-te Zelle)."""
+    """Grid cells of the filled GND zone on `layer` in which `pad` lies (every `step`-th cell)."""
     code = pad.GetNetCode()
     q = pad.GetPosition()
     for zone in board.Zones():
@@ -604,7 +837,7 @@ def island_cells(board, grid, pad, layer, step=2):
 
 
 def linked_fill_cells(board, grid, code, layer, step=3):
-    """Rasterzellen der Füllflächen auf `layer`, die schon über ein Via oder Durchsteckpad angebunden sind."""
+    """Grid cells of the fill areas on `layer` that are already connected through a via or through-hole pad."""
     anchors = [t.GetPosition() for t in board.GetTracks() if t.GetClass() == "PCB_VIA" and t.GetNetCode() == code]
     anchors += [p.GetPosition() for p in board.GetPads() if p.GetNetCode() == code and p.GetDrillSize().x > 0]
     cells = []
@@ -627,9 +860,9 @@ def linked_fill_cells(board, grid, code, layer, step=3):
 
 
 def fragment_vias(pcb, net_name="/GND", log=print):
-    """ISLAND_AREA_SEARCH: Jedes Flächenstück des Netzes auf F.Cu/In2/B.Cu ohne Via und ohne Durchsteckpad bekommt ein
-    Via an der ersten Stelle in seiner Füllung, an der eines Platz hat (Abstände wie beim Routen). Füllt danach neu.
-    Gibt die Zahl der gesetzten Vias zurück."""
+    """ISLAND_AREA_SEARCH: every fill piece of the net on F.Cu/In2/B.Cu without a via and without a through-hole pad
+    gets a via at the first spot in its fill where one fits (clearances as in routing). Refills afterwards.
+    Returns the number of vias placed."""
     board = pcbnew.LoadBoard(str(pcb))
     pcbnew.ZONE_FILLER(board).Fill(board.Zones())
     net = board.FindNet(net_name)
@@ -659,7 +892,7 @@ def fragment_vias(pcb, net_name="/GND", log=print):
                 for ii in range(max(0, i0), min(grid.ny, i1 + 1)):
                     for jj in range(max(0, j0), min(grid.nx, j1 + 1)):
                         if not via[ii, jj] and outline.PointInside(grid.point((ii, jj))):
-                            # das Via muss ganz in der Füllung liegen (sonst verbindet es nicht sicher)
+                            # the via must lie entirely inside the fill (otherwise it does not connect reliably)
                             q = grid.point((ii, jj))
                             r = mm(VIA_D / 2)
                             if all(outline.PointInside(pcbnew.VECTOR2I(q.x + dx, q.y + dy))
@@ -669,7 +902,7 @@ def fragment_vias(pcb, net_name="/GND", log=print):
                     if spot:
                         break
                 if spot is None:
-                    log(f"  Flächenstück ohne Via-Platz: {board.GetLayerName(layer)} "
+                    log(f"  fill piece without via space: {board.GetLayerName(layer)} "
                         f"({pcbnew.ToMM(box.GetX()):.2f}; {pcbnew.ToMM(box.GetY()):.2f})")
                     continue
                 v = pcbnew.PCB_VIA(board)
@@ -680,7 +913,7 @@ def fragment_vias(pcb, net_name="/GND", log=print):
                 v.SetLocked(True)
                 board.Add(v)
                 added += 1
-                g = grid  # Via sperrt die Umgebung für weitere Vias
+                g = grid  # the via blocks its surroundings for further vias
                 g.circle(via, spot, 2 * (VIA_D / 2) + CLEAR)
     pcbnew.ZONE_FILLER(board).Fill(board.Zones())
     pcbnew.SaveBoard(str(pcb), board)
@@ -688,7 +921,7 @@ def fragment_vias(pcb, net_name="/GND", log=print):
 
 
 def gnd_tasks(board, net_name="/GND", near=0.9):
-    """GND-SMD-Pads, die ein eigenes Via zur GND-Lage brauchen (nicht schon eines im/am Pad haben)."""
+    """GND SMD pads that need their own via to the GND layer (do not already have one in/at the pad)."""
     code = board.FindNet(net_name).GetNetCode()
     vias = [t.GetPosition() for t in board.GetTracks() if t.GetClass() == "PCB_VIA" and t.GetNetCode() == code]
     out = []
@@ -702,8 +935,8 @@ def gnd_tasks(board, net_name="/GND", near=0.9):
 
 
 def island_tasks(board, net_name="/GND"):
-    """GND-Flächeninseln ohne Via und ohne Durchsteckpad (nach dem Füllen): je Insel die Pads darin.
-    Ein Pad je Insel braucht eine Bahn zu einem Via (connect_gnd)."""
+    """GND zone islands without a via and without a through-hole pad (after filling): per island the pads in it.
+    One pad per island needs a track to a via (connect_gnd)."""
     pcbnew.ZONE_FILLER(board).Fill(board.Zones())
     code = board.FindNet(net_name).GetNetCode()
     vias = [t.GetPosition() for t in board.GetTracks() if t.GetClass() == "PCB_VIA" and t.GetNetCode() == code]
@@ -726,12 +959,12 @@ def island_tasks(board, net_name="/GND"):
                                if p.IsOnLayer(layer) and outline.PointInside(p.GetPosition()))
                 if inner:
                     tasks.append(tuple(inner))
-    # Pads ohne jede Flächenberührung (z. B. von Bahnen eingeschlossen) zählen einzeln
+    # pads without any zone contact (e.g. enclosed by tracks) count individually
     return sorted(set(tasks))
 
 
 def _owners(board, grid, rippable, cells, half):
-    """Netze der aufreißbaren Elemente, die an den Zellen (Lage oder None = Via) stören."""
+    """Nets of the rip-up-able items that interfere at the cells (layer or None = via)."""
     rv = VIA_D / 2
     pts = [(L, pcbnew.ToMM(grid.point(c).x), pcbnew.ToMM(grid.point(c).y)) for L, c in cells]
     nets = set()
@@ -764,9 +997,11 @@ def _owners(board, grid, rippable, cells, half):
     return nets
 
 
-def fix(pcb, nets=None, min_len=0.0, max_rounds=None, log=print, priority=(), gnd=False, rip_tracks=None):
-    """Offene Signalverbindungen routen (nets: nur diese Netze; min_len: nur Verbindungen ab dieser Länge).
-    Gibt (geroutet, noch offen) zurück."""
+def fix(pcb, nets=None, min_len=0.0, max_rounds=None, log=print, priority=(), gnd=False, rip_tracks=None,
+        trace=None, trace_label=""):
+    """Route open signal connections (nets: only these nets; min_len: only connections of at least this length).
+    trace: CSV file to which time, open connections and run time of the sub-steps are appended per round.
+    Returns (routed, still open)."""
     max_rounds = max_rounds or MAX_ROUNDS
     done, failed = 0, set()
 
@@ -782,68 +1017,94 @@ def fix(pcb, nets=None, min_len=0.0, max_rounds=None, log=print, priority=(), gn
             return False
         return length(u) >= min_len
 
+    def weight(u):
+        """SEED > 0: fixed factor 1 ± SEED_JITTER per net and seed, otherwise 1."""
+        if not SEED:
+            return 1.0
+        d = u["items"][0]["description"]
+        net = d[d.find("[") + 1:d.find("]")]
+        return 1.0 + SEED_JITTER * (2 * random.Random(f"{SEED}:{net}").random() - 1)
+
     def order_key(u):
-        """Reihenfolge (ORDER): "kurz" = kurze zuerst, "lang" = lange zuerst, "modul" = Randpads des Moduls
-        zuerst (nur eine Fluchtgasse), danach kurze."""
-        module = any(f"von {MODULE_REF} " in i["description"] for i in u["items"])
+        """Order (ORDER): "short" = short ones first, "long" = long ones first, "module" = edge pads of the module
+        first (only one escape lane), then short ones. The old German values lang/kurz/modul still work."""
+        module = any(f"von {MODULE_REF} " in i["description"] for i in u["items"])  # "von" = "of" (DRC text)
         first = not any(f"[{n}]" in i["description"] for n in priority for i in u["items"])
-        if ORDER == "lang":
-            return (first, -length(u))
-        if ORDER == "modul":
-            return (first, not module, length(u))
-        return (first, length(u))
+        order = ORDER_ALIASES.get(ORDER, ORDER)
+        if order == "long":
+            return (first, -length(u) * weight(u))
+        if order == "module":
+            return (first, not module, length(u) * weight(u))
+        return (first, length(u) * weight(u))
 
     todo = []
-    mine = {}        # UUID -> Gruppe der hier gebauten Elemente (Netzname bzw. "GND:Ref.Pad"), aufreißbar
+    mine = {}        # UUID -> group of the items built here (net name or "GND:Ref.Pad"), rip-up-able
     ripped_count = {}
     hist = None
     gnd_failed = set()
     gnd_open = []
     gnd_tries = {}
-    # Bahnen von Freerouting (nicht gesperrt) sind ebenfalls aufreißbar, gruppiert nach Netz
-    for t in pcbnew.LoadBoard(str(pcb)).GetTracks():
+    # The board is loaded only once and then edited in memory (saved after each change): pcbnew does not free
+    # loaded boards (about 4 MB per LoadBoard); with 2 LoadBoard per round an attempt grew to several GB over
+    # ~900 rounds (2026-11-07: RAM and swap full, processes killed by the OOM killer).
+    board = pcbnew.LoadBoard(str(pcb))
+    # tracks from Freerouting (not locked) are rip-up-able as well, grouped by net
+    for t in board.GetTracks():
         if not t.IsLocked() and t.GetNetname() not in SKIP_NETS:
             mine[t.m_Uuid.AsString()] = t.GetNetname()
-    # rip_tracks: {UUID: Netz} weiterer aufreißbarer Bahnen (Nacharbeit an einer schon gerouteten Platine, deren
-    # Router-Bahnen gesperrt sind; Vorrouten gehören nicht hinein)
+    # rip_tracks: {UUID: net} of further rip-up-able tracks (finishing work on an already routed board whose router
+    # tracks are locked; pre-routes do not belong in here)
     mine.update(rip_tracks or {})
     import shutil
     snap, snap_open = Path(pcb).with_suffix(".fixbest"), None
+    t_start, rounds, times0 = time.perf_counter(), 0, dict(TIMES)
+    if trace and not Path(trace).exists():
+        Path(trace).write_text("run,round,t_s,open,best,action,conn_s,masks_s,astar_s\n")
+
+    def note(action, n_open):
+        """One line of the trace."""
+        nonlocal times0
+        if trace:
+            dt = {k: TIMES[k] - times0[k] for k in TIMES}
+            with open(trace, "a") as f:
+                f.write(f"{trace_label},{rounds},{time.perf_counter() - t_start:.2f},{n_open},{snap_open},{action},"
+                        f"{dt['conn']:.3f},{dt['masks']:.3f},{dt['astar']:.3f}\n")
+        times0 = dict(TIMES)
 
     def finish(result, signals):
-        """Bester Zwischenstand (wenigste offene Signalverbindungen) gewinnt, falls das Ende schlechter ist."""
+        """The best intermediate state (fewest open signal connections) wins if the end is worse."""
         if snap_open is not None and snap_open < signals:
             shutil.copy(snap, pcb)
             result = (result[0], snap_open)
-            log(f"  bester Zwischenstand übernommen: {snap_open} offen")
+            log(f"  best intermediate state restored: {snap_open} open")
         if snap.exists():
             snap.unlink()
         return result
 
-    for _ in range(max_rounds):
-        open_items = [u for u in drc_unconnected(pcb) if wanted(u)]
+    for rounds in range(1, max_rounds + 1):
+        open_items = [u for u in open_connections(pcb, board) if wanted(u)]
         if snap_open is None or len(open_items) < snap_open:
             snap_open = len(open_items)
             shutil.copy(pcb, snap)
         todo = [u for u in open_items if tuple(sorted(i["uuid"] for i in u["items"])) not in failed]
-        board = pcbnew.LoadBoard(str(pcb))
         gtodo = []
-        if gnd and not todo:  # erst alle Signale, dann GND-Inseln ohne Via
+        if gnd and not todo:  # first all signals, then GND islands without a via
             gnd_open = island_tasks(board)
             gtodo = [t for t in gnd_open if t not in gnd_failed]
         if not todo and not gtodo:
             if gnd_open:
-                log(f"  GND-Inseln ohne Via: {'; '.join(', '.join('.'.join(r) for r in t) for t in gnd_open)}")
+                log(f"  GND islands without via: {'; '.join(', '.join('.'.join(r) for r in t) for t in gnd_open)}")
+            note("end", len(open_items))
             return finish((done, len(open_items) + len(gnd_open)), len(open_items))
         allowed = {k: v for k, v in mine.items() if ripped_count.get(v, 0) < RIP_MAX}
         obstacles = Obstacles(board)
         if hist is None:
             hist = np.zeros((len(SIGNAL_LAYERS), obstacles.grid.ny, obstacles.grid.nx))
         obstacles.grid.hist = hist
-        if gtodo:  # GND-Insel: ein Pad der Insel per Bahn an ein neues Via
+        if gtodo:  # GND island: one pad of the island to a new via with a track
             task = gtodo[0]
             gnd_tries[task] = gnd_tries.get(task, 0) + 1
-            if gnd_tries[task] > 3:  # Schutz gegen Endlosschleifen
+            if gnd_tries[task] > 3:  # guard against endless loops
                 gnd_failed.add(task)
                 continue
             result = None
@@ -852,7 +1113,7 @@ def fix(pcb, nets=None, min_len=0.0, max_rounds=None, log=print, priority=(), gn
                 result = connect_gnd(board, obstacles, pad, rippable=allowed, exclude=set(task))
                 if result:
                     break
-            group, desc = f"GND:{ref}.{num}", f"GND-Insel {', '.join('.'.join(r) for r in task)}"
+            group, desc = f"GND:{ref}.{num}", f"GND island {', '.join('.'.join(r) for r in task)}"
             fail_key = None
         else:
             u = min(todo, key=order_key)
@@ -871,24 +1132,26 @@ def fix(pcb, nets=None, min_len=0.0, max_rounds=None, log=print, priority=(), gn
                 ripped_count[n] = ripped_count.get(n, 0) + 1
                 for uid in [k for k, v in mine.items() if v == n]:
                     del mine[uid]
-            if ripped:  # nach dem Aufreißen alles neu versuchen
+            if ripped:  # after a rip-up try everything again
                 failed, gnd_failed = set(), set()
             pcbnew.SaveBoard(str(pcb), board)
             done += 1
-            log(f"  geroutet ({text}): {desc}" + (f"  — aufgerissen: {', '.join(sorted(ripped))}" if ripped else ""))
+            note("ripped" if ripped else "routed", len(open_items))
+            log(f"  routed ({text}): {desc}" + (f"  — ripped up: {', '.join(sorted(ripped))}" if ripped else ""))
         else:
             if fail_key is None:
                 gnd_failed.add(task)
             else:
                 failed.add(fail_key)
-            log(f"  kein Weg: {desc}")
+            note("no_path", len(open_items))
+            log(f"  no path: {desc}")
     return finish((done, len(todo) + len(gnd_open)), len(todo))
 
 
 def gnd_fanout(pcb, net_name="/GND", near=0.9, log=print, only=None, reach=3.0):
-    """Jedes GND-SMD-Pad ohne eigenes GND-Via in der Nähe bekommt eine kurze Bahn zu einem Via (Dijkstra auf
-    der Lage des Pads bis zur nächsten Stelle, an der ein Via Platz hat). Das Via erreicht die GND-Lage In1.
-    Gibt (gesetzt, ohne Platz) zurück."""
+    """Every GND SMD pad without its own GND via nearby gets a short track to a via (Dijkstra on the pad's layer
+    up to the nearest spot where a via fits). The via reaches the GND layer In1.
+    Returns (placed, without space)."""
     board = pcbnew.LoadBoard(str(pcb))
     net = board.FindNet(net_name)
     code = net.GetNetCode()
@@ -905,7 +1168,7 @@ def gnd_fanout(pcb, net_name="/GND", near=0.9, log=print, only=None, reach=3.0):
         obstacles = Obstacles(board)
         grid = obstacles.grid
         goal = None
-        for width in (0.25, W_MIN):  # möglichst 0,25 mm, an Engstellen 0,15 mm
+        for width in (0.25, W_MIN):  # 0.25 mm if possible, 0.15 mm at bottlenecks
             track, via = obstacles.masks(net, width / 2)
             blocked = track[layer]
             start = grid.cell(q)
@@ -963,13 +1226,13 @@ def gnd_fanout(pcb, net_name="/GND", near=0.9, log=print, only=None, reach=3.0):
     pcbnew.ZONE_FILLER(board).Fill(board.Zones())
     pcbnew.SaveBoard(str(pcb), board)
     if failed:
-        log(f"  GND-Via ohne Platz: {', '.join(failed)}")
+        log(f"  GND via without space: {', '.join(failed)}")
     return done, failed
 
 
 def gnd_islands(pcb, net_name="/GND", log=print):
-    """GND-Flächeninseln (F.Cu/B.Cu/In2.Cu) ohne Via: von einem ihrer Pads eine Bahn zu einem Via (Reichweite
-    bis 6 mm). Gibt die Zahl der angebundenen Inseln zurück."""
+    """GND zone islands (F.Cu/B.Cu/In2.Cu) without a via: a track from one of their pads to a via (reach up to
+    6 mm). Returns the number of connected islands."""
     board = pcbnew.LoadBoard(str(pcb))
     pcbnew.ZONE_FILLER(board).Fill(board.Zones())
     net = board.FindNet(net_name)
@@ -989,7 +1252,7 @@ def gnd_islands(pcb, net_name="/GND", log=print):
                 if any(outline.PointInside(v) for v in vias):
                     continue
                 if any(p.GetDrillSize().x > 0 and outline.PointInside(p.GetPosition()) for p in pads):
-                    continue  # Durchsteckpad verbindet die Lagen
+                    continue  # a through-hole pad connects the layers
                 inner = [(p.GetParentFootprint().GetReference(), p.GetNumber()) for p in pads
                          if p.IsOnLayer(layer) and outline.PointInside(p.GetPosition())]
                 for ref in inner:
@@ -1000,14 +1263,14 @@ def gnd_islands(pcb, net_name="/GND", log=print):
                         break
                 else:
                     if inner:
-                        log(f"  GND-Insel ohne Via-Platz: {', '.join('.'.join(r) for r in inner)}")
+                        log(f"  GND island without via space: {', '.join('.'.join(r) for r in inner)}")
     return fixed
 
 
 def open_nets(pcb):
-    """Netznamen der noch offenen Signalverbindungen."""
+    """Net names of the signal connections still open."""
     nets = set()
-    for u in drc_unconnected(pcb):
+    for u in open_connections(pcb):
         for i in u["items"]:
             d = i.get("description", "")
             if "[" in d and "Zone" not in d:
@@ -1017,26 +1280,30 @@ def open_nets(pcb):
     return nets
 
 
-def route_all(pcb, restarts=1, log=print, gnd=True):
-    """Alle Signale routen; bleiben Verbindungen offen, von vorn beginnen und deren Netze zuerst routen
-    (Vorrang wächst mit jedem Neustart). Das beste Ergebnis bleibt in pcb. Gibt (geroutet, offen) zurück."""
+def route_all(pcb, restarts=1, log=print, gnd=True, trace=None):
+    """Route all signals; if connections stay open, start over and route their nets first (the priority grows with
+    each restart). The best result stays in pcb. trace: CSV trace per round (fix()).
+    Returns (routed, open)."""
     import shutil
     pcb = Path(pcb)
     start, best_file = pcb.with_suffix(".start"), pcb.with_suffix(".best")
+    if GND_FANOUT_FIRST and gnd:
+        done, failed = gnd_fanout(pcb, log=log)
+        log(f"GND fanout beforehand: {done} vias, without space: {len(failed)}")
     shutil.copy(pcb, start)
     priority, best = [], None
     for k in range(restarts + 1):
         shutil.copy(start, pcb)
-        log(f"Lauf {k + 1}, Vorrang: {', '.join(priority) or '-'}")
-        done, still_open = fix(pcb, log=log, priority=tuple(priority), gnd=gnd)
-        log(f"Lauf {k + 1}: {done} geroutet, {still_open} offen")
+        log(f"Run {k + 1}, priority: {', '.join(priority) or '-'}")
+        done, still_open = fix(pcb, log=log, priority=tuple(priority), gnd=gnd, trace=trace, trace_label=k + 1)
+        log(f"Run {k + 1}: {done} routed, {still_open} open")
         if best is None or still_open < best[1]:
             best = (done, still_open)
             shutil.copy(pcb, best_file)
         if still_open == 0:
             break
         more = sorted(open_nets(pcb) - set(priority))
-        if not more:  # nur GND-Inseln offen: ein Neustart ohne neuen Vorrang ergäbe dasselbe
+        if not more:  # only GND islands open: a restart without new priority would give the same
             break
         priority += more
     shutil.copy(best_file, pcb)
@@ -1049,6 +1316,8 @@ if __name__ == "__main__":
     import os
     import sys
     ORDER = os.environ.get("ORDER", ORDER)
+    SEED = int(os.environ.get("SEED", SEED))
+    CONN = os.environ.get("CONN", CONN)
     RIP_MAX = int(os.environ.get("RIP_MAX", RIP_MAX))
     VIA_D = float(os.environ.get("VIA_D", VIA_D))
 

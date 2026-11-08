@@ -1,24 +1,24 @@
 #!/usr/bin/env python3
-"""Erzeugt die projekteigene Symbolbibliothek hardware/lib/louie.kicad_sym.
+"""Generates the project symbol library hardware/lib/louie.kicad_sym.
 
-Enthält Symbole, für die es weder in KiCad noch bei LCSC ein brauchbares gibt (ESP32-C6-MINI-1,
-DRV8213DSG; C3, DRV8833 und LIS2DH12 bleiben als Rückfall bzw. für Platine B)
-(LCSC-Symbole haben keine Pin-Typen, damit wäre die ERC-Prüfung wertlos).
+Contains symbols for which neither KiCad nor LCSC has a usable one (ESP32-C6-MINI-1,
+DRV8213DSG; C3, DRV8833 and LIS2DH12 remain as fallback or for board B)
+(LCSC symbols have no pin types, which would make the ERC check worthless).
 
-Außerdem die Lötpad-Footprints im 2,54-mm-Raster (hardware/lib/louie.pretty/SolderPads_1x0N_P2.54mm, N aus
-SOLDER_PADS), weil KiCad dafür nur Stiftleisten mit Bohrung hat.
+Also the solder pad footprints at 2.54 mm pitch (hardware/lib/louie.pretty/SolderPads_1x0N_P2.54mm, N from
+SOLDER_PADS), because KiCad only has pin headers with drill holes for that.
 
-Aufruf (über just):  just symbols
+Usage (via just):  just symbols
 """
 from pathlib import Path
 
 LIB = Path(__file__).resolve().parent.parent / "lib" / "louie.kicad_sym"
 FOOTPRINTS = LIB.parent / "louie.pretty"
-SOLDER_PADS = (3, 4, 5)  # Pads je Reihe im 2,54-mm-Raster (J7, –, J2/J3)
+SOLDER_PADS = (3, 4, 5)  # pads per row at 2.54 mm pitch (J7, –, J2/J3)
 FONT = "(effects (font (size 1.27 1.27)))"
 HIDDEN = "(effects (font (size 1.27 1.27)) (hide yes))"
 
-# ESP-Module: (Pinname, Padnummer, Pintyp). Laut Datenblatt Espressif, Tabelle "Pin Definitions".
+# ESP modules: (pin name, pad number, pin type). Per Espressif datasheet, table "Pin Definitions".
 ESP_C3 = dict(
     left=[("3V3", "3", "power_in"), ("EN", "8", "input"),
           ("IO0", "12", "bidirectional"), ("IO1", "13", "bidirectional"), ("IO2", "5", "bidirectional"),
@@ -31,9 +31,9 @@ ESP_C3 = dict(
     nc=["4", "7", "9", "10", "15", "17", "24", "25", "28", "29", "32", "33", "34", "35"],
     footprint="lcsc:WIFIM-SMD_ESP32-C3-MINI-1", lcsc="C2838502",
     datasheet="https://www.espressif.com/sites/default/files/documentation/esp32-c3-mini-1_datasheet_en.pdf",
-    description="WLAN/BLE-Modul ESP32-C3, 4 MB Flash, PCB-Antenne",
+    description="Wi-Fi/BLE module ESP32-C3, 4 MB flash, PCB antenna",
 )
-# ESP32-C6-MINI-1: gleiche Pads wie C3, Belegung wie KiCad RF_Module:ESP32-C6-MINI-1 (geprüft)
+# ESP32-C6-MINI-1: same pads as C3, pinout as KiCad RF_Module:ESP32-C6-MINI-1 (verified)
 ESP_C6 = dict(
     left=[("3V3", "3", "power_in"), ("EN", "8", "input")]
     + [(f"IO{n}", pad, "bidirectional") for n, pad in
@@ -46,7 +46,7 @@ ESP_C6 = dict(
     nc=["4", "7", "21", "32", "33", "34", "35"],
     footprint="lcsc:WIFIM-SMD_ESP32-C6-MINI-1", lcsc="C42403058",
     datasheet="https://documentation.espressif.com/esp32-c6-mini-1_mini-1u_datasheet_en.html",
-    description="WLAN 6/BLE 5.3/802.15.4-Modul ESP32-C6, H8 = 8 MB Flash (N4 = 4 MB pinkompatibel), PCB-Antenne",
+    description="Wi-Fi 6/BLE 5.3/802.15.4 module ESP32-C6, H8 = 8 MB flash (N4 = 4 MB pin-compatible), PCB antenna",
 )
 
 
@@ -95,9 +95,9 @@ def esp32_mini_1(name, d):
 
 
 def drv8213dsg():
-    """TI DRV8213DSG (WSON-8 2 × 2 mm): H-Brücke mit Strommessung (IPROPI), Autosleep, ohne nSLEEP/nFAULT.
-    Pinbelegung laut Datenblatt SLVSGV9 bzw. LCSC C22407186: 1 VM, 2 OUT1, 3 OUT2, 4 GND, 5 IN2, 6 IN1,
-    7 GAINSEL, 8 IPROPI, 9 Thermal-Pad (GND)."""
+    """TI DRV8213DSG (WSON-8 2 × 2 mm): H-bridge with current sensing (IPROPI), autosleep, without nSLEEP/nFAULT.
+    Pinout per datasheet SLVSGV9 or LCSC C22407186: 1 VM, 2 OUT1, 3 OUT2, 4 GND, 5 IN2, 6 IN1,
+    7 GAINSEL, 8 IPROPI, 9 thermal pad (GND)."""
     half_w, top, bottom = 10.16, 5.08, -7.62
     pins = []
     left = [("IN1", "6", "input"), ("IN2", "5", "input"), ("GAINSEL", "7", "input")]
@@ -118,7 +118,7 @@ def drv8213dsg():
         '\t\t(property "Footprint" "Package_SON:Texas_DSG0008A_WSON-8-1EP_2x2mm_P0.5mm_EP0.9x1.6mm"'
         f' (at 0 0 0) {HIDDEN})\n'
         f'\t\t(property "Datasheet" "https://www.ti.com/lit/gpn/drv8213" (at 0 0 0) {HIDDEN})\n'
-        f'\t\t(property "Description" "H-Brücke 4 A, Strommessung IPROPI, Strombegrenzung, Autosleep" (at 0 0 0) {HIDDEN})\n'
+        f'\t\t(property "Description" "H-bridge 4 A, current sensing IPROPI, current limit, autosleep" (at 0 0 0) {HIDDEN})\n'
         f'\t\t(property "LCSC Part" "C22407186" (at 0 0 0) {HIDDEN})\n'
         '\t\t(symbol "DRV8213DSG_0_1"\n'
         f'\t\t\t(rectangle (start {-half_w} {top}) (end {half_w} {bottom})\n'
@@ -133,9 +133,9 @@ def drv8213dsg():
 
 
 def drv8833_parallel():
-    """DRV8833PWP mit beiden H-Brücken parallel (Datenblatt Kap. 8.3.5): AIN1+BIN1, AIN2+BIN2,
-    AOUT1+BOUT1, AOUT2+BOUT2, AISEN+BISEN. Die zusammengeschalteten Pins liegen übereinander.
-    VINT ist der Ausgang des internen Reglers (nur Kondensator), daher passiv."""
+    """DRV8833PWP with both H-bridges in parallel (datasheet section 8.3.5): AIN1+BIN1, AIN2+BIN2,
+    AOUT1+BOUT1, AOUT2+BOUT2, AISEN+BISEN. The paralleled pins are stacked on top of each other.
+    VINT is the output of the internal regulator (capacitor only), hence passive."""
     left = [("~{SLEEP}", ["1"], "input"), ("VCP", ["11"], "passive"), ("ISEN", ["3", "6"], "passive"),
             ("IN1", ["16", "9"], "input"), ("IN2", ["15", "10"], "input")]
     right = [("~{FAULT}", ["8"], "open_collector"), ("OUT1", ["2", "7"], "power_out"),
@@ -163,7 +163,7 @@ def drv8833_parallel():
         '\t\t(property "Footprint" "Package_SO:HTSSOP-16-1EP_4.4x5mm_P0.65mm_EP3.4x5mm_Mask2.46x2.31mm"'
         f' (at 0 0 0) {HIDDEN})\n'
         f'\t\t(property "Datasheet" "https://www.ti.com/lit/ds/symlink/drv8833.pdf" (at 0 0 0) {HIDDEN})\n'
-        f'\t\t(property "Description" "Dual-H-Brücke, hier im Parallelbetrieb (bis ca. 3 A)" (at 0 0 0) {HIDDEN})\n'
+        f'\t\t(property "Description" "Dual H-bridge, here in parallel mode (up to approx. 3 A)" (at 0 0 0) {HIDDEN})\n'
         f'\t\t(property "LCSC Part" "C50506" (at 0 0 0) {HIDDEN})\n'
         '\t\t(symbol "DRV8833PWP_parallel_0_1"\n'
         f'\t\t\t(rectangle (start {-half_w} {top}) (end {half_w} {bottom})\n'
@@ -178,7 +178,7 @@ def drv8833_parallel():
 
 
 def lis2dh12():
-    """ST LIS2DH12 Beschleunigungssensor, LGA-12 2×2 mm (Pinbelegung laut Datenblatt/LCSC C110926)."""
+    """ST LIS2DH12 accelerometer, LGA-12 2×2 mm (pinout per datasheet/LCSC C110926)."""
     half_w, top, bottom = 7.62, 7.62, -7.62
     left = [("VDD", ["9"], "power_in"), ("VDD_IO", ["10"], "power_in"), ("CS", ["2"], "input"),
             ("SDO/SA0", ["3"], "input"), ("RES", ["5"], "passive")]
@@ -199,7 +199,7 @@ def lis2dh12():
         f'\t\t(property "Value" "LIS2DH12" (at {half_w} {top + 1.27} 0) (effects (font (size 1.27 1.27)) (justify right)))\n'
         f'\t\t(property "Footprint" "Package_LGA:LGA-12_2x2mm_P0.5mm" (at 0 0 0) {HIDDEN})\n'
         f'\t\t(property "Datasheet" "https://www.st.com/resource/en/datasheet/lis2dh12.pdf" (at 0 0 0) {HIDDEN})\n'
-        f'\t\t(property "Description" "3-Achsen-Beschleunigungssensor, I2C/SPI, 2 µA" (at 0 0 0) {HIDDEN})\n'
+        f'\t\t(property "Description" "3-axis accelerometer, I2C/SPI, 2 µA" (at 0 0 0) {HIDDEN})\n'
         f'\t\t(property "LCSC Part" "C110926" (at 0 0 0) {HIDDEN})\n'
         '\t\t(symbol "LIS2DH12_0_1"\n'
         f'\t\t\t(rectangle (start {-half_w} {top}) (end {half_w} {bottom})\n'
@@ -214,10 +214,10 @@ def lis2dh12():
 
 
 def solder_pads(n, pitch=2.54, size=1.4):
-    """Footprint mit n SMD-Lötpads in einer Reihe (Pad 1 eckig), ohne Bestückung (nicht in Stückliste/Bestückung)."""
+    """Footprint with n SMD solder pads in a row (pad 1 square), not populated (not in BOM/placement)."""
     half = round((n - 1) * pitch / 2 + 0.85, 2)
     name = f"SolderPads_1x{n:02d}_P{pitch:.2f}mm"
-    pitch_de = f"{pitch:.2f}".replace(".", ",")
+    pitch_text = f"{pitch:.2f}"
     pads = []
     for k in range(n):
         x = round(-(n - 1) * pitch / 2 + k * pitch, 2)
@@ -229,7 +229,7 @@ def solder_pads(n, pitch=2.54, size=1.4):
         '\t(version 20241229)\n'
         '\t(generator "louie")\n'
         '\t(layer "F.Cu")\n'
-        f'\t(descr "{n} SMD-Lötpads im {pitch_de}-mm-Raster (Stiftleiste oder Litzen). Keine Bestückung.")\n'
+        f'\t(descr "{n} SMD solder pads at {pitch_text} mm pitch (pin header or stranded wires). Not populated.")\n'
         '\t(tags "solder pad header")\n'
         '\t(property "Reference" "REF**" (at 0 -1.6 0) (layer "F.Fab") (effects (font (size 0.5 0.5) (thickness 0.08))))\n'
         f'\t(property "Value" "SolderPads_1x{n:02d}" (at 0 1.6 0) (layer "F.Fab") (hide yes) '
@@ -243,15 +243,15 @@ def solder_pads(n, pitch=2.54, size=1.4):
 
 
 def test_pad(d=1.0, courtyard=0.65):
-    """Runder Testpunkt (Messspitze/Pogo-Pin), nur Kupfer; Sperrbereich enger als TestPoint_Pad_D1.0mm von KiCad
-    (r = 1,0 mm), damit er zwischen die optionalen Bauteile unten passt."""
+    """Round test point (probe tip/pogo pin), copper only; courtyard tighter than KiCad's TestPoint_Pad_D1.0mm
+    (r = 1.0 mm), so that it fits between the optional components on the bottom."""
     name = f"TestPad_D{d:.1f}mm"
     return name, (
         f'(footprint "{name}"\n'
         '\t(version 20241229)\n'
         '\t(generator "louie")\n'
         '\t(layer "F.Cu")\n'
-        f'\t(descr "Runder SMD-Testpunkt {d:.1f} mm (Messspitze, Pogo-Pin). Keine Bestückung.")\n'
+        f'\t(descr "Round SMD test point {d:.1f} mm (probe tip, pogo pin). Not populated.")\n'
         '\t(tags "test point pad")\n'
         '\t(property "Reference" "REF**" (at 0 -1.0 0) (layer "F.Fab") (effects (font (size 0.5 0.5) (thickness 0.08))))\n'
         f'\t(property "Value" "{name}" (at 0 1.0 0) (layer "F.Fab") (hide yes) '
@@ -267,7 +267,7 @@ def test_pad(d=1.0, courtyard=0.65):
 def main():
     name, text = test_pad()
     (FOOTPRINTS / f"{name}.kicad_mod").write_text(text)
-    for n, pitch in [(n, 2.54) for n in SOLDER_PADS] + [(6, 2.0)]:  # 1x06 2,0 mm: J6 (kürzer, 11.7)
+    for n, pitch in [(n, 2.54) for n in SOLDER_PADS] + [(6, 2.0)]:  # 1x06 2.0 mm: J6 (shorter, 11.7)
         name, text = solder_pads(n, pitch)
         (FOOTPRINTS / f"{name}.kicad_mod").write_text(text)
     LIB.write_text(
@@ -279,7 +279,7 @@ def main():
         + drv8213dsg() + drv8833_parallel() + lis2dh12() +
         ')\n'
     )
-    print(f"{LIB.relative_to(LIB.parent.parent.parent)} geschrieben")
+    print(f"{LIB.relative_to(LIB.parent.parent.parent)} written")
 
 
 if __name__ == "__main__":

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Zeichnet die Platzierung der Hauptplatine als PNG (Ober- und Unterseite übereinander):
-Courtyards, Pads, Referenzen, Luftlinien (Ratsnest) und Sperrflächen. Meldet Überlappungen
-und die Flächenbelegung.
+"""Draws the placement of the main board as PNG (top and bottom side one above the other):
+courtyards, pads, references, ratsnest and keepout areas. Reports overlaps
+and the area usage.
 
-Aufruf (über just):  just plot   → build/main-board/placement.png
+Usage (via just):  just plot   → build/main-board/placement.png
 """
 import itertools
 import math
@@ -39,7 +39,7 @@ def overlap(a, b):
 
 
 def mst(points):
-    """Minimaler Spannbaum (Prim) über Punkte, gibt Kanten zurück."""
+    """Minimum spanning tree (Prim) over points, returns edges."""
     if len(points) < 2:
         return []
     done, edges = {0}, []
@@ -55,15 +55,15 @@ def main():
     board = pcbnew.LoadBoard(str(PCB))
     side_axes = {}
     fig, axes = plt.subplots(2, 1, figsize=(16, 10.5))
-    for ax, (side, layer, title) in zip(axes, [("F", pcbnew.F_CrtYd, "Oberseite (Bestückung)"),
-                                               ("B", pcbnew.B_CrtYd, "Unterseite (Blick von oben, durchsichtig)")]):
+    for ax, (side, layer, title) in zip(axes, [("F", pcbnew.F_CrtYd, "Top side (assembly)"),
+                                               ("B", pcbnew.B_CrtYd, "Bottom side (seen from the top, transparent)")]):
         side_axes[side] = ax
         ax.set_title(title, loc="left", fontsize=11)
         ax.set_aspect("equal")
         ax.set_xlim(-24, 24)
         ax.set_ylim(7.5, -7.5)
         ex0, ey0, ex1, ey1 = box(board.GetBoardEdgesBoundingBox())
-        for item in board.GetDrawings():  # Umriss (Edge.Cuts): Strecken und Bögen als Polylinie
+        for item in board.GetDrawings():  # outline (Edge.Cuts): segments and arcs as polyline
             if item.GetLayer() == pcbnew.Edge_Cuts:
                 if item.GetShape() == pcbnew.SHAPE_T_ARC:
                     pts = [to_xy(item.GetStart()), to_xy(item.GetArcMid()), to_xy(item.GetEnd())]
@@ -71,7 +71,7 @@ def main():
                     pts = [to_xy(item.GetStart()), to_xy(item.GetEnd())]
                 ax.plot([q[0] for q in pts], [q[1] for q in pts], color="black", lw=1.5)
         for zone in board.Zones():
-            if zone.GetIsRuleArea() and zone.GetZoneName() != "GND-Lage":  # In1 ganzflächig
+            if zone.GetIsRuleArea() and zone.GetZoneName() not in ("GND plane", "GND-Lage"):  # In1 whole area
                 x0, y0, x1, y1 = box(zone.GetBoundingBox())
                 ax.add_patch(plt.Rectangle((x0, y0), x1 - x0, y1 - y0, color="#ffd9d9", zorder=0))
                 ax.text(x0 + 0.3, y1 - 0.3, zone.GetZoneName(), fontsize=7, color="#c00")
@@ -96,7 +96,7 @@ def main():
         cx, cy = to_xy(fp.GetPosition())
         ax.text(cx, cy, fp.GetReference(), ha="center", va="center", fontsize=7, weight="bold")
 
-    # Luftlinien: Pads je Netz, auf beiden Ansichten
+    # ratsnest: pads per net, in both views
     pads_by_net = {}
     for pad in board.GetPads():
         if pad.GetNetname():
@@ -111,18 +111,18 @@ def main():
     for side in "FB":
         for (ra, a), (rb, b) in itertools.combinations(courtyards[side], 2):
             if overlap(a, b) > 0.01:
-                problems.append(f"{side}: {ra} überlappt {rb} ({overlap(a, b):.1f} mm²)")
+                problems.append(f"{side}: {ra} overlaps {rb} ({overlap(a, b):.1f} mm²)")
         for ref, b in courtyards[side]:
             if b[0] < ex0 or b[2] > ex1 or b[1] < ey0 or b[3] > ey1:
-                problems.append(f"{side}: {ref} ragt über den Platinenrand")
+                problems.append(f"{side}: {ref} extends beyond the board edge")
 
     usable = (ex1 - ex0) * (ey1 - ey0)
-    fig.suptitle(f"Belegung (Courtyard-Fläche): oben {area['F']:.0f} mm², unten {area['B']:.0f} mm² "
-                 f"von je {usable:.0f} mm²  ·  Luftlinien: grau GND, rot VSYS, orange 3V3", fontsize=11)
+    fig.suptitle(f"Usage (courtyard area): top {area['F']:.0f} mm², bottom {area['B']:.0f} mm² "
+                 f"of {usable:.0f} mm² each  ·  ratsnest: grey GND, red VSYS, orange 3V3", fontsize=11)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     fig.tight_layout()
     fig.savefig(OUT, dpi=110)
-    print(f"{OUT.relative_to(HARDWARE.parent)}  oben {area['F']:.0f} mm², unten {area['B']:.0f} mm²")
+    print(f"{OUT.relative_to(HARDWARE.parent)}  top {area['F']:.0f} mm², bottom {area['B']:.0f} mm²")
     for p in problems:
         print("  ⚠", p)
     return 1 if problems else 0

@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
-"""Routing-Score: harte Bedingungen + gewichtete Summe (docs/routing-score.md).
+"""Routing score: hard constraints + weighted sum (docs/routing-score.md).
 
-Misst eine geroutete Platine (kicad-cli-DRC als JSON + pcbnew; Flächen werden nur im Speicher neu gefüllt, die Datei
-bleibt unverändert) und entscheidet zwischen zwei Ständen:
+Measures a routed board (kicad-cli DRC as JSON + pcbnew; zones are refilled only in memory, the file stays
+unchanged) and decides between two states:
 
-1. harte Bedingungen ([hard] in hardware/routing-score.toml): wer sie verletzt, ist unzulässig. Zulässig schlägt
-   unzulässig; von zwei unzulässigen gewinnt die kleinere Gesamtverletzung (Regel nach Deb), bei Gleichstand die
-   kürzere zu schmale Strompfad-Länge.
-2. gewichtete Summe der weichen Kennzahlen S = Σ weight · value / scale (kleiner ist besser).
-3. Schwelle und Veto: ein Kandidat ersetzt die offizielle Platine nur bei ΔS ≤ −min_improvement und wenn keine
-   Kennzahl mit max_regression sich stärker verschlechtert.
+1. hard constraints ([hard] in hardware/routing-score.toml): whoever violates them is infeasible. Feasible beats
+   infeasible; of two infeasible ones the smaller total violation wins (Deb's rule), on a tie the shorter
+   under-width current path length.
+2. weighted sum of the soft metrics S = Σ weight · value / scale (smaller is better).
+3. Threshold and veto: a candidate replaces the official board only if ΔS ≤ −min_improvement and no metric with
+   max_regression gets worse by more than that.
 
-Wird von route_gate.py (Gate, Befehle score/explain) und route.py (bester Versuch eines Aufrufs) benutzt.
-Muss mit dem System-Python laufen, das pcbnew enthält.
+Used by route_gate.py (gate, commands score/explain) and route.py (best attempt of an invocation).
+Must run with the system Python that contains pcbnew.
 
-Aufruf direkt: route_score.py <platine.kicad_pcb> [board]   Kennzahlen als JSON
+Direct usage: route_score.py <board.kicad_pcb> [board]   metrics as JSON
 """
 import fnmatch
 import hashlib
@@ -34,11 +34,11 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 CONFIG = ROOT / "hardware" / "routing-score.toml"
-# Erhöhen, wenn sich die Berechnung einer Kennzahl ändert: das Gate misst dann die offizielle Platine neu
+# increase when the computation of a metric changes: the gate then measures the official board again
 METRICS_VERSION = 1
 NM = 1e6
 LIB_CHECKS = {"lib_footprint_issues", "lib_footprint_mismatch"}
-STEP = 0.1  # mm, Abtastschritt entlang der Bahnen
+STEP = 0.1  # mm, sampling step along the tracks
 ROBUST_SAMPLES = 2000
 
 
@@ -46,10 +46,10 @@ def mm(v):
     return v / NM
 
 
-# --- Konfiguration ------------------------------------------------------------------------------------------
+# --- Configuration --------------------------------------------------------------------------------------------------
 
 def load_config(board=None, path=None):
-    """TOML laden; [boards.<board>] überschreibt die allgemeinen Abschnitte (nets, antenna, via_in_pad, paths …)."""
+    """Load the TOML; [boards.<board>] overrides the general sections (nets, antenna, via_in_pad, paths …)."""
     path = Path(path) if path else CONFIG
     cfg = tomllib.loads(path.read_text())
     per_board = cfg.pop("boards", {})
@@ -67,11 +67,11 @@ def config_hash(path=None):
     return hashlib.sha256(Path(path or CONFIG).read_bytes()).hexdigest()
 
 
-# --- DRC ------------------------------------------------------------------------------------------------------
+# --- DRC ------------------------------------------------------------------------------------------------------------
 
 def run_drc(pcb, extra_rule=None):
-    """kicad-cli-DRC (JSON, alle Schweregrade) einer Kopie samt .kicad_pro/.kicad_dru; extra_rule wird an die
-    Regeldatei angehängt."""
+    """kicad-cli DRC (JSON, all severities) of a copy including .kicad_pro/.kicad_dru; extra_rule is appended to the
+    rules file."""
     pcb = Path(pcb)
     with tempfile.TemporaryDirectory() as tmp:
         copy = Path(tmp) / pcb.name
@@ -89,10 +89,10 @@ def run_drc(pcb, extra_rule=None):
         return json.loads(out.read_text())
 
 
-# --- Geometrie --------------------------------------------------------------------------------------------
+# --- Geometry -------------------------------------------------------------------------------------------------------
 
 def seg_point_dist(px, py, ax, ay, bx, by):
-    """Abstand vieler Punkte (px, py) zu vielen Strecken (a, b) → Matrix [Punkte, Strecken]."""
+    """Distance of many points (px, py) to many segments (a, b) → matrix [points, segments]."""
     dx, dy = bx - ax, by - ay
     ll = dx * dx + dy * dy
     ll = np.where(ll == 0, 1e-12, ll)
@@ -115,7 +115,7 @@ def samples(seg):
 
 
 def octi(a, b):
-    """45°-Abstand (oktilinear)."""
+    """45° distance (octilinear)."""
     dx, dy = abs(a[0] - b[0]), abs(a[1] - b[1])
     return max(dx, dy) + (math.sqrt(2) - 1) * min(dx, dy)
 
@@ -133,7 +133,7 @@ def mst_length(points, metric=octi):
     return total
 
 
-# --- Platinenmodell -------------------------------------------------------------------------------------------
+# --- Board model ----------------------------------------------------------------------------------------------------
 
 class Board:
     def __init__(self, path):
@@ -141,7 +141,7 @@ class Board:
         self.pcbnew = pcbnew
         self.board = b = pcbnew.LoadBoard(str(path))
         pcbnew.ZONE_FILLER(b).Fill(b.Zones())
-        self.cu = list(b.GetEnabledLayers().CuStack())  # Reihenfolge F.Cu, In1, …, B.Cu
+        self.cu = list(b.GetEnabledLayers().CuStack())  # order F.Cu, In1, …, B.Cu
         self.name = {l: b.GetLayerName(l) for l in self.cu}
         self.segs, self.vias = [], []
         for t in b.GetTracks():
@@ -199,10 +199,10 @@ def inside(B, polys, x, y):
     return any(p.Contains(v) for p in polys)
 
 
-# --- Kennzahlen -----------------------------------------------------------------------------------------------
+# --- Metrics --------------------------------------------------------------------------------------------------------
 
 def gnd_islands(B, gnd):
-    """GND-Flächenstücke ohne Via und ohne Durchsteckpad (wie früher route_gate.gnd_islands)."""
+    """GND fill pieces without via and without through-hole pad (like the former route_gate.gnd_islands)."""
     vias = [v["item"].GetPosition() for v in B.vias if v["net"] == gnd]
     tht = [p["item"].GetPosition() for p in B.pads if p["net"] == gnd and p["tht"]]
     count = 0
@@ -218,8 +218,8 @@ def gnd_islands(B, gnd):
 
 
 def angles(B, gnd):
-    """Knicke, spitze Winkel (< 90°) und zurücklaufende Bahnen je Netz/Lage (Bahnen gleichen Netzes an einem
-    gemeinsamen Endpunkt)."""
+    """Bends, acute angles (< 90°) and folded-back tracks per net/layer (tracks of the same net at a common
+    end point)."""
     ends = defaultdict(list)
     for s in B.segs:
         if s["net"] == gnd or s["len"] < 1e-4:
@@ -243,7 +243,7 @@ def angles(B, gnd):
 
 
 def detour(B, zone_nets):
-    """Umweg je Netz: geroutete Länge / oktilinearer Minimalbaum der Pads."""
+    """Detour per net: routed length / octilinear minimum spanning tree of the pads."""
     per_net = {}
     length = defaultdict(float)
     for s in B.segs:
@@ -262,13 +262,13 @@ def detour(B, zone_nets):
 
 
 def plane_layers(B, gnd):
-    """Lagen ohne Bahnen mit GND-Füllung (4 Lagen: In1)."""
+    """Layers without tracks with GND fill (4 layers: In1)."""
     used = {s["layer"] for s in B.segs}
     return [l for l in B.cu if l not in used and B.gnd_fill(gnd, l)]
 
 
 def coupled_layers(B, planes):
-    """Lagenpaare, die koppeln: gleiche Lage oder keine Ebene dazwischen."""
+    """Layer pairs that couple: same layer or no plane in between."""
     idx = {l: i for i, l in enumerate(B.cu)}
     pairs = set()
     for a in B.cu:
@@ -303,8 +303,8 @@ def sense_coupling(B, cfg, planes):
 
 
 def return_gaps(B, gnd, power, planes):
-    """Signal-Bahnlänge ohne GND-Bezug: mit Ebene muss die nächste Ebene unter dem Punkt gefüllt sein, ohne Ebene
-    (2 Lagen) eine Nachbarlage. Das Antipad des eigenen Vias zählt nicht."""
+    """Signal track length without GND reference: with a plane, the nearest plane below the point must be filled;
+    without a plane (2 layers), an adjacent layer. The antipad of the track's own via does not count."""
     fills = {l: B.gnd_fill(gnd, l) for l in B.cu}
     idx = {l: i for i, l in enumerate(B.cu)}
     total, per = 0.0, defaultdict(float)
@@ -335,7 +335,7 @@ def usb(B, cfg):
     dp, dm = pair
     ln = {n: sum(s["len"] for s in B.segs if s["net"] == n) for n in (dp, dm)}
     vias = sum(1 for v in B.vias if v["net"] in (dp, dm))
-    stubs = 0  # offene Bahnenden: berühren weder Bahn gleichen Netzes noch Via noch Pad
+    stubs = 0  # open track ends: touch neither a track of the same net nor a via nor a pad
     for n in (dp, dm):
         segs = [s for s in B.segs if s["net"] == n]
         ends = defaultdict(int)
@@ -359,7 +359,7 @@ def usb(B, cfg):
 
 def antenna(B, cfg, gnd):
     acfg = cfg["antenna"]
-    areas = [z for z in B.rule_areas if z.GetZoneName().startswith(acfg["area_prefix"])]
+    areas = [z for z in B.rule_areas if z.GetZoneName().startswith((acfg["area_prefix"], "Antenne"))]  # "Antenne": name before 2026-11-08
     rects = []
     for z in areas:
         bb = z.GetBoundingBox()
@@ -413,8 +413,8 @@ def via_in_pad(B, cfg):
 
 
 def stitching(B, gnd):
-    """95-%-Wert und Größtwert des Abstands von GND-Füllung der Außenlagen (0,25-mm-Raster) zum nächsten
-    GND-Via/Durchsteckpad."""
+    """95th percentile and maximum of the distance from GND fill on the outer layers (0.25 mm grid) to the nearest
+    GND via/through-hole pad."""
     gv = np.array([v["p"] for v in B.vias if v["net"] == gnd] +
                   [p["p"] for p in B.pads if p["net"] == gnd and p["tht"]])
     pts = []
@@ -456,17 +456,17 @@ def thermal_vias(B, gnd, spec, margin=0.5):
                                 mm(bb.GetRight()) + margin, mm(bb.GetBottom()) + margin))
 
 
-# --- Strompfade -----------------------------------------------------------------------------------------------
+# --- Current paths --------------------------------------------------------------------------------------------------
 
 def ipc_width(i, dt, k, t_mm):
-    """Mindestbreite (mm) nach IPC-2221: I = k · ΔT^0,44 · A^0,725 (A in mil²)."""
+    """Minimum width (mm) per IPC-2221: I = k · ΔT^0.44 · A^0.725 (A in mil²)."""
     area_mil2 = (i / (k * dt ** 0.44)) ** (1 / 0.725)
     return area_mil2 / (t_mm / 0.0254) * 0.0254
 
 
 def power_paths(B, cfg):
-    """Je Pfad (Pad → Pad, gleiches Netz) der Weg mit dem kleinsten Widerstand durch Bahnen und Vias (Dijkstra);
-    Breite gegen IPC-2221 (current_a), Spannungsabfall bei peak_a."""
+    """For each path (pad → pad, same net) the route with the lowest resistance through tracks and vias (Dijkstra);
+    width against IPC-2221 (current_a), voltage drop at peak_a."""
     th = cfg["thermal"]
     rho = th["resistivity_ohm_m"]
     results = []
@@ -554,11 +554,11 @@ def power_paths(B, cfg):
     return results
 
 
-# --- Messung ----------------------------------------------------------------------------------------------
+# --- Measurement ----------------------------------------------------------------------------------------------------
 
 def measure_all(pcb, cfg, project=None):
-    """Alle Kennzahlen einer Platine → (metrics, details). project: .kicad_pro, deren Regeln (samt .kicad_dru)
-    gelten sollen; liegt die Platine nicht daneben, wird sie dafür in einen temporären Ordner kopiert."""
+    """All metrics of a board → (metrics, details). project: .kicad_pro whose rules (including .kicad_dru) should
+    apply; if the board is not next to it, it is copied into a temporary directory for this."""
     pcb = Path(pcb)
     project = Path(project) if project else pcb.with_suffix(".kicad_pro")
     if project.resolve() != pcb.with_suffix(".kicad_pro").resolve():
@@ -578,8 +578,8 @@ def measure_all(pcb, cfg, project=None):
     margin_rule = (f'(rule "score_margin"\n  (condition "A.Type != \'Zone\' && B.Type != \'Zone\' && '
                    f'!(A.Type == \'Pad\' && B.Type == \'Pad\')")\n'
                    f'  (constraint clearance (min {clearance + nets["clearance_margin_mm"]:.3f}mm)))')
-    # Gezählt werden die beteiligten Elemente (Bahn, Via, Pad), nicht die gemeldeten Paare: welche Paare der DRC
-    # meldet, schwankt von Lauf zu Lauf um einige Prozent (KiCad 9.0.8, mehrere Threads), die Elemente nicht.
+    # The involved items (track, via, pad) are counted, not the reported pairs: which pairs the DRC reports varies
+    # from run to run by a few percent (KiCad 9.0.8, multiple threads), the items do not.
     tight = len({i["uuid"] for v in run_drc(pcb, margin_rule)["violations"] if v["type"] == "clearance"
                  for i in v["items"]})
     power = set(nets["power"])
@@ -598,16 +598,16 @@ def measure_all(pcb, cfg, project=None):
     ideal = sum(v[1] for v in per_net.values())
     errors = sum(1 for v in viol if v["severity"] == "error")
     m = {
-        # Kennzahlen des früheren lexikografischen Gates (Kurzzeile, Dateinamen, alte routing.json)
+        # metrics of the former lexicographic gate (short line, file names, old routing.json)
         "drc_violations": len(viol),
         "via_count": len(B.vias),
         "track_length_mm": round(sum(s["len"] for s in B.segs), 2),
-        # harte Bedingungen
+        # hard constraints
         "drc_errors": errors,
         "unconnected": len(drc["unconnected_items"]),
         "antenna_intrusions": intr,
         "power_width_violations": sum(1 for p in paths if p["violation"]),
-        # weiche Kennzahlen
+        # soft metrics
         "drc_warnings": len(viol) - errors,
         "gnd_islands": gnd_islands(B, gnd),
         "signal_vias": sum(1 for v in B.vias if v["net"] != gnd),
@@ -641,10 +641,10 @@ def measure_all(pcb, cfg, project=None):
     return m, details
 
 
-# --- Bewertung und Entscheidung ------------------------------------------------------------------------------
+# --- Evaluation and decision ----------------------------------------------------------------------------------------
 
 def evaluate(cfg, metrics, details=None):
-    """→ dict(hard={Kennzahl: Überschreitung}, hard_total, under_mm, S, parts)."""
+    """→ dict(hard={metric: excess}, hard_total, under_mm, S, parts)."""
     details = details or {}
     hard = {k: max(0, metrics[k] - lim) for k, lim in cfg["hard"].items() if metrics.get(k) is not None}
     under = sum(p.get("under_width_mm", 0) for p in details.get("paths", []) if p.get("violation"))
@@ -659,8 +659,8 @@ def evaluate(cfg, metrics, details=None):
 
 
 def rank_key(cfg, metrics, details=None):
-    """Sortierschlüssel (kleiner ist besser) für den besten Versuch eines Aufrufs: erst zulässig, dann kleinste
-    Verletzung (Anzahl, dann zu schmale Länge), dann kleinster S."""
+    """Sort key (smaller is better) for the best attempt of an invocation: first feasible, then smallest violation
+    (count, then under-width length), then smallest S."""
     e = evaluate(cfg, metrics, details)
     return (e["hard_total"], e["under_mm"], e["S"])
 
@@ -675,30 +675,30 @@ def _vetoes(cfg, cand, base):
 
 
 def decide(cfg, cand, official):
-    """cand/official: dict(metrics=…, details=…). → (accept, reason, drivers). drivers: die zwei größten Beiträge
-    zu ΔS als Text."""
+    """cand/official: dict(metrics=…, details=…). → (accept, reason, drivers). drivers: the two largest contributions
+    to ΔS as text."""
     T = cfg["decision"]["min_improvement"]
     ec, eo = evaluate(cfg, cand["metrics"], cand.get("details")), evaluate(cfg, official["metrics"],
                                                                           official.get("details"))
     dS = ec["S"] - eo["S"]
     diffs = {k: ec["parts"].get(k, 0) - eo["parts"].get(k, 0) for k in set(ec["parts"]) | set(eo["parts"])}
     top = sorted(diffs.items(), key=lambda kv: -abs(kv[1]))[:2]
-    drivers = " / ".join(f"{k} {v:+.1f}" for k, v in top if abs(v) >= 0.005) or "keine Unterschiede"
+    drivers = " / ".join(f"{k} {v:+.1f}" for k, v in top if abs(v) >= 0.005) or "no differences"
     hc, ho = ec["hard_total"], eo["hard_total"]
     if ho == 0 and hc > 0:
-        return False, f"harte Bedingung verletzt ({', '.join(ec['hard'])}), offizielle Platine zulässig", drivers
+        return False, f"hard constraint violated ({', '.join(ec['hard'])}), official board feasible", drivers
     if ho > 0 and hc == 0:
-        return True, f"zulässig, offizielle Platine verletzt {', '.join(eo['hard'])}", drivers
+        return True, f"feasible, official board violates {', '.join(eo['hard'])}", drivers
     if ho > 0 and (hc, round(ec["under_mm"], 1)) != (ho, round(eo["under_mm"], 1)):
         better = (hc, ec["under_mm"]) < (ho, eo["under_mm"])
-        return better, (f"beide unzulässig, Verletzung {hc}/{ec['under_mm']:.1f} mm gegen {ho}/{eo['under_mm']:.1f} mm "
-                        f"({'kleiner' if better else 'größer'})"), drivers
+        return better, (f"both infeasible, violation {hc}/{ec['under_mm']:.1f} mm vs. {ho}/{eo['under_mm']:.1f} mm "
+                        f"({'smaller' if better else 'larger'})"), drivers
     vetoes = _vetoes(cfg, cand["metrics"], official["metrics"])
     if vetoes:
         return False, "Veto: " + ", ".join(vetoes), drivers
     if dS <= -T:
         return True, f"ΔS {dS:+.2f} ≤ −{T:g}", drivers
-    return False, f"ΔS {dS:+.2f} > −{T:g} (nicht um die Schwelle besser)", drivers
+    return False, f"ΔS {dS:+.2f} > −{T:g} (not better by the threshold)", drivers
 
 
 def dominates(cfg, a, b):
@@ -715,7 +715,7 @@ def fmt(v):
 
 
 def table(cfg, boards):
-    """boards: Liste (Name, dict(metrics, details)); die erste ist die Basis für ΔS."""
+    """boards: list of (name, dict(metrics, details)); the first one is the baseline for ΔS."""
     base = evaluate(cfg, boards[0][1]["metrics"], boards[0][1].get("details"))
     lines = [f"{'board':34} {'hard':>4} {'under_mm':>8} {'S':>8} {'dS':>7}  {'vias':>4} {'len_mm':>7}"]
     for name, b in boards:
@@ -728,24 +728,24 @@ def table(cfg, boards):
 
 
 def pareto(cfg, boards):
-    lines = ["Pareto (weiche Kennzahlen mit Gewicht ≠ 0):"]
+    lines = ["Pareto (soft metrics with weight ≠ 0):"]
     for name, b in boards:
         dom = [n for n, o in boards if n != name and dominates(cfg, o["metrics"], b["metrics"])]
-        lines.append(f"  {name[:34]:34} " + (f"dominiert von {', '.join(dom)}" if dom else "nicht dominiert"))
+        lines.append(f"  {name[:34]:34} " + (f"dominated by {', '.join(dom)}" if dom else "not dominated"))
     return lines
 
 
 def explain(cfg, cand_name, cand, base_name, official):
-    """Beitragstabelle, Kipp-Faktor je Kennzahl, Robustheit gegen zufällige Gewichte, Pfade (Liste von Zeilen)."""
+    """Contribution table, flip factor per metric, robustness against random weights, paths (list of lines)."""
     T = cfg["decision"]["min_improvement"]
     accept, why, _ = decide(cfg, cand, official)
     ec, eo = evaluate(cfg, cand["metrics"], cand.get("details")), evaluate(cfg, official["metrics"],
                                                                           official.get("details"))
     dS = ec["S"] - eo["S"]
-    lines = [f"=== {cand_name} gegen {base_name}: {'ÜBERNEHMEN' if accept else 'VERWERFEN'} ({why})"]
+    lines = [f"=== {cand_name} vs. {base_name}: {'ACCEPT' if accept else 'REJECT'} ({why})"]
     if eo["hard_total"] or ec["hard_total"]:
-        lines.append(f"  harte Stufe: offiziell {eo['hard'] or 'zulässig'} (zu schmal {eo['under_mm']} mm), "
-                     f"Kandidat {ec['hard'] or 'zulässig'} (zu schmal {ec['under_mm']} mm)")
+        lines.append(f"  hard stage: official {eo['hard'] or 'feasible'} (too narrow {eo['under_mm']} mm), "
+                     f"candidate {ec['hard'] or 'feasible'} (too narrow {ec['under_mm']} mm)")
     rows = []
     for k in sorted(set(ec["parts"]) | set(eo["parts"])):
         c = ec["parts"].get(k, 0) - eo["parts"].get(k, 0)
@@ -756,7 +756,7 @@ def explain(cfg, cand_name, cand, base_name, official):
     for k, a, b, c in rows:
         if abs(c) < 0.005:
             continue
-        # Faktor auf das Gewicht dieser einen Kennzahl, bei dem die weiche Entscheidung kippt (ΔS = −T)
+        # factor on the weight of this one metric at which the soft decision flips (ΔS = −T)
         f = 1 + (-T - dS) / c
         lines.append(f"  {k:24} {fmt(a):>10} {fmt(b):>10} {c:>+8.2f}  {abs(c) / tot:>5.0%}  "
                      + (f"x{f:.2f}" if f >= 0 else "-"))
@@ -764,16 +764,16 @@ def explain(cfg, cand_name, cand, base_name, official):
     rnd = random.Random(1)
     diffs = [r[3] for r in rows]
     n_acc = sum(1 for _ in range(ROBUST_SAMPLES) if sum(c * 2 ** rnd.uniform(-1, 1) for c in diffs) <= -T)
-    lines.append(f"  Robustheit: weiche Entscheidung „übernehmen“ in {100 * n_acc / ROBUST_SAMPLES:.1f} % von "
-                 f"{ROBUST_SAMPLES} zufälligen Gewichtssätzen (je ×0,5…×2)")
-    for label, b in (("offiziell", official), ("Kandidat", cand)):
+    lines.append(f"  robustness: soft decision \"accept\" in {100 * n_acc / ROBUST_SAMPLES:.1f} % of "
+                 f"{ROBUST_SAMPLES} random weight sets (each ×0.5…×2)")
+    for label, b in (("official", official), ("candidate", cand)):
         for p in (b.get("details") or {}).get("paths", []):
             if not p.get("connected"):
-                lines.append(f"  Pfad {label}: {p['name']}: nicht verbunden")
+                lines.append(f"  path {label}: {p['name']}: not connected")
                 continue
-            lines.append(f"  Pfad {label}: {p['name']}: {p['drop_mv']} mV, min. {p['min_width_mm']} mm, "
-                         f"{p['vias']} Vias, innen {p.get('inner_mm', 0)} mm, zu schmal {p['under_width_mm']} mm"
-                         + ("  ← Verletzung" if p["violation"] else ""))
+            lines.append(f"  path {label}: {p['name']}: {p['drop_mv']} mV, min. {p['min_width_mm']} mm, "
+                         f"{p['vias']} vias, inner {p.get('inner_mm', 0)} mm, too narrow {p['under_width_mm']} mm"
+                         + ("  ← violation" if p["violation"] else ""))
     return lines
 
 

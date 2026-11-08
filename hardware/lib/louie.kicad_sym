@@ -9,7 +9,7 @@
 		(property "Value" "ESP32-C3-MINI-1" (at 12.7 13.969999999999999 0) (effects (font (size 1.27 1.27)) (justify right)))
 		(property "Footprint" "lcsc:WIFIM-SMD_ESP32-C3-MINI-1" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))
 		(property "Datasheet" "https://www.espressif.com/sites/default/files/documentation/esp32-c3-mini-1_datasheet_en.pdf" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))
-		(property "Description" "WLAN/BLE-Modul ESP32-C3, 4 MB Flash, PCB-Antenne" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))
+		(property "Description" "Wi-Fi/BLE module ESP32-C3, 4 MB flash, PCB antenna" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))
 		(property "LCSC Part" "C2838502" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))
 		(symbol "ESP32-C3-MINI-1_0_1"
 			(rectangle (start -12.7 12.7) (end 12.7 -15.24)
@@ -132,7 +132,7 @@
 		(property "Value" "ESP32-C6-MINI-1" (at 12.7 21.59 0) (effects (font (size 1.27 1.27)) (justify right)))
 		(property "Footprint" "lcsc:WIFIM-SMD_ESP32-C6-MINI-1" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))
 		(property "Datasheet" "https://documentation.espressif.com/esp32-c6-mini-1_mini-1u_datasheet_en.html" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))
-		(property "Description" "WLAN 6/BLE 5.3/802.15.4-Modul ESP32-C6, H8 = 8 MB Flash (N4 = 4 MB pinkompatibel), PCB-Antenne" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))
+		(property "Description" "Wi-Fi 6/BLE 5.3/802.15.4 module ESP32-C6, H8 = 8 MB flash (N4 = 4 MB pin-compatible), PCB antenna" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))
 		(property "LCSC Part" "C42403058" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))
 		(symbol "ESP32-C6-MINI-1_0_1"
 			(rectangle (start -12.7 20.32) (end 12.7 -17.78)
@@ -255,7 +255,7 @@
 		(property "Value" "DRV8213DSG" (at 10.16 -8.89 0) (effects (font (size 1.27 1.27)) (justify right)))
 		(property "Footprint" "Package_SON:Texas_DSG0008A_WSON-8-1EP_2x2mm_P0.5mm_EP0.9x1.6mm" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))
 		(property "Datasheet" "https://www.ti.com/lit/gpn/drv8213" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))
-		(property "Description" "H-Brücke 4 A, Strommessung IPROPI, Strombegrenzung, Autosleep" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))
+		(property "Description" "H-bridge 4 A, current sensing IPROPI, current limit, autosleep" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))
 		(property "LCSC Part" "C22407186" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))
 		(symbol "DRV8213DSG_0_1"
 			(rectangle (start -10.16 5.08) (end 10.16 -7.62)
@@ -290,7 +290,7 @@
 		(property "Value" "DRV8833PWP" (at 10.16 -8.89 0) (effects (font (size 1.27 1.27)) (justify right)))
 		(property "Footprint" "Package_SO:HTSSOP-16-1EP_4.4x5mm_P0.65mm_EP3.4x5mm_Mask2.46x2.31mm" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))
 		(property "Datasheet" "https://www.ti.com/lit/ds/symlink/drv8833.pdf" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))
-		(property "Description" "Dual-H-Brücke, hier im Parallelbetrieb (bis ca. 3 A)" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))
+		(property "Description" "Dual H-bridge, here in parallel mode (up to approx. 3 A)" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))
 		(property "LCSC Part" "C50506" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))
 		(symbol "DRV8833PWP_parallel_0_1"
 			(rectangle (start -10.16 7.62) (end 10.16 -7.62)
@@ -341,7 +341,7 @@
 		(property "Value" "LIS2DH12" (at 7.62 8.89 0) (effects (font (size 1.27 1.27)) (justify right)))
 		(property "Footprint" "Package_LGA:LGA-12_2x2mm_P0.5mm" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))
 		(property "Datasheet" "https://www.st.com/resource/en/datasheet/lis2dh12.pdf" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))
-		(property "Description" "3-Achsen-Beschleunigungssensor, I2C/SPI, 2 µA" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))
+		(property "Description" "3-axis accelerometer, I2C/SPI, 2 µA" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))
 		(property "LCSC Part" "C110926" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))
 		(symbol "LIS2DH12_0_1"
 			(rectangle (start -7.62 7.62) (end 7.62 -7.62)

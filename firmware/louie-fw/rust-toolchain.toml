@@ -1,0 +1,4 @@
+# Dated nightly (docs/firmware-architecture.md 9): raise only deliberately and with a golden/HIL run.
+[toolchain]
+channel = "nightly-2026-11-01"
+components = ["rust-src"]

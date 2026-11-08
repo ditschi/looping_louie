@@ -1,11 +1,11 @@
 # Firmware architecture (Rust, std on ESP-IDF)
 
 Status: 2026-11-06 · Draft, revised after critical review; basis for starting the implementation.
-Language decision: [firmware-sprache.md](firmware-sprache.md). Functional basis:
-[software-konzept.md](software-konzept.md) (network, roles, game, protocol section 7),
-[web-ui-konzept.md](web-ui-konzept.md), [modus-baukasten.md](modus-baukasten.md) (schema 2),
-[geraete-anlernen.md](geraete-anlernen.md), [idee-funk-taster.md](idee-funk-taster.md).
-Hardware: [hauptplatine-c6.md](hauptplatine-c6.md) 2.3–2.5 (pin assignment, wake-up), test setup: [test-hardware.md](test-hardware.md).
+Language decision: [firmware-language.md](firmware-language.md). Functional basis:
+[software-concept.md](software-concept.md) (network, roles, game, protocol section 7),
+[web-ui-concept.md](web-ui-concept.md), [mode-builder.md](mode-builder.md) (schema 2),
+[device-pairing.md](device-pairing.md), [idea-wireless-buttons.md](idea-wireless-buttons.md).
+Hardware: [main-board-c6.md](main-board-c6.md) 2.3–2.5 (pin assignment, wake-up), test setup: [test-hardware.md](test-hardware.md).
 Earlier versions of individual decisions: [decision-history.md](decision-history.md) 8.
 
 Markers: **(verified)** = source read (below), **(unverified)** = estimate or rule of thumb, measure in the test
@@ -54,7 +54,7 @@ setup.
 
 Constraints ESP32-C6-MINI-1: one RISC-V core 160 MHz, **512 KB SRAM**, 4 MB (N4) or 8 MB (H8) flash
 (verified, datasheet). Free heap in the ESP-IDF example with Wi-Fi + BLE: **259 KB** (verified, ESP-Techpedia, see
-[analyse-funk-controller.md](analyse-funk-controller.md)). Nothing is time-critical: LEDC generates PWM in hardware,
+[analysis-wireless-controllers.md](analysis-wireless-controllers.md)). Nothing is time-critical: LEDC generates PWM in hardware,
 ramps and measurements run on a 10–50 ms grid. Scarce are **RAM** (6.3) and, on N4, **flash** (6.1).
 
 ## 2. Repo and workspace layout
@@ -93,7 +93,7 @@ checked in, so that a build in one year still produces the same result.
 
 | Crate | Content | Why here |
 |---|---|---|
-| **louie-core** | Round state machine (ready, countdown, running, pause, end, sleep), mode interpreter schema 2 (flight plan, spice, jokers, end, meanness, upgrade schema 1 → 2) including serde types of the mode schema, validation with hints (modus-baukasten.md 2.8), joker accounts, cooldowns, shared lock, reverse limits, model profiles (minimum speed, centrifugal limit, cap), ramp formulas, roles → permissions, deterministic randomness (seed) | Pure functions over time and inputs. `no_std` + `alloc` is **discipline** here: the compiler prevents clock, I/O, threads and `HashMap` with a random hasher in the core. Time comes as a parameter (`now_ms: u32`) |
+| **louie-core** | Round state machine (ready, countdown, running, pause, end, sleep), mode interpreter schema 2 (flight plan, spice, jokers, end, meanness, upgrade schema 1 → 2) including serde types of the mode schema, validation with hints (mode-builder.md 2.8), joker accounts, cooldowns, shared lock, reverse limits, model profiles (minimum speed, centrifugal limit, cap), ramp formulas, roles → permissions, deterministic randomness (seed) | Pure functions over time and inputs. `no_std` + `alloc` is **discipline** here: the compiler prevents clock, I/O, threads and `HashMap` with a random hasher in the core. Time comes as a parameter (`now_ms: u32`) |
 | **louie-proto** | `ClientMsg`/`ServerMsg` (WS), REST bodies, `Config`, `DevicesFile`, error codes; schema version; optional TS types via `ts-rs` | Shared contract for firmware, simulator and web UI. If the protocol changes, the build breaks instead of the phone |
 | **louie-app** | **Actor loop** `App::run(rx, sinks, hal, store)` as a `std::thread` with channels (owns the whole state), sessions/tokens, admin login with lock, hub (one JSON state, rate 10/s, events, backpressure per client), REST router, inputs (phone, wireless button, J6) → same joker request, button pairing, persistence via trait `Store`, HAL traits, trait `ClientSink` | Shares the entire server logic **including threads, channels and backpressure** between firmware and simulator. Firmware and simulator only provide transport (httpd or axum) and HAL |
 | **louie-fw** | Board definitions, HAL implementation (LEDC, ADC, GPIO, I²C, RMT), Wi-Fi/AP, captive DNS, mDNS, `EspHttpServer` + WS adapter with own send path, NimBLE scan, NVS, LittleFS, OTA, sleep, watchdog, logging | Everything that needs ESP-IDF |
@@ -140,7 +140,7 @@ The traits live in `louie-app::hal` (std, no ESP types). Every method is non-blo
 | Trait | Methods (selection) | Louie board | Simulator |
 |---|---|---|---|
 | `Motor` | `set_duty(i16 /*‰ duty cycle, −1000…1000*/)`, `brake()`, `coast()` | LEDC 20 kHz on IN1/IN2 (IO18/IO19), drive/brake: forward IN1 = 1, IN2 = PWM (1 − d) | Model with inertia, speed for the top view |
-| `Lever` | `closed() -> bool`, `edges()` | SENSE IO3, level "closed" ≈ 3.0 V (hauptplatine-c6.md 2.5) | Key / UI button |
+| `Lever` | `closed() -> bool`, `edges()` | SENSE IO3, level "closed" ≈ 3.0 V (main-board-c6.md 2.5) | Key / UI button |
 | `Power` | `vsys_mv()`, `vbus_present()`, `usb_powered()` | VBAT_ADC IO0 (divider 470k/470k, factor 2), VBUS_DET IO4 | Slider in the UI |
 | `MotorCurrent` | `ma()` | ISEN_ADC IO1, 255 mV/A (R_IPROPI 1.24 k × 205 µA/A) | from the motor model |
 | `StatusLed` | `pattern(Pattern)` | IO14 | Display in the sim UI |
@@ -184,9 +184,9 @@ There is only one motor driver: the **DRV8213 scheme** (IN1/IN2, drive/brake, co
 - **Runtime detection only for options**: I²C probe for the LIS2DH12, LED chain and J6 according to the configuration
   (owner setting), battery present yes/no from the VSYS history. If an option is missing, the HAL returns `None` and
   the UI hides the feature.
-- **Breadboard:** The test setup ([test-hardware.md](test-hardware.md)) uses the **ESP32-C6-DevKitC-1-N8** or the compatible Waveshare ESP32-C6-DEV-KIT-N8 (8 MB like
-  the target H8) with **the same GPIO numbers** as the board; the only exception: IO14 is not broken out there,
-  the status LED is on **IO10**. Optionally the DevKitM-1-N4 (same module as the board, all GPIOs).
+- **Breadboard:** The test setup ([test-hardware.md](test-hardware.md)) uses the **Waveshare ESP32-C6-DEV-KIT-N8**
+  (pin header identical to the ESP32-C6-DevKitC-1-N8, verified; 8 MB like the target H8) with **the same GPIO
+  numbers** as the board; the only exception: the WROOM-1 module has no IO14, the status LED is on **IO10**. Optionally the DevKitM-1-N4 (same module as the board, all GPIOs).
   `board/devkitc_c6.rs` and `board/devkitm_c6.rs` take over the pins from `louie_v1.rs` and change only numeric values
   and options:
   - **Motor in LED mode:** no motor driver on the breadboard (decision 2026-11-06, decision-history.md 9). The
@@ -249,7 +249,7 @@ only through the channels (`try_send`, never blocking in the tokio task).
    DRV8213 this gives approx. 3.3 V × 200/245 ≈ 2.7 V > V_IH 1.45 V, so **IN1 = IN2 = 1 = brake** (both low-side
    on), no drive. After reset both pins are input only without pull → 200 k pulls to 0 → **coast**,
    then autosleep. The earlier statement "pull-downs → motor off during reset" is therefore only true after reset; during reset
-   the driver brakes briefly. Hardware finding: see 13 and hauptplatine-c6.md 3.2 (still to be updated there).
+   the driver brakes briefly. Hardware finding: see 13 and main-board-c6.md 3.2 (still to be updated there).
 2. **Start order in `main`:** first of all IO18/IO19 as output to 0 (coast), then set up LEDC with duty cycle 0,
    only after that Wi-Fi, BLE and file system.
 3. **Motor thread:** the only place that writes LEDC. Limits from the model profile (admin), maximum ramp
@@ -260,7 +260,7 @@ only through the channels (`try_send`, never blocking in the tokio task).
 6. **Manual motor control** (`workshop.motor`, workshop): every command carries its **own validity period
    (1 s)**. Without repetition the setpoint drops to 0, even if the game thread keeps running and the phone loses the
    connection.
-7. **Stall:** current above threshold for longer than x ms (≤ 0.5 s, hauptplatine-c6.md 3) → off, error to `game`,
+7. **Stall:** current above threshold for longer than x ms (≤ 0.5 s, main-board-c6.md 3) → off, error to `game`,
    round stops, UI shows the reason.
 8. **Task watchdog (TWDT):** `motor` and `game` register; `CONFIG_ESP_TASK_WDT_PANIC=y` and
    `CONFIG_ESP_TASK_WDT_TIMEOUT_S=2` in `sdkconfig.defaults`. The IDF defaults are **without panic** and **5 s**
@@ -278,7 +278,7 @@ only through the channels (`try_send`, never blocking in the tokio task).
     at startup. After every reset except power-on and an intended restart (`reset_reason()`), the motor only starts
     after an **edge lever open → closed** or a start in the UI. A **restart counter in RTC memory** counts
     unexpected resets; from 3 within 60 s the motor stays locked until the lever is opened and
-    closed again, and the UI shows "Supply interrupted" (idee-powerbank.md). This avoids a
+    closed again, and the UI shows "Supply interrupted" (idea-power-bank.md). This avoids a
     brownout loop (start → dip → reset → start).
 12. **Brownout shortly after an OTA update:** see 7 (motor locked until the new image is marked valid).
 
@@ -317,9 +317,9 @@ PBKDF2 takes noticeable time on the C6 depending on the iteration count (unverif
 
 | Building block | Implementation | Status |
 |---|---|---|
-| STA + AP at the same time | `EspWifi` with `Configuration::Mixed` (STA + AP); test Wi-Fi in AP+STA mode (software-konzept.md 3.3) | (unverified, check API name in step 0) |
-| Startup sequence, fallback | `net` thread as a state machine per software-konzept.md 3.1; no change during a round | – |
-| AP clients | `max_connection` 8 (ESP-IDF allows up to 10); DHCP server hands out 8 addresses by default (`LWIP_DHCPS_MAX_STATION_NUM`) | (verified, software-konzept.md 3.2; Kconfig 5.5) |
+| STA + AP at the same time | `EspWifi` with `Configuration::Mixed` (STA + AP); test Wi-Fi in AP+STA mode (software-concept.md 3.3) | (unverified, check API name in step 0) |
+| Startup sequence, fallback | `net` thread as a state machine per software-concept.md 3.1; no change during a round | – |
+| AP clients | `max_connection` 8 (ESP-IDF allows up to 10); DHCP server hands out 8 addresses by default (`LWIP_DHCPS_MAX_STATION_NUM`) | (verified, software-concept.md 3.2; Kconfig 5.5) |
 | Hotspot password | **random at first start** (e.g. 10 characters without confusable characters) from the hardware RNG, in NVS; output on the console at first start and for the sticker; do not derive from the MAC (every beacon broadcasts the MAC) | Decision E17 |
 | Captive DNS | own small DNS server (std `UdpSocket`, about 100 lines, answers all A queries with 192.168.4.1) or crate `edge-captive` 0.8 (std feature) | (verified, crates.io) |
 | Captive portal via DHCP | **Option 114** (captive portal URI, RFC 8910) via `esp_netif_dhcps_option(… ESP_NETIF_CAPTIVEPORTAL_URI …)`; the IDF example `captive_portal` enables it via Kconfig | (verified, IDF 5.5 `esp_netif_types.h` and example) |
@@ -355,15 +355,15 @@ receive, not on send (verified, IDF `httpd_sess.c`). A spectator who only receiv
   is its `ClientSink` created.
 - **Static files:** gzip from the firmware (`include_bytes!`) or from the `www` partition (6.1),
   `Content-Encoding: gzip`, `Cache-Control` with version hash in the file name.
-- **No HTTPS** (rationale software-konzept.md 2.4).
+- **No HTTPS** (rationale software-concept.md 2.4).
 - **Admin password:** salted, iterated hash (PBKDF2-SHA-256) on the server, computed in the httpd task
   (4.2); without HTTPS the browser lacks Web Crypto.
 
 ### 5.3 Protocol
 
-The basis is software-konzept.md section 7. Additions the firmware knows from the start:
+The basis is software-concept.md section 7. Additions the firmware knows from the start:
 
-- from web-ui-konzept.md 8: WS `request_lead`, `handover`, `release_lead`, `request_join`, `allow_players`, `kick`,
+- from web-ui-concept.md 8: WS `request_lead`, `handover`, `release_lead`, `request_join`, `allow_players`, `kick`,
   `leader_plays`, `chick_lost`, `estop`; state `multiplayer`, `leader_plays`, `lead_policy`; permissions
   `modes.select`, `modes.tweak`, `workshop.dry`, `workshop.motor`.
 - **First WS message** of the client: `{"t":"hello","token":"…","proto":N,"now":<ms since 1970>}`. Without a valid
@@ -372,7 +372,7 @@ The basis is software-konzept.md section 7. Additions the firmware knows from th
   state messages with `{"t":"ack","seq":N}` (the newest is enough) and, without state traffic, sends an acknowledgement at least
   every 5 s (5.4).
 - `workshop.motor`: `{"t":"motor","mv":…,"valid_ms":1000}`; without repetition → 0 after 1 s (4.1).
-- Wireless buttons ([geraete-anlernen.md](geraete-anlernen.md)): `GET/POST/DELETE /api/admin/devices` (pairing,
+- Wireless buttons ([device-pairing.md](device-pairing.md)): `GET/POST/DELETE /api/admin/devices` (pairing,
   learn mode 30 s), assignment as a WS command of the game master; event
   `{"t":"event","kind":"joker","seat":2,"src":"button"}`; in the state optionally per player
   `"button":{"rssi":-71,"battery":90}`.
@@ -486,7 +486,7 @@ with 0x20000; rest as above. The web files then live not in the app but in `www`
     not match, it serves a small emergency page from the firmware (≤ 10 KB) with an upload for `www`. A rollback of the app
     leaves `www` in place, so every app must still start with the previous `www` build (protocol version, 5.3).
   - Larger → N4 **without OTA** (one large app slot, update via USB) or H8.
-- Zigbee (+0.5–0.8 MB, hauptplatine-c6.md 4) only fits on H8.
+- Zigbee (+0.5–0.8 MB, main-board-c6.md 4) only fits on H8.
 - The table is tight on N4: 128 KB file system is enough for `config.json`, `devices.json` and 30 own modes
   at ≤ 2 KB each, but not for web UI and languages. These therefore live in the firmware or in `www` (6.2).
 
@@ -498,7 +498,7 @@ with 0x20000; rest as above. The web files then live not in the app but in `www`
 | Language files (gzip, 5–8 KB per language) | in the firmware; N4 plan B: `www` | about 100 KB for 16 languages (unverified) |
 | `louie_core.wasm` (gzip, 60–120 KB) | in the firmware; N4 plan B: `www` | loaded only by the editor |
 | `config.json` (model profile, limits, permissions, admin hash, power) | LittleFS | write atomically (temp + rename) |
-| `devices.json` (paired buttons) | LittleFS | geraete-anlernen.md 7 |
+| `devices.json` (paired buttons) | LittleFS | device-pairing.md 7 |
 | `modes/*.json` (own modes; built-in ones in the firmware) | LittleFS | |
 | Wi-Fi credentials, hotspot password (random, 5.1) | **NVS** (encrypted if flash encryption comes later) | robust against power loss, never in Git |
 | Last panic reason, recent errors, restart counter | **RTC memory (`RTC_NOINIT`)**, moved to NVS at the next start | survives software reset and brownout without flash writes in the failure case |
@@ -555,12 +555,12 @@ free block **≥ 16 KB**, both without a downward trend in the last hour. If thi
   `GET /api/admin/diag` and live in the workshop area. The **last 8 errors** are also stored in
   `RTC_NOINIT` and so survive a crash.
 - **Diagnostics:** VSYS, VBUS, motor current, lever, RSSI, free heap and largest block, stack high-water mark of the
-  threads, reset reason and restart counter (brownout → status card "Supply interrupted", idee-powerbank.md),
+  threads, reset reason and restart counter (brownout → status card "Supply interrupted", idea-power-bank.md),
   uptime, version, **golden checksum** (8).
 - **Error handling:** Errors in network or storage never stop the game thread. Broken JSON file →
   load backup `.bak`, otherwise defaults, notice in the UI. Core dump partition for analysis after a crash
   (mind the write duration, 4.1 item 10).
-- **Power** (idee-powerbank.md, software-konzept.md 6.4):
+- **Power** (idea-power-bank.md, software-concept.md 6.4):
   - **There is no light sleep in hotspot mode.** Modem sleep (and thus automatic light sleep with Wi-Fi) only works
     in STA mode (verified, IDF Wi-Fi guide 5.5: "Modem-sleep mode works in station-only mode"); as an AP
     the radio must send beacons. Light sleep between rounds is therefore only possible in STA mode (`WIFI_PS_MIN_MODEM`).
@@ -568,7 +568,7 @@ free block **≥ 16 KB**, both without a downward trend in the last hour. If thi
     hotspot is visible again takes about 2–5 s (unverified, measure); phones must reconnect. Wake-up via SENSE (IO3,
     `ANY_HIGH`), VBUS_DET (IO4) and optionally INT (IO2). After a wake-up, 4.1 item 11 does not count as "unexpected".
   - On USB `WIFI_PS_NONE` and no deep sleep; power bank keep-alive as test mode (timer wake-up + radio burst).
-    Special case lever closed when falling asleep: timer wake-up every 5 s (hauptplatine-c6.md 2.5). Check all sleep paths on the
+    Special case lever closed when falling asleep: timer wake-up every 5 s (main-board-c6.md 2.5). Check all sleep paths on the
     test setup.
 
 ## 8. Tests
@@ -624,8 +624,8 @@ Loaded only in the editor, not at startup. If it is too large: mode input as `Js
 
 | Command | Does |
 |---|---|
-| `just fw-build board=louie-v1` | Release build of the firmware for one board, print size |
-| `just fw-flash board=devkitc-c6` | build, flash, open monitor |
+| `just fw-build board=louie-v1` | Release build of the firmware for one board, print size (implemented) |
+| `just fw-run [target] [port]` | build, flash, open monitor (bring-up or a probe; implemented, test-hardware.md 8) |
 | `just fw-image board=louie-v1` | create OTA file (`espflash save-image`) |
 | `just sim` | start the simulator on the PC (axum, serves `web/`) |
 | `just test` | host tests incl. golden tests |
@@ -639,7 +639,7 @@ Loaded only in the editor, not at startup. If it is too large: mode input as `Js
 | Step | Content | Done when |
 |---|---|---|
 | **0 – Toolchain and test setup** | `esp-idf-template` for C6, dated nightly, `Cargo.lock`; blink, LEDC 20 kHz on IO18/IO19 in **LED mode** (test-hardware.md 5), ADC (VSYS, ISEN pot), lever ISR; small test binaries for the **pre-order checks** (test-hardware.md 4: `lever_probe`, `boot_probe`, `pin_probe`, `adc_probe`); probe with Wi-Fi + NimBLE scan + httpd/WS **and placeholder assets** (UI 100 KB, languages 100 KB, WASM 120 KB) | LEDs follow the setpoint; pre-order checks 4.2–4.5 done. **Measurement points:** release app size (decision 6.1: N4 with OTA / `www` / without OTA / H8 only), free heap and largest block with Wi-Fi+BLE+httpd, stack high-water mark, PBKDF2 duration, IO18/IO19 on the oscilloscope during reset and deep sleep (test-hardware.md 4.4, F17) |
-| **1 – Core** | `louie-core` with schema 2, meanness, jokers, limits; golden tests for the built-in modes and the examples from modus-baukasten.md 5 and 6 | `cargo test` green, curves match the PoC (tolerance, 8) |
+| **1 – Core** | `louie-core` with schema 2, meanness, jokers, limits; golden tests for the built-in modes and the examples from mode-builder.md 5 and 6 | `cargo test` green, curves match the PoC (tolerance, 8) |
 | **2 – App and simulator** | `louie-proto`, `louie-app` with actor loop and `ClientSink`, `louie-sim`; switch the PoC UI to the real protocol | Game playable in the browser against the simulator; load client with a hanging client does not disturb the others |
 | **3 – Network on the ESP** | STA/AP/fallback, captive DNS + option 114, mDNS, httpd + own send path (5.4), header checks (5.5), NVS, LittleFS | 8 phones on the hotspot; load client 2 h without errors, **heap ≥ 60 KB, largest block ≥ 16 KB** (6.3); hanging client disconnected after ≤ 15 s, others without gap > 200 ms; captive behaviour on Android + iOS recorded |
 | **4 – Motor and power** | Motor thread with dead-man timer, emergency stop, stall, TWDT panic, second dead-man timer, restart rule; sleep/wake-up, battery/USB | HIL tests stall (motor and stall on the prototype board, test-hardware.md 6), dead-man timer, emergency stop latency (≤ 20 ms), wake-up passed; deliberate panic/WDT/brownout → no start without lever edge; jitter of the motor thread during flash writes measured |
@@ -649,6 +649,10 @@ Loaded only in the editor, not at startup. If it is too large: mode input as `Js
 | **8 – Options** | LED chain J7, player inputs J6, accelerometer, power bank pulse | depending on assembly |
 
 Steps 1 and 2 need no hardware and can run in parallel with step 0.
+
+**Status step 0 (2026-11-07):** [firmware/louie-fw](../firmware/louie-fw/README.md) contains the board definitions,
+the bring-up in LED mode and the four probes for test-hardware.md 4.2–4.5; written against the ESP-IDF v5.5 headers,
+**not compiled yet**. Wi-Fi/NimBLE/httpd probe with placeholder assets and the size measurement are still open.
 
 ## 12. Decide before programming
 
@@ -670,7 +674,7 @@ Steps 1 and 2 need no hardware and can run in parallel with step 0.
 | E14 | Where does which work run? | **Actor only for state changes** via request + reply channel with timeout; JSON, PBKDF2, validation, file I/O beforehand in the httpd task or in the `worker` (4.2) | the 50 ms tick and the motor setpoint must never wait for expensive work |
 | E15 | Restart after an unexpected reset | **No start without a lever edge open → closed**; restart counter in RTC; locked from 3 in 60 s; motor locked while a new image is unconfirmed (4.1, 7) | prevents surprise starts and brownout loops; otherwise a brownout right after an update discards a good firmware |
 | E16 | `louie-proto` as a separate crate or as a feature in `louie-core`? | **Separate crate**; mode types in `louie-core` | REST bodies, `Config`, `ts-rs` do not belong in the core and WASM; one more crate costs hardly anything (2.1) |
-| E17 | Hotspot password | **Random at first start**, in NVS, output for the sticker; reset via workshop or factory reset | derived from the MAC it could be computed by anyone in radio range; previously planned that way in software-konzept.md 3.2 (decision-history.md 8) |
+| E17 | Hotspot password | **Random at first start**, in NVS, output for the sticker; reset via workshop or factory reset | derived from the MAC it could be computed by anyone in radio range; previously planned that way in software-concept.md 3.2 (decision-history.md 8) |
 
 ## 13. Risks and fallbacks
 

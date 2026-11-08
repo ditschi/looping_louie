@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Nacharbeit an einer gerouteten Hauptplatine: offene Verbindungen und GND-Inseln mit route_fix.py schließen, wobei
-alle Bahnen des Routers (nicht die Vorrouten aus `just pcb`) aufgerissen werden dürfen; danach Stitching wie route.py.
+"""Finishing pass on a routed main board: close open connections and GND islands with route_fix.py, where all
+tracks of the router (not the pre-routes from `just pcb`) may be ripped up; then stitching as in route.py.
 
-Aufruf: route_finish.py <geroutet.kicad_pcb> <ungeroutet.kicad_pcb> <ziel.kicad_pcb> [max_schritte]
-Das Ergebnis geht danach wie jeder Lauf durch das Gate (route_gate.py check main-board <ziel> --start <ungeroutet>
---apply). Muss mit dem System-Python laufen, das pcbnew enthält.
+Usage: route_finish.py <routed.kicad_pcb> <unrouted.kicad_pcb> <target.kicad_pcb> [max_steps]
+Afterwards the result goes through the gate like any run (route_gate.py check main-board <target> --start <unrouted>
+--apply). Must run with the system Python that contains pcbnew.
 """
 import shutil
 import sys
@@ -14,7 +14,7 @@ import pcbnew
 
 sys.path.insert(0, str(Path(__file__).parent))
 ARGS = sys.argv[1:]
-sys.argv = sys.argv[:1] + ["main-board"]  # route.py liest die Platine beim Import aus argv
+sys.argv = sys.argv[:1] + ["main-board"]  # route.py reads the board from argv on import
 import route  # noqa: E402
 import route_fix  # noqa: E402
 from stitch import stitch, stitch_grid  # noqa: E402
@@ -39,18 +39,18 @@ def main(routed, unrouted, target, max_rounds=200):
            if key(t) not in pre and t.GetNetname() not in route_fix.SKIP_NETS}
     done, still = route_fix.fix(target, max_rounds=int(max_rounds), gnd=True, rip_tracks=rip,
                                 log=lambda m: print(m, flush=True))
-    print(f"route_fix: {done} geroutet, {still} offen")
+    print(f"route_fix: {done} routed, {still} open")
     for _ in range(2):
         d, _f = stitch(target, ["/GND"])
         if not d:
             break
     stitch_grid(target)
-    print(f"GND-Inseln: {route_fix.gnd_islands(target, log=lambda m: None)}")
+    print(f"GND islands: {route_fix.gnd_islands(target, log=lambda m: None)}")
     stitch_grid(target)
     if route_fix.ISLAND_AREA_SEARCH:
-        print(f"Vias in Flächenstücken ohne Anbindung: {route_fix.fragment_vias(target, log=print)}")
-    print(f"lose Vias/Bahnen entfernt: {route.remove_dangling_vias(target)}")
-    board = pcbnew.LoadBoard(str(target))  # Flächen zum Schluss neu füllen (DRC prüft die gespeicherte Füllung)
+        print(f"vias in unconnected fill fragments: {route_fix.fragment_vias(target, log=print)}")
+    print(f"dangling vias/tracks removed: {route.remove_dangling_vias(target)}")
+    board = pcbnew.LoadBoard(str(target))  # refill zones at the end (DRC checks the stored fill)
     pcbnew.ZONE_FILLER(board).Fill(board.Zones())
     pcbnew.SaveBoard(str(target), board)
 

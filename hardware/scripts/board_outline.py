@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Legt die Hauptplatine im AA-Format an bzw. setzt ihren Umriss neu.
+"""Creates the main board in AA format or redraws its outline.
 
-Aufruf (über just):  just outline
-Muss mit dem System-Python laufen, das das KiCad-Modul pcbnew enthält.
+Usage (via just):  just outline
+Must run with the system Python that contains the KiCad module pcbnew.
 
-Maße siehe docs/hardware-konzept.md, Kapitel 4.1.
+Dimensions see docs/hardware-concept.md, chapter 4.1.
 """
 from pathlib import Path
 
@@ -13,22 +13,23 @@ import pcbnew
 HARDWARE = Path(__file__).resolve().parent.parent
 PCB = HARDWARE / "main-board" / "louie-main.kicad_pcb"
 
-LENGTH_MM = 46.0  # AA = 50,5 mm; Rest bleibt für die Kontakte an den Enden
-# 14,1 mm (vorher 13,5): AA-Ø 14,5, auf Platinenhöhe (z −0,3 … +0,5 um die Zellachse) ist der Kreis noch 14,47 mm
-# breit; 14,1 lässt Luft für die Umrisstoleranz bei JLC (±0,2). Gewinn: eine Längsbahn mehr je Rand und Lage.
+LENGTH_MM = 46.0  # AA = 50.5 mm; the rest is left for the contacts at the ends
+# 14.1 mm (previously 13.5): AA Ø 14.5, at board height (z −0.3 … +0.5 around the cell axis) the circle is still
+# 14.47 mm wide; 14.1 leaves room for the outline tolerance at JLC (±0.2). Gain: one more longitudinal track per
+# edge and layer.
 WIDTH_MM = 14.1
-THICKNESS_MM = 0.8  # dünn, damit das Modul in der AA-Hülle Platz hat
-# Enden: auf den 0,8 mm, mit denen die Platine in die Endkappen greift, schmaler (Zunge), damit der Kappenschlitz
-# nicht breiter werden muss; Innenecken mit Fräserradius
+THICKNESS_MM = 0.8  # thin, so that the module fits in the AA sleeve
+# Ends: narrower (tongue) on the 0.8 mm with which the board engages the end caps, so that the cap slot
+# does not have to get wider; inner corners with milling cutter radius
 TONGUE_W = 12.5
 TONGUE_L = 0.8
-MILL_R = 0.5      # Innenecken (Fräser 1,0 mm)
-CORNER_MM = 0.3   # Außenecken
-# Aussparung vor der USB-C-Buchse (J4 bei x = 15,3): 9 mm breit, 0,3 mm tief, damit die Buchsenöffnung wie bisher
-# 0,7 mm hinter der Kante liegt (Platz für den Steckerkörper)
+MILL_R = 0.5      # inner corners (cutter 1.0 mm)
+CORNER_MM = 0.3   # outer corners
+# Recess in front of the USB-C receptacle (J4 at x = 15.3): 9 mm wide, 0.3 mm deep, so that the receptacle opening
+# lies 0.7 mm behind the edge as before (room for the plug body)
 RECESS_X = (10.8, 19.8)
 RECESS_DEPTH = 0.3
-ORIGIN_MM = (100.0, 75.0)  # Platinenmitte auf dem Blatt
+ORIGIN_MM = (100.0, 75.0)  # board centre on the sheet
 
 
 def mm(value):
@@ -50,7 +51,7 @@ def add_shape(board, shape, **kwargs):
 
 
 def _fillet(prev, v, nxt, r):
-    """Tangentenpunkte und Bogenmitte einer 90°-Ecke v mit Radius r (konvex oder konkav)."""
+    """Tangent points and arc midpoint of a 90° corner v with radius r (convex or concave)."""
     import math
     ax, ay = prev[0] - v[0], prev[1] - v[1]
     bx, by = nxt[0] - v[0], nxt[1] - v[1]
@@ -65,12 +66,12 @@ def _fillet(prev, v, nxt, r):
 
 def outline_path(length=LENGTH_MM, width=WIDTH_MM, tongue_w=TONGUE_W, tongue_l=TONGUE_L, recess=RECESS_X,
                  depth=RECESS_DEPTH):
-    """Umriss als Liste von ("seg", a, b) und ("arc", start, mid, end), Koordinaten relativ zur Platinenmitte
-    (x entlang der Länge, +y = Seite der USB-C-Öffnung)."""
+    """Outline as a list of ("seg", a, b) and ("arc", start, mid, end), coordinates relative to the board centre
+    (x along the length, +y = side of the USB-C opening)."""
     import math
     xe, xl, w2, t2 = length / 2, length / 2 - tongue_l, width / 2, tongue_w / 2
     rc, rm = CORNER_MM, MILL_R
-    # Eckpunkte im Umlauf (Radius): Körper mit Zungen an beiden Enden
+    # corner points in order (radius): body with tongues at both ends
     verts = [((-xl, -w2), rc), ((xl, -w2), rc), ((xl, -t2), rm), ((xe, -t2), rc), ((xe, t2), rc), ((xl, t2), rm),
              ((xl, w2), rc), ((-xl, w2), rc), ((-xl, t2), rm), ((-xe, t2), rc), ((-xe, -t2), rc), ((-xl, -t2), rm)]
     n = len(verts)
@@ -80,12 +81,12 @@ def outline_path(length=LENGTH_MM, width=WIDTH_MM, tongue_w=TONGUE_W, tongue_l=T
         t1, mid, t2_ = corners[k]
         out.append(("arc", t1, mid, t2_))
         a, b = t2_, corners[(k + 1) % n][0]
-        if k == 6 and recess:  # Kante +y von (xl, w2) nach (−xl, w2): Aussparung vor J4
+        if k == 6 and recess:  # edge +y from (xl, w2) to (−xl, w2): recess in front of J4
             xa, xb = sorted(recess)
-            y0 = w2 - depth            # Grund der Aussparung
-            cy = y0 + rm                 # Fräsermitte (außerhalb der Platine)
+            y0 = w2 - depth            # bottom of the recess
+            cy = y0 + rm                 # cutter centre (outside the board)
             dx = math.sqrt(rm ** 2 - (cy - w2) ** 2)
-            # rechts: Kante → Bogen hinunter auf den Grund; links umgekehrt
+            # right: edge → arc down to the bottom; left the other way round
             r_top, r_bot = (xb - rm + dx, w2), (xb - rm, y0)
             l_bot, l_top = (xa + rm, y0), (xa + rm - dx, w2)
 
@@ -123,8 +124,8 @@ def main():
     board.GetDesignSettings().SetBoardThickness(mm(THICKNESS_MM))
     draw_outline(board)
     pcbnew.SaveBoard(str(PCB), board)
-    print(f"{PCB.relative_to(HARDWARE.parent)}: {LENGTH_MM} x {WIDTH_MM} mm (Enden {TONGUE_W} mm), "
-          f"{THICKNESS_MM} mm dick")
+    print(f"{PCB.relative_to(HARDWARE.parent)}: {LENGTH_MM} x {WIDTH_MM} mm (ends {TONGUE_W} mm), "
+          f"{THICKNESS_MM} mm thick")
 
 
 if __name__ == "__main__":

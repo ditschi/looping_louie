@@ -1,15 +1,15 @@
 # Test setup (breadboard) and prototype boards
 
-Status: 2026-11-06 · Prices retrieved on 2026-11-06, gross incl. 19 % VAT unless stated otherwise.
+Status: 2026-11-07 (dev board facts and test firmware added) · Prices retrieved on 2026-11-06, gross incl. 19 % VAT unless stated otherwise.
 
 Markers: **(verified)** = source read or recalculated from the project files · **(unverified)** = estimate,
 secondary source, or not checked in the datasheet.
 
-References: pinout, strapping, wake [hauptplatine-c6.md](hauptplatine-c6.md) 2.3–2.5, DRV8213
-[hauptplatine-c6.md](hauptplatine-c6.md) 3, motor stage and lever detection [hardware-konzept.md](hardware-konzept.md)
-5.1/5.2, part values [teile.csv](../hardware/bom/teile.csv), firmware [firmware-architecture.md](firmware-architecture.md)
-(3.1 board `board-devkitc-c6`, 11 step 0), tests T1–T9 and assumptions in [offene-punkte.md](offene-punkte.md),
-manufacturing costs [kostenabschaetzung.md](kostenabschaetzung.md).
+References: pinout, strapping, wake [main-board-c6.md](main-board-c6.md) 2.3–2.5, DRV8213
+[main-board-c6.md](main-board-c6.md) 3, motor stage and lever detection [hardware-concept.md](hardware-concept.md)
+5.1/5.2, part values [parts.csv](../hardware/bom/parts.csv), firmware [firmware-architecture.md](firmware-architecture.md)
+(3.1 board `board-devkitc-c6`, 11 step 0), tests T1–T9 and assumptions in [open-items.md](open-items.md),
+manufacturing costs [cost-estimate.md](cost-estimate.md).
 
 ## Summary
 
@@ -18,8 +18,12 @@ manufacturing costs [kostenabschaetzung.md](kostenabschaetzung.md).
   **software development** in LED mode (section 5). Motor control, stall detection and current calibration are done
   on the 5 prototype boards (section 6, 7).
 - **Buy only the dev board:** **Waveshare ESP32-C6-DEV-KIT-N8**, 13.90 € incl. shipping on Amazon.de (verified),
-  same module ESP32-C6-WROOM-1-N8, pinout DevKitC-1-N8-compatible per seller. Alternative: Espressif
+  module ESP32-C6-WROOM-1-N8. **Pin header identical to the Espressif DevKitC-1** (verified, Waveshare schematic vs.
+  Espressif user guide); one USB-C port with hub, two serial ports (section 3.1). Alternative: Espressif
   **ESP32-C6-DevKitC-1-N8** (approx. 21 € incl. shipping at Reichelt, unverified).
+- **Test firmware ready (not built yet):** [firmware/louie-fw](../firmware/louie-fw/README.md) with the bring-up in LED
+  mode and one probe per check (`lever_probe`, `boot_probe`, `pin_probe`, `adc_probe`), started with
+  `just fw-run <name> <port>` (section 8).
 - **Everything else exists:** parts drawer (R, C, buttons, switches, LEDs, pots), the real Looping Louie (old and new
   model), lab power supply (adjustable, current limit, display), multimeter with scope function, classic ESP32
   (BTHome simulator), ESP8266 (extra Wi-Fi clients), Shelly BLU Button.
@@ -59,7 +63,7 @@ manufacturing costs [kostenabschaetzung.md](kostenabschaetzung.md).
 questions**. No other module fits the AA format; the order uses the **H8** (F14). Both are measured in section 5.
 
 **Recoverability:** if USB on J4 fails on the prototype, flashing still works via the service pads **J3** (EN, TXD,
-BOOT, GND, RXD) with a USB-UART adapter (hauptplatine-c6.md 2.4, A14).
+BOOT, GND, RXD) with a USB-UART adapter (main-board-c6.md 2.4, A14).
 
 ---
 
@@ -74,8 +78,7 @@ BOOT, GND, RXD) with a USB-UART adapter (hauptplatine-c6.md 2.4, A14).
 
 - **Why 8 MB:** the board target is the H8. Whether the firmware also fits an N4 is shown by a build with the 4 MB
   partition table (firmware-architecture.md 6.1); it runs the same on the 8 MB board.
-- **Waveshare:** one USB-C port with a CH334 USB hub + CH343 UART, so native USB and UART work over one cable
-  (verified, seller page). RGB LED pin and GPIO14 availability are **unverified**; assume the same as the DevKitC-1.
+- **Waveshare:** details in section 3.1 (verified, schematic).
 - **Do not buy:** motor driver boards, INA219, LiPo/charger, logic analyzer, USB tester, SMD adapters.
 
 ### 2.2 Existing devices
@@ -91,7 +94,7 @@ BOOT, GND, RXD) with a USB-UART adapter (hauptplatine-c6.md 2.4, A14).
 
 ### 2.3 Parts drawer
 
-Values as on the board where a board part is emulated (teile.csv).
+Values as on the board where a board part is emulated (parts.csv).
 
 | Part | Value | Qty | Used for |
 |---|---|---:|---|
@@ -112,42 +115,71 @@ Values as on the board where a board part is emulated (teile.csv).
 
 ---
 
-## 3. Pinout of the dev board
+## 3. The dev board
 
-Goal: **the same GPIO numbers as on the board** ([hauptplatine-c6.md](hauptplatine-c6.md) 2.3). The DevKitC-1 breaks
-out all required GPIOs **except IO14** (verified, Espressif user guide: J1 0–8, 10, 11; J3 9, 12, 13, 15–23); for
-the Waveshare board this is **unverified**. Board feature: **`board-devkitc-c6`** (firmware-architecture.md 3.1).
+### 3.1 Waveshare ESP32-C6-DEV-KIT-N8: facts from the schematic
 
-| GPIO | PCB net / part | Pre-order checks (section 4) | Software, LED mode (section 5) |
+All points verified in the Waveshare schematic (`ESP32-C6-DEV-KIT-N8-Schematic.pdf`, wiki, 2026-11-07) unless marked.
+
+| Item | Waveshare DEV-KIT-N8 | Consequence for the tests |
+|---|---|---|
+| Module | ESP32-C6-**WROOM-1**-N8 (8 MB flash, PCB antenna); the board uses the **MINI-1** | same chip and GPIO numbers; WROOM-1 has **no GPIO14** (pin 22 NC) → status LED on IO10 |
+| Pin headers | 2 × 16, 2.54 mm, **same order as DevKitC-1 J1/J3** (3.2) | Espressif pinout drawings apply |
+| USB | **one USB-C**, CH334F hub: port 1 → C6 USB-Serial-JTAG (IO12/IO13), port 2 → **CH343P** USB-UART on UART0 (IO16/IO17) | two serial ports over one cable (8.2); the UART port stays connected in deep sleep |
+| Auto download | CH343 DTR/RTS → 2 × SS8050 → EN and IO9 (classic circuit) | `espflash` works on both ports |
+| EN / RESET | 10 k pull-up, 1 µF; RESET button via Schottky D2 to EN **and via D3 to the hub's RESET#** | pressing RESET also re-enumerates both serial ports (monitor drops, 8.2) |
+| BOOT | button IO9 → GND, no external pull-up (C9 not fitted) | as on the board (J3) |
+| IO8 | **10 k pull-up (R8)** + WS2812B-0807 DI via 0 Ω (R10) | see "Differences" below; S4 not usable |
+| 3V3 | SGM2212-3.3 LDO from VCC_5V; red power LED with 2 k on 3V3 (≈ 0.7 mA, calculated) | dev board quiescent current not meaningful (LED, LDO, WS2812 idle current) |
+| 5V pin | VCC_5V, fed from USB VBUS via Schottky **D1** (B5819WS) | USB and 5V pin do not short each other; still power only via USB (below) |
+| Hub/UART supply | CH334 and CH343 get 3V3 only when USB VBUS is present (Q1 SI2301 + Q2 MMBT3904) | fed via the 5V pin the USB side is off |
+| Other GPIOs | no onboard parts on IO0–IO7, IO10, IO11, IO15, IO18–IO23 | all check pins free |
+
+Wiki notes (Waveshare, unverified): supply ≥ 5 V, below 4.9 V the USB connection may drop; ESP-IDF ≥ 5.1.
+
+### 3.2 Pinout and use per check
+
+Goal: **the same GPIO numbers as on the board** ([main-board-c6.md](main-board-c6.md) 2.3). Board feature:
+**`board-devkitc-c6`** (firmware-architecture.md 3.1, [devkitc_c6.rs](../firmware/louie-fw/src/board/devkitc_c6.rs)).
+
+- **Header P1** (with 3V3/5V): 1 3V3 · 2 EN · 3 IO4 · 4 IO5 · 5 IO6 · 6 IO7 · 7 IO0 · 8 IO1 · 9 IO8 · 10 IO10 ·
+  11 IO11 · 12 IO2 · 13 IO3 · 14 5V · 15 GND · 16 NC
+- **Header P2** (with TX/RX): 1 GND · 2 TX (IO16) · 3 RX (IO17) · 4 IO15 · 5 IO23 · 6 IO22 · 7 IO21 · 8 IO20 ·
+  9 IO19 · 10 IO18 · 11 IO9 · 12 GND · 13 IO13 (USB D+) · 14 IO12 (USB D−) · 15 GND · 16 NC
+
+(Verified, schematic; which header is left or right: check the silkscreen.)
+
+| GPIO (header pin) | PCB net / part | Pre-order checks (section 4) | Software, LED mode (section 5) |
 |---|---|---|---|
-| IO0 | VBAT_ADC, R6/R7 470 k/470 k + C13 | divider from the lab supply (4.5) | pot wiper (= VSYS / 2) |
-| IO1 | ISEN_ADC, R8/C14 | free | pot wiper via 1 k / 100 nF (simulated current, 255 mV/A) |
-| IO2 | INT (LIS2DH12 INT1, J2) | button to 3V3 + 100 k to GND (wake, 4.3) | free |
-| IO3 | SENSE, R5 100 k | R3/R4/R5 network at the Louie (4.2) | switch to 3V3, 100 k to GND (lever) |
-| IO4 | VBUS_DET, R14/R15 100 k/100 k | divider from the lab supply 5 V (4.3, 4.5) | switch to 3V3, 100 k to GND (USB) |
-| IO5 | S1 (J6) | button to GND, internal pull-up (4.3) | same |
-| IO6 / IO7 | SDA / SCL | free | free (sensor probe reports "no sensor") |
-| IO8 | S4 (J6), strapping, R11 10 k | button to GND (4.3) | button to GND (collides with RGB LED, see below) |
-| IO9 | BOOT (J3) | BOOT button of the dev board | same |
-| IO10 | – (PCB: status LED on **IO14**) | free | status LED + 1 k |
-| IO12 / IO13 | USB D− / D+ | USB-C of the dev board | same |
-| IO15 | U6 enable, R22 100 k | 100 k to GND (4.3) | free |
-| IO16 / IO17 | TXD / RXD (J3) | UART bridge of the dev board | same |
-| IO18 / IO19 | MOT_IN1 / MOT_IN2 | 200 k to GND each, scope (4.4) | LED + 1 k from 3V3 to the pin each |
-| IO20 / IO21 | S2 / S3 (J6) | free | button to GND |
-| IO22 | spare | free | free |
-| IO23 | LED data J7 | free | input for the latency reference from device B (5.3) |
+| IO0 (P1-7) | VBAT_ADC, R6/R7 470 k/470 k + C13 | divider from the lab supply (4.5) | pot wiper (= VSYS / 2) |
+| IO1 (P1-8) | ISEN_ADC, R8/C14 | free | pot wiper via 1 k / 100 nF (simulated current, 255 mV/A) |
+| IO2 (P1-12) | INT (LIS2DH12 INT1, J2) | button to 3V3 + 100 k to GND (wake, 4.3) | free |
+| IO3 (P1-13) | SENSE, R5 100 k | R3/R4/R5 network at the Louie (4.2) | switch to 3V3, 100 k to GND (lever) |
+| IO4 (P1-3) | VBUS_DET, R14/R15 100 k/100 k | divider from the lab supply 5 V (4.3, 4.5) | switch to 3V3, 100 k to GND (USB) |
+| IO5 (P1-4) | S1 (J6) | button to GND, internal pull-up (4.3) | same |
+| IO6 / IO7 (P1-5/6) | SDA / SCL | free | free (sensor probe reports "no sensor") |
+| IO8 (P1-9) | S4 (J6), strapping, R11 10 k | button to GND (4.3) | button to GND (collides with RGB LED, see below) |
+| IO9 (P2-11) | BOOT (J3) | BOOT button of the dev board | same |
+| IO10 (P1-10) | – (PCB: status LED on **IO14**) | free | status LED + 1 k |
+| IO12 / IO13 (P2-14/13) | USB D− / D+ | USB-C of the dev board | same |
+| IO15 (P2-4) | U6 enable, R22 100 k | 100 k to GND (4.3) | free |
+| IO16 / IO17 (P2-2/3) | TXD / RXD (J3) | UART bridge of the dev board | same |
+| IO18 / IO19 (P2-10/9) | MOT_IN1 / MOT_IN2 | 200 k to GND each, scope (4.4) | LED + 1 k from 3V3 to the pin each |
+| IO20 / IO21 (P2-8/7) | S2 / S3 (J6) | free | button to GND |
+| IO22 (P2-6) | spare | free | free |
+| IO23 (P2-5) | LED data J7 | free | input for the latency reference from device B (5.3) |
 
 **Differences from the board:**
 
 - **IO14 → IO10:** status LED on IO10 (board definition).
-- **IO8:** the dev board has its own **10 k pull-up and the RGB LED (WS2812)** on IO8 (verified for the Espressif
-  DevKit schematic, unverified for Waveshare). So the IO8 check in 4.3 only tests the case "S4 pressed during reset";
+- **IO8:** the dev board has its own **10 k pull-up and the RGB LED (WS2812)** on IO8 (verified, Waveshare schematic
+  R8/R10). So the IO8 check in 4.3 only tests the case "S4 pressed during reset";
   R11 itself is not new. During play the button sends garbage to the RGB LED; this is harmless. The firmware
   reports only S1–S3 on the dev board.
 - **IO4:** in LED mode only a switch (`vbus_divider = None`); in 4.3/4.5 the real 100 k/100 k divider.
 - **Supply:** always power the dev board via USB. Do not feed the 5V or 3V3 pin at the same time (verified, Espressif
-  user guide). Common ground with the lab supply whenever both are connected.
+  user guide; on the Waveshare board D1 protects USB from the 5V pin, the 3V3 pin has no protection). Common ground
+  with the lab supply whenever both are connected.
 - **ADC inputs max. 3.3 V.** No lab-supply voltage directly on a GPIO.
 
 ---
@@ -161,11 +193,11 @@ General rules:
   no stall).
 - **Scope ground** only at the lab supply's negative terminal (shunt low side). If the scope is earthed, the lab
   supply output must be floating (unverified for your devices, check before connecting).
-- Enter the results in [offene-punkte.md](offene-punkte.md) (A2–A5, F17, T1, T5).
+- Enter the results in [open-items.md](open-items.md) (A2–A5, F17, T1, T5).
 
-**Firmware:** small Rust test binaries from step 0 of firmware-architecture.md 11 (proposal:
-`louie-fw/examples/{lever_probe,boot_probe,pin_probe,adc_probe}.rs`, feature `board-devkitc-c6`). Fallback: the
-ESP-IDF examples `system/deep_sleep` and `peripherals/adc/oneshot_read` with changed pin numbers.
+**Firmware:** one probe per check in [firmware/louie-fw/examples](../firmware/louie-fw/examples) (4.2 `lever_probe`,
+4.3 `boot_probe`, 4.4 `pin_probe`, 4.5 `adc_probe`), usage in section 8. Fallback if the Rust build is not ready yet:
+the ESP-IDF examples `system/deep_sleep` and `peripherals/adc/oneshot_read` with changed pin numbers.
 
 ### 4.1 Motor characterization (lab supply, no ESP)
 
@@ -207,14 +239,14 @@ Multimeter (V): across contacts 1–2 (real motor voltage, without shunt drop)
 | Resistance with lever open | | |
 
 **Why the lab supply is enough:** with 20 kHz PWM the winding smooths the current; the motor sees roughly the
-effective voltage d × VSYS (hardware-konzept.md 5.1). The current at a lab voltage U therefore approximates the
-board at effective voltage U (unverified; the DRV8213 adds 0.24 Ω Rds(on), hauptplatine-c6.md 3.1). The battery
+effective voltage d × VSYS (hardware-concept.md 5.1). The current at a lab voltage U therefore approximates the
+board at effective voltage U (unverified; the DRV8213 adds 0.24 Ω Rds(on), main-board-c6.md 3.1). The battery
 then delivers roughly d × I_motor on average.
 
 **Consequences (pass criteria and design values):**
 
 - **A2 holds** if the running current at nominal voltage is < 1 A. Otherwise re-evaluate battery size and turbo limit.
-- **R1 / ITRIP:** ITRIP = 0.51 V / (R1 × 205 µA/A) (verified, hauptplatine-c6.md 3.1). Stay well below the OCP of
+- **R1 / ITRIP:** ITRIP = 0.51 V / (R1 × 205 µA/A) (verified, main-board-c6.md 3.1). Stay well below the OCP of
   approx. 4 A.
 
 | R1 (E96) | ITRIP | ISEN scale at the ADC | Use if |
@@ -250,8 +282,8 @@ Dev board GND ──[100 k R3]──┬── contact 1 (OUT_A) ── lever ─
 optional leakage emulation: 1 M from OUT_A to GND, then 1 M from OUT_B to GND
 ```
 
-- The DRV8213 outputs are **Hi-Z in coast (0/0)** (verified, hauptplatine-c6.md 3.1). That no output pull-down or
-  leakage acts in autosleep is **unverified** (hauptplatine-c6.md 3.2). The 1 M resistors emulate a few µA of
+- The DRV8213 outputs are **Hi-Z in coast (0/0)** (verified, main-board-c6.md 3.1). That no output pull-down or
+  leakage acts in autosleep is **unverified** (main-board-c6.md 3.2). The 1 M resistors emulate a few µA of
   leakage to show the margin; the final check is on the prototype.
 - Expected: lever closed SENSE = 3.3 V × 100 k / (110 k + R_motor) ≈ **3.0 V**; lever open ≈ 0 V (verified, calculation).
 - C6 input thresholds: HIGH > 0.75 × VDD = 2.48 V, LOW < 0.25 × VDD = 0.83 V (C6 datasheet DC characteristics,
@@ -265,7 +297,7 @@ optional leakage emulation: 1 M from OUT_A to GND, then 1 M from OUT_B to GND
 4. Firmware `lever_probe`: IO3 **without internal pull-up/pull-down** (a 45 k internal pull-up would read HIGH with the
    lever open). Log edges every 10 ms; toggle the lever 20 ×. Then deep sleep with ext1 ANY_HIGH on IO3; toggle 20 ×
    and count wake-ups (wake cause in the log after boot).
-5. Special case "lever closed when going to sleep" (hauptplatine-c6.md 2.5): test the firmware fallback (wake on
+5. Special case "lever closed when going to sleep" (main-board-c6.md 2.5): test the firmware fallback (wake on
    LOW or timer every 5 s).
 
 | Measurement | Old: closed | Old: open | New: closed | New: open | Expected |
@@ -338,7 +370,7 @@ IO9  ── BOOT button of the dev board
 ### 4.4 Reset and deep-sleep level of IO18/IO19 (F17)
 
 **Goal:** know the level of IN1/IN2 during reset, boot and deep sleep. During reset the C6's internal ~45 k pull-ups
-pull IO18/IO19 HIGH (verified, hauptplatine-c6.md 3.2); against the DRV8213's internal 200 k pull-down this gives
+pull IO18/IO19 HIGH (verified, main-board-c6.md 3.2); against the DRV8213's internal 200 k pull-down this gives
 3.3 V × 200 / 245 ≈ **2.7 V = HIGH → brake** (verified, calculation). IO18/IO19 are **not LP GPIOs**; their pad
 state in deep sleep is unverified.
 
@@ -408,18 +440,18 @@ drift at 10 Hz; VBUS readable to ± 0.1 V.
 τ = 235 k × 100 nF = 23.5 ms, so 10 Hz recharges fully. Pin leakage of some 10 nA × 235 k gives about 10 mV.
 
 **On failure:** smaller divider (e.g. **220 k / 220 k**, 9.5 µA quiescent at 4.2 V instead of 4.5 µA) or larger C13;
-specify **1 %** resistors for R6/R7 in teile.csv (tolerance not stated there today; 2 × 1 % → up to approx. 2 % ratio
+specify **1 %** resistors for R6/R7 in parts.csv (tolerance not stated there today; 2 × 1 % → up to approx. 2 % ratio
 error, 84 mV at 4.2 V) or a one-point calibration in the firmware.
 
 ### 4.6 Results → design
 
 | Result | Changes | Where |
 |---|---|---|
-| 4.1 stall current, running current | R1, C1/C2 count, trace widths; A2, A3 | teile.csv, routing gate |
-| 4.2 SENSE levels, diode | R3/R4/R5, board orientation; A4 | teile.csv, hardware-konzept.md 5.2 |
-| 4.3 strapping, wake, IO4 threshold | S4 pin, R14/R15 ratio | hauptplatine-c6.md 2.3/2.4 |
-| 4.4 IO18/IO19 levels | 3.3 k pull-downs (F17) | hauptplatine-c6.md 3.2 |
-| 4.5 ADC error | R6/R7/C13, tolerance; A5 | teile.csv |
+| 4.1 stall current, running current | R1, C1/C2 count, trace widths; A2, A3 | parts.csv, routing gate |
+| 4.2 SENSE levels, diode | R3/R4/R5, board orientation; A4 | parts.csv, hardware-concept.md 5.2 |
+| 4.3 strapping, wake, IO4 threshold | S4 pin, R14/R15 ratio | main-board-c6.md 2.3/2.4 |
+| 4.4 IO18/IO19 levels | 3.3 k pull-downs (F17) | main-board-c6.md 3.2 |
+| 4.5 ADC error | R6/R7/C13, tolerance; A5 | parts.csv |
 
 ---
 
@@ -439,7 +471,7 @@ error, 84 mV at 4.2 V) or a one-point calibration in the firmware.
 | Latency reference (IO23) | wire from device B, common GND | 5.3 |
 
 The firmware is the same as for the board (`board-devkitc-c6`): it drives the DRV8213 scheme; only the LEDs and pots
-stand in for driver and motor.
+stand in for driver and motor. The bring-up binary already does this with keys or a sweep as setpoint (8.3).
 
 ### 5.2 What can be developed and tested
 
@@ -470,7 +502,7 @@ stand in for driver and motor.
 | F1 | STA in home network | off | 8 WS, 10/s | 2 h |
 | F2 | STA in home network | passive scan | 8 WS, 10/s, button every 2 s | 2 h |
 | F3 | SoftAP, 8 stations | passive scan | as F2, LEDs in game tick | 2 h |
-| F4 | SoftAP + STA (Wi-Fi test, software-konzept.md 3.3) | passive scan | 4 WS | 1 h |
+| F4 | SoftAP + STA (Wi-Fi test, software-concept.md 3.3) | passive scan | 4 WS | 1 h |
 | F5 | as F3, reload on 2 phones every 10 s | passive scan | socket peaks | 1 h |
 
 | Metric | How (Rust / ESP-IDF) | Abort if | Result F1–F5 |
@@ -513,7 +545,7 @@ The 5 assembled boards allow losing one (e.g. in a stall or thermal test).
 - Footprint check against the datasheets, especially ESP32-C6-MINI-1 (A11), DRV8213 WSON-8, LIS2DH12 LGA-12, USB-C.
 - JLC assembly preview: rotation and polarity of every part (pin 1 of U1–U6, D1, D2, Q1, C orientation).
 - 3D check and envelope (`just hull`, A1, A13).
-- ERC/DRC with 0 errors and 0 unrouted (hauptplatine-c6.md 7).
+- ERC/DRC with 0 errors and 0 unrouted (main-board-c6.md 7).
 
 ---
 
@@ -549,10 +581,10 @@ The 5 assembled boards allow losing one (e.g. in a stall or thermal test).
 | Solder joint | 0.0016 USD; minimum 0.48 USD per board | fee verified, joint count unverified |
 | X-ray (module/LGA) | 1.64 USD per board for 1–10, 0.82 for 11–50 | tiers verified, counting method unverified |
 | Minimum quantity | 5 boards, at least 2 of them assembled | verified (secondary source) |
-| PCB 4 layers | 5 pcs approx. 5 USD, 10 pcs approx. 10, 30 pcs approx. 20 USD | unverified (kostenabschaetzung.md 5.2) |
+| PCB 4 layers | 5 pcs approx. 5 USD, 10 pcs approx. 10, 30 pcs approx. 20 USD | unverified (cost-estimate.md 5.2) |
 | Shipping DE | 8 / 8 / 10 / 15 € | unverified |
-| VAT / customs | 19 % on goods + shipping; below 150 € goods value flat 3 € customs, above approx. 2 % | verified (kostenabschaetzung.md 2.4) |
-| Exchange rate | 1 USD = 0.885 € | as in kostenabschaetzung.md |
+| VAT / customs | 19 % on goods + shipping; below 150 € goods value flat 3 € customs, above approx. 2 % | verified (cost-estimate.md 2.4) |
+| Exchange rate | 1 USD = 0.885 € | as in cost-estimate.md |
 
 ### 7.3 Scenarios (with -N4; H8 approx. +1.2 € per assembled board; all unverified)
 
@@ -564,11 +596,11 @@ The 5 assembled boards allow losing one (e.g. in a stall or thermal test).
 | 4 | 30 / 30 | 59 | 201 | **≈ 296 €** | 9.90 € | 27 % |
 
 - Parts per board approx. 6.90 USD (1–9 pcs), 5.95 (10+), 5.40 (30+); the module is a good 55 % of that.
-- Other vendors for 5 assembled (unverified): PCBWay approx. 130–200 €, Aisler approx. 200–260 € (kostenabschaetzung.md).
+- Other vendors for 5 assembled (unverified): PCBWay approx. 130–200 €, Aisler approx. 200–260 € (cost-estimate.md).
 
 ### 7.4 Recommendation
 
-1. **Run the pre-order checks 4.1–4.5** and enter the results in offene-punkte.md (A2–A5, F17, T1, T5). Change design
+1. **Run the pre-order checks 4.1–4.5** and enter the results in open-items.md (A2–A5, F17, T1, T5). Change design
    values per 4.6 before ordering.
 2. **Scenario 2: 5 boards, 5 assembled (≈ 105 €)**, directly with H8 if the H8 stock is sufficient (≈ +6 €).
    Compared with 5/2, 3 more boards cost only approx. 29 €. Motor, DRV8213, brownout, RSSI, sensor, quiescent current
@@ -592,9 +624,67 @@ The 5 assembled boards allow losing one (e.g. in a stall or thermal test).
 
 ---
 
+## 8. Test firmware: setup and usage
+
+Code and details: [firmware/louie-fw/README.md](../firmware/louie-fw/README.md). Status 2026-11-07: **written, not
+built and not run yet**; the first build is the first task when the board arrives.
+
+### 8.1 Setup (once)
+
+1. `./setup.sh` (section "Firmware"): rustup with the pinned nightly + `rust-src`, `ldproxy`, `espflash`. Also
+   `python3-venv`, user in group `dialout`.
+2. `just fw-build`: the first build downloads ESP-IDF v5.5.5 into `~/.espressif` and takes 10–20 min (unverified).
+   The repo path contains spaces, which ESP-IDF does not support; the Cargo target directory therefore lives in
+   `~/.cache/louie-fw/target`. If the build still fails on paths: work from a clone without spaces (README).
+
+### 8.2 Connecting
+
+- One USB-C cable; `just fw-ports` shows two devices: **CH343** (`usb-1a86_…`, UART0) and **USB-Serial-JTAG**
+  (`usb-Espressif_…`).
+- **Use the CH343 port** for flashing and monitoring: keys go only to UART0, and it stays connected while the C6
+  is in deep sleep (the USB-Serial-JTAG port disappears). Example: `just fw-run boot_probe /dev/serial/by-id/usb-1a86_…`.
+- The **RESET button also resets the USB hub**: both ports drop for a moment. For reset series use a terminal that
+  reconnects on its own (e.g. `tio <port>`) instead of `espflash monitor` (unverified how espflash reacts).
+
+### 8.3 Smoke test and bring-up (LED mode)
+
+| Step | Action | Expected |
+|---|---|---|
+| 1 | Plug in the bare board | power LED on, `just fw-ports` lists both ports |
+| 2 | `just fw-run boot_probe <CH343 port>` without any wiring | banner: reset reason, wake cause, `levels:` line; ROM log shows `boot:0x..` |
+| 3 | Wire LED mode (5.1), `just fw-run` | status LED IO10 blinks 1 Hz, log line every 0.5 s |
+| 4 | VSYS pot to ≥ 1.65 V wiper (VSYS ≥ 3.3 V), lever switch closed | state `Run` |
+| 5 | Keys `+` / `-` (250 mV steps), `s` sweep | one motor LED dims with the setpoint, direction changes the LED; ramp 4 V/s |
+| 6 | Open the lever switch / VSYS pot below 3.3 V | `LeverOpen` / `LowBattery`, both LEDs on (coast) |
+| 7 | ISEN pot above ≈ 383 mV (1.5 A) while running | after 0.3 s `Stall`, both LEDs off (brake); `r` clears |
+| 8 | Key `p` (panic) | restart, state `Locked` (double blink) until the lever goes open → closed (E15) |
+| 9 | Buttons S1–S3 | `button Sn pressed` in the log |
+
+Placeholders in `src/main.rs` (ramp, VSYS cut-off, stall threshold) are LED-mode values, not motor values.
+
+### 8.4 Probes for the pre-order checks
+
+| Check | Command | Keys | Note in the tables of section 4 |
+|---|---|---|---|
+| 4.2 lever | `just fw-run lever_probe <port>` | `c` auto cycle (closed at sleep → wake on LOW), `t` the same with timer 5 s fallback, `s` one sleep, `z` reset counters; after each wake `x` within 2 s stops | edges and closings in the log ("reads of 20"), `wake #n` ("wake-ups of 20") |
+| 4.3 boot / wake | `just fw-run boot_probe <port>` | `7` / `8` / `9` / `a` = cases 7 / 8 / 9 / 10 (repeat automatically, `x` stops), `l` live levels (case 11), `r` software restart | cases 1–5: banner + ROM `boot:` line after each reset; case 6: flash over the **USB-Serial-JTAG** port (as on the board) while S4 is held |
+| 4.4 IO18/IO19 | `just fw-run pin_probe <port>` | `w` sleep without hold (b), `h` with hold (c), `n` 10 × (c), `r` / `p` / `d` software / panic / watchdog reset (a) | levels and HIGH window from the scope; the logged µs are only the app part |
+| 4.5 ADC | `just fw-run adc_probe <port>` | `f` burst mode (64 conversions) | per second: pin mV mean/min/max and input mV with the nominal ratio; convert with the measured ratio |
+
+Recommended order: 8.3 steps 1–2 → 4.5 (lab supply only on dividers) → 4.3 → 4.4 → 4.2 at the Louie; 4.1 needs no ESP.
+
+---
+
 ## Sources
 
-Retrieved on 2026-11-06.
+Retrieved on 2026-11-06; Waveshare and ESP-IDF headers on 2026-11-07.
+
+- Waveshare ESP32-C6-DEV-KIT-N8 wiki: https://www.waveshare.com/wiki/ESP32-C6-DEV-KIT-N8 ; schematic (module, CH334F hub,
+  CH343P, auto download, RESET to hub, IO8 with R8 10 k + WS2812B, SGM2212, D1, VCC_Open switch, headers P1/P2):
+  https://files.waveshare.com/wiki/ESP32-C6-DEV-KIT-N8/ESP32-C6-DEV-KIT-N8-Schematic.pdf (verified)
+- ESP-IDF v5.5 headers (`esp_sleep.h`: `esp_sleep_enable_ext1_wakeup_with_level_mask`; `soc_caps.h` C6: ext1 per pin,
+  wake GPIOs 0–7, `SOC_GPIO_SUPPORT_HOLD_SINGLE_IO_IN_DSLP`; `adc_oneshot.h`, `adc_cali_scheme.h`; LEDC clock sources):
+  https://github.com/espressif/esp-idf/tree/v5.5.1/components (verified)
 
 - ESP32-C6-DevKitC-1 user guide (headers J1/J3, GPIO14 not broken out, power supply options):
   https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32c6/esp32-c6-devkitc-1/user_guide.html (verified in the previous version of this document)
@@ -605,10 +695,10 @@ Retrieved on 2026-11-06.
 - Waveshare ESP32-C6-DEV-KIT-N8 on Amazon.de (13.90 € incl. shipping, seller Bolin Electronic / Waveshare store; module,
   USB hub CH334 + UART CH343, pinout per seller) (verified, 2026-11-06)
 - TI DRV8213 (ITRIP, IPROPI, coast Hi-Z, autosleep): https://www.ti.com/product/DRV8213, values in
-  [hauptplatine-c6.md](hauptplatine-c6.md) 3.1 (verified)
+  [main-board-c6.md](main-board-c6.md) 3.1 (verified)
 - ESP32-C6 datasheet (strapping, internal pull-ups during reset, DC characteristics): values in
-  [hauptplatine-c6.md](hauptplatine-c6.md) 2.4/3.2 (pull-ups verified; VIH/VIL not re-read)
+  [main-board-c6.md](main-board-c6.md) 2.4/3.2 (pull-ups verified; VIH/VIL not re-read)
 - JLCPCB PCBA prices: https://jlcpcb.com/help/article/pcb-assembly-price (verified)
 - JLCPCB parts API (stock, Extended/Basic) for C5736265, C42403058, C22407186, C110926, C51118 (verified, 2026-11-06)
 - JLCPCB minimum quantity PCBA: https://jlcpcb.com/solutions/pcb-prototype-assembly (secondary source)
-- PCB, shipping and vendor assumptions: [kostenabschaetzung.md](kostenabschaetzung.md) 2.4, 5.2
+- PCB, shipping and vendor assumptions: [cost-estimate.md](cost-estimate.md) 2.4, 5.2
