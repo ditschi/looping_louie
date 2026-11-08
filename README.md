@@ -19,7 +19,7 @@ envelope check `just hull` confirms it stays inside the AA diameter.*
 
 ## Status
 
-> 2026-11-08 · restart on branch `v2`, nothing ordered yet.
+> 2026-11-08 · second version (restart, merged into `main`), nothing ordered yet.
 
 | Part | State |
 |---|---|

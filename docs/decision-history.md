@@ -3,7 +3,7 @@
 Status: 2026-11-06 · This is a short record of **what was planned or investigated earlier and then rejected or replaced**, and why.
 The other documents describe only the current state. The full old text is in Git: commit
 `dc555c7` (last state before the cleanup on 2026-11-06), the 2-layer board in commit `c45c6de`, the C3 state in
-earlier commits on branch `v2`, the old MicroPython/ESP8266 version in tag `v1-legacy`.
+earlier commits of the former branch `v2` (merged into `main` on 2026-11-08), the old MicroPython/ESP8266 version in tag `v1-legacy`.
 
 "Source" names the document and section **before** the cleanup. Old German section titles are kept in quotes so they
 can be found in Git.
