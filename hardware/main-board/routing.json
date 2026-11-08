@@ -1,0 +1,228 @@
+{
+  "board": "main-board",
+  "fingerprint": "93e4000685451e887ed040f4d225a1085c5a0804782d436d8b51b0d9213d22e1",
+  "board_hash": "c8acffc529930136b376c47740d6d53ca1b5e24d645f076f477fab57a2d28d91",
+  "metrics": {
+    "drc_violations": 2,
+    "via_count": 112,
+    "track_length_mm": 824.04,
+    "drc_errors": 2,
+    "unconnected": 12,
+    "antenna_intrusions": 0,
+    "power_width_violations": 0,
+    "drc_warnings": 0,
+    "gnd_islands": 11,
+    "signal_vias": 85,
+    "gnd_vias": 27,
+    "signal_length_mm": 820.62,
+    "detour_total": 1.544,
+    "detour_worst5": 2.711,
+    "bends": 386,
+    "acute_angles": 4,
+    "overlapping_segments": 1,
+    "tight_clearance": 349,
+    "power_drop_mv": 83.0,
+    "sense_coupling_mm": 0.0,
+    "sense_length_mm": 54.22,
+    "return_gap_mm": 0.57,
+    "antenna_proximity_mm": 11.99,
+    "via_in_pad": 11,
+    "stitch_gap_p95_mm": 4.18,
+    "stitch_gap_max_mm": 7.34,
+    "gnd_vias_module": 12,
+    "thermal_vias": 2,
+    "ref_plane_mm2": 443.6,
+    "layer_length_mm": {
+      "F.Cu": 234.4,
+      "In1.Cu": 0,
+      "In2.Cu": 270.9,
+      "B.Cu": 318.8
+    },
+    "usb_len_dp": 30.73,
+    "usb_len_dm": 37.88,
+    "usb_skew_mm": 7.16,
+    "usb_vias": 6,
+    "usb_stubs": 0
+  },
+  "score": {
+    "S": 162.863,
+    "hard": {
+      "drc_errors": 2,
+      "unconnected": 12
+    },
+    "hard_total": 14,
+    "under_mm": 0,
+    "parts": {
+      "drc_warnings": 0.0,
+      "gnd_islands": 33.0,
+      "signal_vias": 17.0,
+      "signal_length_mm": 16.4124,
+      "detour_worst5": 5.422,
+      "bends": 3.86,
+      "acute_angles": 4.0,
+      "overlapping_segments": 0.5,
+      "via_in_pad": 22.0,
+      "tight_clearance": 34.9,
+      "power_drop_mv": 8.3,
+      "sense_coupling_mm": 0.0,
+      "sense_length_mm": 5.422,
+      "return_gap_mm": 0.855,
+      "antenna_proximity_mm": 4.796,
+      "stitch_gap_p95_mm": 4.18,
+      "gnd_vias_module": -1.5,
+      "usb_vias": 3.0,
+      "usb_skew_mm": 0.716,
+      "usb_stubs": 0.0
+    }
+  },
+  "decision": "hard+weighted",
+  "score_config_sha256": "5b43ea32198eba54e06606a41074bce0e45dbdef5432d79f795135dca88fd62f",
+  "metrics_version": 1,
+  "details": {
+    "paths": [
+      {
+        "name": "OUT_A U2 -> BT1",
+        "connected": true,
+        "r_mohm": 41.5,
+        "drop_mv": 83.0,
+        "length_mm": 32.81,
+        "inner_mm": 0.0,
+        "min_width_mm": 0.3,
+        "vias": 1,
+        "under_width_mm": 1.15,
+        "violation": false
+      },
+      {
+        "name": "OUT_B U2 -> BT2",
+        "connected": true,
+        "r_mohm": 34.8,
+        "drop_mv": 69.6,
+        "length_mm": 27.1,
+        "inner_mm": 0.0,
+        "min_width_mm": 0.3,
+        "vias": 1,
+        "under_width_mm": 1.87,
+        "violation": false
+      },
+      {
+        "name": "VSYS D2 -> U2 VM",
+        "connected": true,
+        "r_mohm": 5.5,
+        "drop_mv": 11.0,
+        "length_mm": 4.88,
+        "inner_mm": 0.0,
+        "min_width_mm": 0.3,
+        "vias": 0,
+        "under_width_mm": 1.1,
+        "violation": false
+      },
+      {
+        "name": "VBUS J4 -> D2",
+        "connected": true,
+        "r_mohm": 7.0,
+        "drop_mv": 14.0,
+        "length_mm": 7.12,
+        "inner_mm": 0.0,
+        "min_width_mm": 0.5,
+        "vias": 0,
+        "under_width_mm": 0.0,
+        "violation": false
+      },
+      {
+        "name": "BAT J5 -> Q1",
+        "connected": true,
+        "r_mohm": 7.4,
+        "drop_mv": 14.8,
+        "length_mm": 6.81,
+        "inner_mm": 0.0,
+        "min_width_mm": 0.5,
+        "vias": 1,
+        "under_width_mm": 0.0,
+        "violation": false
+      },
+      {
+        "name": "VSYS Q1 -> U2 VM",
+        "connected": true,
+        "r_mohm": 15.5,
+        "drop_mv": 31.0,
+        "length_mm": 13.57,
+        "inner_mm": 0.0,
+        "min_width_mm": 0.3,
+        "vias": 2,
+        "under_width_mm": 1.1,
+        "violation": false
+      }
+    ],
+    "detour_worst": [
+      [
+        "/VLED_SW",
+        2.908
+      ],
+      [
+        "/VBAT_ADC",
+        2.891
+      ],
+      [
+        "/VLED",
+        2.852
+      ],
+      [
+        "/VBUS_J4",
+        2.577
+      ],
+      [
+        "/VSYS",
+        2.327
+      ]
+    ],
+    "coupling_per_net": {
+      "/ISEN": 0.0,
+      "/ISEN_ADC": 0.0,
+      "/VBAT_ADC": 0.0
+    },
+    "return_gap_worst": [
+      [
+        "/LED",
+        0.28
+      ],
+      [
+        "/SDA",
+        0.2
+      ],
+      [
+        "/IO23",
+        0.1
+      ]
+    ],
+    "via_in_pad": [
+      "J5:2",
+      "C15:2",
+      "J5:2",
+      "J1:4",
+      "R1:2",
+      "C1:2",
+      "U3:2",
+      "J2:2",
+      "J3:4",
+      "J6:6",
+      "C13:2"
+    ],
+    "antenna_fill_mm2": 0.0,
+    "plane_layers": [
+      "In1.Cu"
+    ],
+    "drc_types": [
+      "hole_clearance"
+    ],
+    "clearance_mm": 0.15
+  },
+  "router": "own",
+  "variant": "attempt 3: own router, via cost 40, F 1.3, B 1.15",
+  "runs": 4,
+  "note": "design changed, baseline reset (before: 12 open, DRC 2, islands 10, 123 vias, 864.3 mm)",
+  "timestamp": "2026-11-06T23:27:52+01:00",
+  "tools": {
+    "kicad": "9.0.8",
+    "repo": "v1-legacy-14-g8376bce-dirty"
+  }
+}

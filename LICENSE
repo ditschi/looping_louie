@@ -1,0 +1,57 @@
+Looping Louie WLAN upgrade – licensing overview
+
+Copyright (c) 2026 Christian Ditscher
+
+This project is free to use, study and modify for noncommercial purposes.
+Commercial use (for example selling boards, kits, devices or services based on
+this project) requires the prior written permission of the copyright holder.
+Requests: https://github.com/ditschi/looping_louie (open an issue or contact
+the owner).
+
+Which license applies to what
+-----------------------------
+
+1. Software – PolyForm Noncommercial License 1.0.0
+   SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+   Full text: LICENSES/PolyForm-Noncommercial-1.0.0.md
+   Applies to: firmware/, web/, hardware/scripts/, tools/ (where created by
+   this project), justfile, setup.sh and any other source code in this
+   repository.
+
+   Required Notice: Copyright 2026 Christian Ditscher (https://github.com/ditschi/looping_louie)
+
+2. Hardware designs and documentation – Creative Commons
+   Attribution-NonCommercial-ShareAlike 4.0 International
+   SPDX-License-Identifier: CC-BY-NC-SA-4.0
+   Full text: LICENSES/CC-BY-NC-SA-4.0.txt
+   Applies to: hardware/ (KiCad projects, schematics, layouts, BOM, own
+   symbols/footprints/3D models, mechanical parts) except hardware/scripts/,
+   docs/, README.md and images.
+
+   Attribution: "Looping Louie WLAN upgrade by Christian Ditscher,
+   https://github.com/ditschi/looping_louie"
+
+Third-party material
+--------------------
+
+Files from third parties keep their own licenses, in particular:
+- hardware/lib/lcsc.* – symbols, footprints and 3D models converted from
+  LCSC/EasyEDA with easyeda2kicad (terms of LCSC/EasyEDA apply).
+- KiCad standard library parts referenced by the projects (CC-BY-SA 4.0 with
+  the KiCad library exception).
+- Rust crates, ESP-IDF and other dependencies (their respective licenses,
+  mostly MIT/Apache-2.0); they are not covered by the licenses above.
+
+Earlier versions
+----------------
+
+Versions before this file was added (including the tag v1-legacy) were
+published without a license; all rights reserved for those versions unless
+stated otherwise.
+
+Contributions
+-------------
+
+By submitting a contribution (pull request, patch) you agree that it is
+licensed under the terms above and that the copyright holder may additionally
+license it under other terms, including commercial licenses.

@@ -1,4 +1,4 @@
-# KiCad: lokale Einstellungen, Caches, Backups
+# KiCad: local settings, caches, backups
 *.kicad_prl
 *-backups/
 fp-info-cache
@@ -7,10 +7,10 @@ fp-info-cache
 _autosave-*
 *.bak
 
-# Erzeugte Ausgaben (just erc/drc/render/fab)
+# Generated output (just erc/drc/render/fab)
 build/
 
-# Heruntergeladene Werkzeuge (setup.sh)
+# Downloaded tools (setup.sh)
 tools/
 
 # Python
@@ -18,6 +18,10 @@ __pycache__/
 *.pyc
 .venv/
 
-# Editoren
+# Editors
 .idea/
 .vscode/
+
+# Firmware build output (if built without just fw-*)
+firmware/louie-fw/target/
+firmware/louie-fw/.embuild/

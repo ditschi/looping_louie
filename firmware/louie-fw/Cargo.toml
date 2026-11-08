@@ -1,0 +1,48 @@
+[package]
+name = "louie-fw"
+version = "0.1.0"
+authors = ["Christian Ditscher"]
+edition = "2021"
+resolver = "2"
+rust-version = "1.82"
+license = "PolyForm-Noncommercial-1.0.0"
+description = "Looping Louie Wi-Fi upgrade: ESP32-C6 firmware (step 0: bring-up and pre-order test probes)"
+
+[lib]
+harness = false
+
+[[bin]]
+name = "louie-fw"
+harness = false # no built-in test harness on the ESP target (rust-analyzer errors otherwise)
+
+# Pre-order checks, docs/test-hardware.md 4. Run with: cargo run --release --example <name>
+[[example]]
+name = "lever_probe"
+[[example]]
+name = "boot_probe"
+[[example]]
+name = "pin_probe"
+[[example]]
+name = "adc_probe"
+
+[features]
+# Exactly one board feature (docs/firmware-architecture.md 3.1). The dev board is the default until the
+# prototype boards exist; build the board with --no-default-features --features board-louie-v1.
+default = ["board-devkitc-c6"]
+board-devkitc-c6 = []
+board-louie-v1 = []
+
+[profile.release]
+opt-level = "s"
+
+[profile.dev]
+debug = true    # symbols do not take flash space
+opt-level = "z"
+
+[dependencies]
+log = "0.4"
+anyhow = "1"
+esp-idf-svc = "0.53"
+
+[build-dependencies]
+embuild = "0.33.5"

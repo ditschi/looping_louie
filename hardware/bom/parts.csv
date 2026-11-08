@@ -1,0 +1,56 @@
+board,ref,qty,function,value,part,manufacturer,package,lcsc,alternatives,library,status
+main,U1,1,MCU + Wi-Fi/BLE/802.15.4,,ESP32-C6-MINI-1-H8,Espressif,module 13.2x16.6x2.4 mm,C42403058,ESP32-C6-MINI-1-N4 C5736265 (4 MB; pin- and footprint-identical; fallback if H8 is not available at JLC - 2026-11-06: 620 pcs.),lcsc,verified
+main,U2,1,Motor driver H-bridge with current sensing (IPROPI) current limit and autosleep; GAINSEL to GND,,DRV8213DSGR,Texas Instruments,WSON-8 2x2 mm with thermal pad,C22407186,DRV8833PWPR C50506 (different layout; fallback),kicad,verified
+main,U3,1,LDO 3.3 V / 600 mA,,AP2112K-3.3TRG1,Diodes Inc.,SOT-23-5,C51118,TLV75533PDBVR (TI); ME6211C33M5G; RT9080 (2 uA; check pinout),kicad,verified
+main,J4,1,USB-C receptacle horizontal at the long edge +y (flashing + 5 V operation incl. motor),,TYPE-C-31-M-12,Korean Hroparts,USB-C 16-pin SMD + 4 THT tabs,C165948,HCTL HC-TYPE-C-16P-01A C2894897 (same hole positions),kicad,verified
+main,U5,1,ESD protection USB D+/D- and VBUS,,USBLC6-2SC6,ST,SOT-23-6,C7519,UMW USBLC6-2SC6 C2687116,kicad,verified
+main,R12-R13,2,USB-C CC resistors (sink),5.1 k,generic,,0402,,,kicad,
+main,D2,1,Power path: VBUS -> VSYS (Schottky 3 A),,SS34F,MDD,SMAF,C60396,SS34 SMA C8678 (larger),lcsc,verified
+main,Q1,1,Power path: BAT_IN -> VSYS (P-MOSFET; blocks with USB; reverse polarity protection),,AO3401A,Alpha & Omega,SOT-23,C15127,DMG2305UX,kicad,verified
+main,R14-R15,2,VBUS divider -> VBUS_DET (IO4; 5 V -> 2.5 V); also gate pull-down Q1 and VBUS discharge,100 k / 100 k,generic,,0402,,,kicad,
+main,J1,1,Cable to the charger board (1 BAT_IN 2/3 free 4 GND; flashing only via J4),,solder pads (not populated),,4 SMD pads 1.4x1.6 mm pitch 2 mm on the bottom at the +y edge under J4,,previously JST SM04B-SRSS-TB (C160404),louie,
+main,J5,1,Battery solder pads on the bottom (1 BAT_IN + / 2 GND -) for a protected cell directly,,solder pads (not populated),,2 pads 2.5x3.5 mm on the bottom,,,louie,
+main,R1,1,R_IPROPI: current sensing and current limit 2 A (ITRIP = 0.51 V / (R x 205 uA/A)),1.24 k 1%,generic,,0402,,,kicad,
+main,C1-C2,2,Buffer motor supply,47 uF 10 V X5R,generic,,1206,,,kicad,
+main,C4,1,Decoupling VM,100 nF 16 V X7R,generic,,0402,,,kicad,
+main,C8,1,LDO input,1 uF 10 V X5R,generic,,0402,,,kicad,
+main,C9,1,3V3 buffer ESP32,10 uF 10 V X5R,generic,,0603,,,kicad,
+main,C10-C11,2,3V3 decoupling + LDO output,100 nF / 1 uF,generic,,0402,,,kicad,
+main,R2+C12,1,ESP32 EN reset RC,10 k / 1 uF,generic,,0402,,,kicad,
+main,R3,1,Lever detection pull-down at OUT_A (lever closed = SENSE HIGH; WAKEUP_ANY_HIGH),100 k,generic,,0402,,,kicad,
+main,R4,1,Lever detection pull-up at OUT_B to 3V3,10 k,generic,,0402,,,kicad,
+main,R5,1,Protection resistor SENSE -> GPIO,100 k,generic,,0402,,,kicad,
+main,R6-R7+C13,1,Divider VSYS (up to 5.5 V -> 2.75 V; 4.5 uA quiescent current),470 k / 470 k / 100 nF,generic,,0402,,,kicad,
+main,R8+C14,1,RC filter IPROPI -> ADC (255 mV/A),1 k / 100 nF,generic,,0402,,,kicad,
+main,D1+R9,1,Status LED,green / 1 k,generic,,0402,,,kicad,
+main,R10-R11+R16,3,Pull-ups SCL (IO7) / IO8 (strapping) / SDA (IO6),10 k,generic,,0402,,,kicad,
+main,J2,1,Expansion solder pads on the bottom (3V3 GND SDA/IO6 SCL/IO7 INT/IO2) for external I2C modules or vibration switches (parallel to the LIS2DH12),,solder pads (not populated),,5 pads 1.4 mm pitch 2.54 mm; centre y +4.3 (in the pocket of the sleeve),,,louie,
+main,J3,1,Service solder pads on the bottom (EN TXD BOOT GND RXD/IO17): UART0 console and download; button on BOOT+GND,,solder pads (not populated),,5 pads 1.4 mm pitch 2.54 mm,,,louie,
+main,U4,1,Accelerometer (I2C 0x18; INT1 to IO2 wakes from deep sleep); population optional (DNP possible),,LIS2DH12TR,ST,LGA-12 2x2x1 mm,C110926,LIS2DW12TR; SC7A20 (clone),louie,verified; optional
+main,C15,1,Decoupling LIS2DH12 (populate with U4),100 nF 10 V X7R,generic,,0402,,,kicad,optional
+main,J6,1,Player inputs on the bottom (3V3 S1/IO5 S2/IO20 S3/IO21 S4/IO8 GND): button/reed per arm to GND; internal pull-ups + 1 k in the cable (no RC footprints),,solder pads (not populated),,6 pads 1.4 mm pitch 2.54 mm,,,louie,optional
+main,R19-R20+C16,3,IO5 (S1): pull-up/resistor ladder to 3V3; bleed (piezo/NTC) and filter to GND,10 k / 1 M / 10 nF,generic,,0402,C25744 / - / C15195,,kicad,DNP/optional
+main,J7,1,LED connector on the bottom (1 VLED 2 IO23 3 GND): NeoPixel chain (V5 types; 330 Ohm at the LED end) / single LED / button,,solder pads (not populated),,3 pads 1.4 mm pitch 2.54 mm,,,louie,optional
+main,U6,1,Load switch VSYS -> VLED for J7 (ON = IO15; ON threshold 1 V; 52 mOhm; 1.45 mm high),,TPS22918DBVR,Texas Instruments,SOT-23-6,C131941,TPS22918DBVT C2680345 (small reel),kicad,DNP/optional; verified
+main,R22,1,Pull-down IO15: U6 off in reset and deep sleep,100 k,0402WGF1003TCE,UNI-ROYAL,0402,C25741,,kicad,DNP/optional
+main,JP1,1,Solder jumper VSYS -> VLED (bypass of U6; open by default; solder or 0 Ohm resistor),,solder jumper (not populated),,0603 pads,,,kicad,optional
+main,F1,1,PTC fuse VLED (VSYS is otherwise unfused),0.5 A hold / 1 A trip / 6 V,BSMD0805-050-6V,BHFUSE,0805 (1.1 mm high),C883108,Littelfuse 0805L050WR C207022,kicad,DNP/optional; verified
+main,C17,1,Buffer VLED at the start of the chain,10 uF 16 V X5R,CL21A106KOQNNNE,Samsung,0805,C1713,CL21A106KAYNNNE C15850 (25 V),kicad,DNP/optional; verified
+main,TP1-TP2,2,Test points on the bottom: VSYS / VBUS (measure ISEN at R1 and SENSE at R5 on top),,copper pads (not populated),,round 1.0 mm,,,louie,
+main,BT1-BT2,2,Contacts at the board ends (OUT_A / OUT_B),,open,,placeholder pad 2x2 mm,,,kicad,mechanics to be clarified
+charger,J101,1,USB-C receptacle horizontal (charging + data); plug across the cell axis,,TYPE-C-31-M-12,Korean Hroparts,USB-C 16-pin SMD + 4 THT tabs,C165948,any 16-pin HRO-compatible receptacle,kicad,verified
+charger,U101,1,LiPo charge controller 1S 4.2 V,,MCP73831T-2ACI/OT,Microchip,SOT-23-5,C424093,TP4056 (1 A; larger),kicad,verified
+charger,R103,1,Charge current 500 mA (I = 1000 V / R),2 k,generic,,0603,,3.3 k = 300 mA for small batteries,kicad,
+charger,C101-C102,2,Charge controller input/output,4.7 uF 10 V X5R,generic,,0603,,,kicad,
+charger,D101+R104,1,Charge indicator (lit while charging),red / 1 k,Hubei KENTO KT-0603R,,0603,C2286,,kicad,verified
+charger,Q101,1,Load sharing: battery -> VSYS without USB (P-MOSFET),,AO3401A,Alpha & Omega,SOT-23,C15127,DMG2305UX,kicad,verified
+charger,D102,1,Load sharing: USB -> VSYS (Schottky 3 A),,SS34,MDD,SMA,C8678,SS24; B5819W only 1 A,kicad,verified
+charger,R105,1,Gate pull-down Q101 / discharge VBUS,100 k,generic,,0603,,,kicad,
+charger,C103,1,Buffer VSYS,10 uF 10 V X5R,generic,,0805,,,kicad,
+charger,U102,1,ESD protection USB D+/D- and VBUS,,USBLC6-2SC6,ST,SOT-23-6,C7519,,kicad,verified
+charger,R101-R102,2,USB-C CC resistors (sink),5.1 k,generic,,0603,,,kicad,
+charger,J102,1,LiPo connector (pin 1 = +; check the battery polarity!),,S2B-PH-SM4-TB,JST,JST-PH 2.0 mm 2-pin SMD horizontal,C295747,solder pads TP101/TP102 in parallel,kicad,verified
+charger,TP101-TP102,2,Battery solder pads (alternative to the JST),,solder pads (not populated),,2 x 2 mm,,,kicad,
+charger,J103,1,Cable to the main board (1 VSYS 2 D+ 3 D- 4 GND; on J1 of the C6 main board connect only 1 and 4),,solder pads (not populated),,4 pads 1.4x1.6 mm pitch 2 mm,,,louie,
+charger,BT101-BT102,2,End contacts of the bridge (replaces board B in the AA compartment),,solder pads on the bottom for nickel strip,,2 x 2 mm,,,kicad,
+bridge,-,0,plain copper bridge without components,,,,,,,,

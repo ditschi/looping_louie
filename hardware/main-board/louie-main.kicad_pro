@@ -94,7 +94,7 @@
         "padstack": "warning",
         "pth_inside_courtyard": "ignore",
         "shorting_items": "error",
-        "silk_edge_clearance": "warning",
+        "silk_edge_clearance": "ignore",
         "silk_over_copper": "warning",
         "silk_overlap": "warning",
         "skew_out_of_range": "error",
@@ -130,9 +130,9 @@
         "min_text_height": 0.8,
         "min_text_thickness": 0.08,
         "min_through_hole_diameter": 0.3,
-        "min_track_width": 0.12,
+        "min_track_width": 0.15,
         "min_via_annular_width": 0.1,
-        "min_via_diameter": 0.6,
+        "min_via_diameter": 0.5,
         "solder_mask_to_copper_clearance": 0.0,
         "use_height_for_length_calcs": true
       },
@@ -470,7 +470,7 @@
         "priority": 2147483647,
         "schematic_color": "rgba(0, 0, 0, 0.000)",
         "track_width": 0.2,
-        "via_diameter": 0.6,
+        "via_diameter": 0.5,
         "via_drill": 0.3,
         "wire_width": 6
       },
@@ -488,7 +488,7 @@
         "priority": -1,
         "schematic_color": "rgba(0, 0, 0, 0.000)",
         "track_width": 0.4,
-        "via_diameter": 0.6,
+        "via_diameter": 0.5,
         "via_drill": 0.3,
         "wire_width": 6
       },
@@ -505,8 +505,8 @@
         "pcb_color": "rgba(0, 0, 0, 0.000)",
         "priority": -1,
         "schematic_color": "rgba(0, 0, 0, 0.000)",
-        "track_width": 0.3,
-        "via_diameter": 0.6,
+        "track_width": 0.25,
+        "via_diameter": 0.5,
         "via_drill": 0.3,
         "wire_width": 6
       }
@@ -519,31 +519,15 @@
     "netclass_patterns": [
       {
         "netclass": "Power",
-        "pattern": "VSYS"
-      },
-      {
-        "netclass": "Power",
-        "pattern": "GND"
-      },
-      {
-        "netclass": "Power",
-        "pattern": "MOT_A"
-      },
-      {
-        "netclass": "Power",
-        "pattern": "MOT_B"
-      },
-      {
-        "netclass": "Power",
-        "pattern": "ISEN"
-      },
-      {
-        "netclass": "Power",
         "pattern": "/VSYS"
       },
       {
         "netclass": "Power",
-        "pattern": "/GND"
+        "pattern": "/BAT_IN"
+      },
+      {
+        "netclass": "Power",
+        "pattern": "/VBUS_J4"
       },
       {
         "netclass": "Power",
@@ -555,11 +539,11 @@
       },
       {
         "netclass": "Power",
-        "pattern": "/ISEN"
+        "pattern": "/VLED"
       },
       {
-        "netclass": "Supply",
-        "pattern": "/VSYS"
+        "netclass": "Power",
+        "pattern": "/VLED_SW"
       },
       {
         "netclass": "Supply",

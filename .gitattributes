@@ -1,4 +1,4 @@
-# 3D-Modelle unverändert speichern, keine Diffs
+# Store 3D models unchanged, no diffs
 *.step binary
 *.stp  binary
 *.wrl  binary

@@ -1,0 +1,212 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 980" width="1400" height="980" font-family="DejaVu Sans, Arial, sans-serif">
+  <title>Verdrahtung Ladeplatine – Hauptplatine – Akku</title>
+  <defs>
+    <style>
+      .t  { font-size: 15px; fill: #222; }
+      .ts { font-size: 12.5px; fill: #333; }
+      .tb { font-size: 15px; fill: #222; font-weight: bold; }
+      .h  { font-size: 19px; fill: #111; font-weight: bold; }
+      .pcb  { fill: #1f6b2c; stroke: #0d3d16; stroke-width: 1.5; }
+      .pcbt { font-size: 13px; fill: #fff; font-weight: bold; }
+      .pad  { fill: #d9b44a; stroke: #8a6a10; stroke-width: 1; }
+      .fach { fill: #f3efe6; stroke: #777; stroke-width: 2; }
+      .blech { fill: #b8bcc2; stroke: #555; stroke-width: 1.5; }
+      .wire { fill: none; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+      .vsys { stroke: #d62728; } .gnd { stroke: #111; } .dp { stroke: #2ca02c; }
+      .dm  { stroke: #fff; } .dmo { stroke: #666; stroke-width: 6; }
+      .mot { fill: none; stroke: #e08a00; stroke-width: 3.5; stroke-dasharray: 9 6; stroke-linecap: round; }
+      .akku { fill: #4d6fa8; stroke: #2b4373; stroke-width: 1.5; }
+      .usb  { fill: #c9ccd1; stroke: #555; stroke-width: 1.2; }
+      .note { fill: #fff8e1; stroke: #e0b84c; stroke-width: 1.2; }
+    </style>
+    <marker id="pfeil" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#444"/>
+    </marker>
+  </defs>
+  <rect width="1400" height="980" fill="#fff"/>
+  <text x="30" y="40" class="h" font-size="24">Verdrahtung: Ladeplatine – Hauptplatine – Akku</text>
+  <text x="30" y="64" class="ts">Gleiche Platinen und gleiches 4-adriges Kabel in beiden Einbauarten. Ansicht schematisch, nicht maßstäblich.</text>
+
+  <!-- ============================ A: 2x AA ============================ -->
+  <text x="30" y="105" class="h">A  2× AA (neues Louie, Chewie): Ladeplatine in Fach 2</text>
+
+  <!-- Batteriefach -->
+  <rect x="120" y="125" width="520" height="250" rx="10" class="fach"/>
+  <text x="130" y="145" class="ts">Batteriefach (Deckel ab bzw. Schlitz im Deckel für den USB-Stecker)</text>
+  <!-- Kammer 1 -->
+  <rect x="150" y="160" width="440" height="70" rx="8" fill="#e8e3d6" stroke="#999"/>
+  <rect x="170" y="180" width="400" height="30" rx="3" class="pcb"/>
+  <text x="185" y="200" class="pcbt">Hauptplatine (AA)  ·  ESP32-C3, Motortreiber</text>
+  <rect x="510" y="212" width="54" height="12" class="pad"/>
+  <text x="455" y="246" class="ts">J1 (unten)</text>
+  <!-- Kammer 2 -->
+  <rect x="150" y="270" width="440" height="80" rx="8" fill="#e8e3d6" stroke="#999"/>
+  <rect x="170" y="292" width="400" height="34" rx="3" class="pcb"/>
+  <text x="186" y="316" class="pcbt">Ladeplatine (hochkant)</text>
+  <rect x="200" y="280" width="54" height="14" class="usb"/>
+  <text x="186" y="268" class="ts" font-weight="bold">USB-C ↑</text>
+  <circle cx="275" cy="298" r="3.5" fill="#e3342f"/>
+  <text x="266" y="268" class="ts">LED</text>
+  <rect x="380" y="282" width="40" height="12" fill="#f4f1e8" stroke="#888"/>
+  <text x="384" y="273" class="ts">JST</text>
+  <rect x="510" y="292" width="54" height="10" class="pad"/>
+  <text x="520" y="344" class="ts">J103</text>
+  <!-- Endkontakte / Bleche -->
+  <rect x="140" y="182" width="10" height="26" class="blech"/>
+  <rect x="140" y="296" width="10" height="26" class="blech"/>
+  <rect x="590" y="182" width="12" height="140" class="blech"/>
+  <text x="612" y="190" class="ts" transform="rotate(90 612 190)">Verbindungsblech</text>
+  <!-- Motorstromkreis -->
+  <path d="M 140,195 H 100 V 430 H 60" class="mot"/>
+  <path d="M 140,309 H 110 V 470 H 60" class="mot"/>
+  <path d="M 170,322 H 505" stroke="#e08a00" stroke-width="3" stroke-dasharray="4 4" fill="none"/>
+  <text x="176" y="344" class="ts" fill="#b36b00">Brücke BT101 ↔ BT102 (unten)</text>
+  <text x="22" y="420" class="ts">zum Hebel</text>
+  <text x="22" y="495" class="ts">zum Motor</text>
+
+  <!-- Akku -->
+  <rect x="290" y="430" width="250" height="60" rx="8" class="akku"/>
+  <text x="318" y="458" class="pcbt" font-size="15">1S-LiPo 3,7 V</text>
+  <text x="318" y="478" class="ts" fill="#dfe8ff">in der Basis, mit Schutzschaltung</text>
+  <path d="M 392,430 V 294" class="wire vsys"/>
+  <path d="M 408,430 V 294" class="wire gnd"/>
+  <text x="560" y="450" class="ts">JST-PH: Pin 1 = + (rot)</text>
+  <text x="560" y="467" class="ts">Pin 2 = − (schwarz)</text>
+
+  <!-- 4-adriges Kabel J103 -> J1 -->
+  <line x1="516" y1="224" x2="516" y2="292" class="wire vsys"/>
+  <line x1="530" y1="224" x2="530" y2="292" class="wire dp"/>
+  <line x1="544" y1="224" x2="544" y2="292" class="wire dmo"/>
+  <line x1="544" y1="224" x2="544" y2="292" class="wire dm"/>
+  <line x1="558" y1="224" x2="558" y2="292" class="wire gnd"/>
+  
+
+  <!-- ============================ B: Basis ============================ -->
+  <text x="760" y="105" class="h">B  Ladeplatine in der Basis (z. B. altes Louie)</text>
+
+  <!-- Basis-Gehäuse -->
+  <path d="M 760,140 H 1320 V 470 H 760 Z" fill="#f7f7f7" stroke="#777" stroke-width="2"/>
+  <text x="770" y="160" class="ts">Basis des Spiels (Innenansicht von oben)</text>
+  <!-- Wand mit Loch -->
+  <rect x="1300" y="140" width="20" height="330" fill="#b9c6d4" stroke="#667"/>
+  <rect x="1300" y="199.6" width="20" height="44" fill="#fff" stroke="#667"/>
+  <path d="M 1390,221.6 H 1326" stroke="#444" stroke-width="2.5" marker-end="url(#pfeil)"/>
+  <text x="1334" y="211.6" class="ts" font-weight="bold">USB-C</text>
+  <text x="1060" y="492" class="ts">Loch 13,5 × 7,5 mm in der Wand</text>
+
+  <!-- Halter + Ladeplatine flach, LANGE Kante (mit der Buchse) an der Wand -->
+  <circle cx="1263.6" cy="158" r="9" fill="#f5b041" stroke="#a96d10"/>
+  <circle cx="1263.6" cy="460" r="9" fill="#f5b041" stroke="#a96d10"/>
+  <rect x="1218.2" y="163" width="81.8" height="292" rx="3" fill="#f5b041" stroke="#a96d10"/>
+  <circle cx="1263.6" cy="158" r="2.5" fill="#fff"/><circle cx="1263.6" cy="460" r="2.5" fill="#fff"/>
+  <rect x="1227.2" y="175.0" width="72.8" height="268.0" rx="3" class="pcb"/>
+  <rect x="1257.2" y="195.6" width="42.8" height="52.1" class="usb"/>
+  <circle cx="1293.9" cy="268.2" r="3.5" fill="#e3342f"/>
+  <rect x="1243.5" y="347.2" width="55.5" height="46.0" fill="#f4f1e8" stroke="#888"/>
+  <text x="1247.5" y="363.2" class="ts" font-size="11px">JST</text>
+  <text x="1247.5" y="377.2" class="ts" font-size="11px">(frei)</text>
+  <rect x="1277.4" y="402.0" width="12" height="12" class="pad"/>
+  <rect x="1237.8" y="402.0" width="12" height="12" class="pad"/>
+  <text x="1291.4" y="412.0" class="ts" fill="#fff" font-weight="bold">+</text>
+  <text x="1251.8" y="412.0" class="ts" fill="#fff" font-weight="bold">−</text>
+  <rect x="1274.2" y="422.9" width="8" height="10" class="pad"/>
+  <rect x="1262.5" y="422.9" width="8" height="10" class="pad"/>
+  <rect x="1250.8" y="422.9" width="8" height="10" class="pad"/>
+  <rect x="1239.2" y="422.9" width="8" height="10" class="pad"/>
+  <text x="1241" y="372" class="pcbt" transform="rotate(-90 1241 372)">Ladeplatine (flach)</text>
+  <text x="1040" y="182" class="ts">Lange Kante mit der Buchse</text>
+  <text x="1040" y="197" class="ts">an die Wand →</text>
+  <text x="1150" y="431.9" class="ts">J103 →</text>
+
+  <!-- Akku -->
+  <rect x="1030" y="350" width="150" height="50" rx="8" class="akku"/>
+  <text x="1042" y="372" class="pcbt" font-size="14">1S-LiPo 3,7 V</text>
+  <text x="1042" y="390" class="ts" fill="#dfe8ff">mit Schutzschaltung</text>
+  <path d="M 1283.4,408.0 V 418 H 1195 V 392 H 1180" class="wire vsys"/>
+  <path d="M 1243.8,408.0 H 1205 V 380 H 1180" class="wire gnd"/>
+
+  <!-- Fach mit Hauptplatine -->
+  <rect x="790" y="190" width="200" height="250" rx="10" class="fach"/>
+  <text x="800" y="210" class="ts">Batteriefach</text>
+  <rect x="820" y="225" width="140" height="190" rx="20" fill="#9bb7d4" stroke="#556"/>
+  <text x="830" y="245" class="ts">C-Hülse (alt)</text>
+  <text x="830" y="260" class="ts">bzw. AA-Fach 1</text>
+  <rect x="870" y="270" width="40" height="130" rx="3" class="pcb"/>
+  <text x="896" y="390" class="pcbt" transform="rotate(-90 896 390)">Hauptplatine</text>
+  <rect x="878" y="276" width="28" height="10" class="pad"/>
+  <text x="800" y="432" class="ts">2× AA: Fach 2 = Brücke</text>
+
+  <!-- Kabel J103 -> J1 (VSYS, D+, D-, GND) -->
+  <path d="M 1278.2,432.9 V 458 H 1000 V 310 H 884 V 286" class="wire vsys"/>
+  <path d="M 1266.5,432.9 V 452 H 1006 V 304 H 891 V 286" class="wire dp"/>
+  <path d="M 1254.8,432.9 V 446 H 1012 V 298 H 898 V 286" class="wire dmo"/>
+  <path d="M 1254.8,432.9 V 446 H 1012 V 298 H 898 V 286" class="wire dm"/>
+  <path d="M 1243.2,432.9 V 440 H 1018 V 292 H 905 V 286" class="wire gnd"/>
+  <text x="1028" y="300" class="ts">Kabel durch die Fachwand</text>
+  <text x="1028" y="315" class="ts">bzw. unter dem Deckel</text>
+
+  <!-- ============================ Tabelle ============================ -->
+  <text x="30" y="560" class="h">Belegung</text>
+  <g class="t">
+    <rect x="30" y="575" width="850" height="34" fill="#eee"/>
+    <text x="42"  y="597" class="tb">Ladeplatine</text>
+    <text x="250" y="597" class="tb">Ader</text>
+    <text x="400" y="597" class="tb">Hauptplatine / Akku</text>
+    <text x="610" y="597" class="tb">Querschnitt</text>
+    <text x="42" y="637">1  VSYS  (Pad „V“)</text>
+    <line x1="250" y1="632" x2="300" y2="632" class="wire vsys"/><text x="310" y="637">rot</text>
+    <text x="400" y="637">J1: 1  VSYS</text>
+    <text x="610" y="637">≥ 0,25 mm² (AWG 24)</text>
+    <line x1="30" y1="649" x2="880" y2="649" stroke="#e4e4e4"/>
+    <text x="42" y="675">2  D+</text>
+    <line x1="250" y1="670" x2="300" y2="670" class="wire dp"/><text x="310" y="675">grün</text>
+    <text x="400" y="675">J1: 2  D+</text>
+    <text x="610" y="675">dünn (AWG 28–30), mit D− verdrillt</text>
+    <line x1="30" y1="687" x2="880" y2="687" stroke="#e4e4e4"/>
+    <text x="42" y="713">3  D−</text>
+    <line x1="250" y1="708" x2="300" y2="708" class="wire dmo"/><line x1="250" y1="708" x2="300" y2="708" class="wire dm"/><text x="310" y="713">weiß</text>
+    <text x="400" y="713">J1: 3  D−</text>
+    <text x="610" y="713">dünn (AWG 28–30)</text>
+    <line x1="30" y1="725" x2="880" y2="725" stroke="#e4e4e4"/>
+    <text x="42" y="751">4  GND  (Pad „G“)</text>
+    <line x1="250" y1="746" x2="300" y2="746" class="wire gnd"/><text x="310" y="751">schwarz</text>
+    <text x="400" y="751">J1: 4  GND</text>
+    <text x="610" y="751">≥ 0,25 mm² (AWG 24)</text>
+    <line x1="30" y1="763" x2="880" y2="763" stroke="#e4e4e4"/>
+    <text x="42" y="789">JST Pin 1 / Pad „+“</text>
+    <line x1="250" y1="784" x2="300" y2="784" class="wire vsys"/><text x="310" y="789">rot</text>
+    <text x="400" y="789">Akku +</text>
+    <text x="610" y="789">≥ 0,25 mm² (Akkukabel)</text>
+    <line x1="30" y1="801" x2="880" y2="801" stroke="#e4e4e4"/>
+    <text x="42" y="827">JST Pin 2 / Pad „−“</text>
+    <line x1="250" y1="822" x2="300" y2="822" class="wire gnd"/><text x="310" y="827">schwarz</text>
+    <text x="400" y="827">Akku −</text>
+    <text x="610" y="827">≥ 0,25 mm² (Akkukabel)</text>
+    <line x1="30" y1="839" x2="880" y2="839" stroke="#e4e4e4"/>
+  </g>
+  <g>
+    <path d="M 46,895 H 110" class="mot"/>
+    <text x="122" y="900" class="ts">Motorstromkreis über die Fachkontakte. In Variante A ersetzt die Ladeplatine die Brückenplatine.</text>
+  </g>
+
+  <!-- Hinweise -->
+  <rect x="900" y="560" width="480" height="405" rx="8" class="note"/>
+  <text x="918" y="590" class="tb">Wichtig</text>
+  <g class="ts" font-size="13.5px">
+    <text x="918" y="618">• Akku-Polarität vor dem Einstecken prüfen: Viele LiPo-</text>
+    <text x="930" y="636">Stecker sind andersherum belegt. Plus ist auf der Platine</text>
+    <text x="930" y="654">mit „+“ markiert (Pin 1 des JST).</text>
+    <text x="918" y="682">• Den Akku nie an J103 anschließen (V/D+/D−/G).</text>
+    <text x="918" y="710">• Nur Akkus mit Schutzschaltung verwenden (Tiefentlade-</text>
+    <text x="930" y="728">und Kurzschlussschutz). Ladestrom 500 mA.</text>
+    <text x="918" y="746" class="ts" font-size="13.5px">• VSYS und GND führen den Motorstrom (bis 2 A).</text>
+    <text x="918" y="784">• In der Basis (B) zeigt der JST-Stecker zur Wand: Akku</text>
+    <text x="930" y="802">dort an die Lötpads + / − löten.</text>
+    <text x="918" y="830">• LED leuchtet rot = lädt, aus = voll oder kein USB.</text>
+    <text x="918" y="858">• Beim Laden läuft das Spiel weiter (Load-Sharing):</text>
+    <text x="930" y="876">USB versorgt dann direkt Hauptplatine und Motor.</text>
+    <text x="918" y="904">• Dieselbe Buchse dient zum Flashen der Firmware</text>
+    <text x="930" y="922">(USB D+/D− gehen zur Hauptplatine durch).</text>
+    <text x="918" y="950">• Kabel D+/D− kurz halten (unter ca. 30 cm).</text>
+  </g>
+</svg>
