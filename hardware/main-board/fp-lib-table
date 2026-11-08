@@ -1,0 +1,5 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "lcsc")(type "KiCad")(uri "${KIPRJMOD}/../lib/lcsc.pretty")(options "")(descr "LCSC/JLC-Teile, erzeugt mit easyeda2kicad (just parts)"))
+  (lib (name "louie")(type "KiCad")(uri "${KIPRJMOD}/../lib/louie.pretty")(options "")(descr "Projekteigene Footprints"))
+)

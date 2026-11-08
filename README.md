@@ -1,17 +1,42 @@
-# Looping Louie controlled with ESP8266
+# Looping Louie WLAN-Upgrade
 
-A little project to control the looping louie game using  wifi.
+Nachrüst-Elektronik für Looping Louie (alt und neu) und Loopin' Chewie: wird **ohne Löten ins
+Batteriefach** gesteckt und macht das Spiel per **Web-UI vom Handy** steuerbar, mit
+Spielmodi, eigenen Modi, Spielleiter- und Spielerrollen. Der Original-Hebel bleibt Start/Stopp.
 
-We are using microPython on a  ESP8266 to provide a  webserver.
+> Status: Neustart (Branch `v2`). Konzept steht, Hardware im Entwurf, Firmware folgt.
+> Der alte MicroPython/ESP8266-Stand liegt im Tag `v1-legacy`.
 
-There will be multiple game modes to choose from.
+## Aufbau
 
+| Baugruppe | Beschreibung |
+|---|---|
+| **Hauptplatine** | Im Format einer AA-Zelle: ESP32-C3, H-Brücke DRV8833, Hebel-Erkennung |
+| **Brücke** | AA-Dummy aus Kupfer für das zweite Fach (neues Louie, Chewie) |
+| **Ladeplatine** | Extern beim Akku: USB-C (Laden + Flashen), Laderegler, LiPo-Anschluss |
+| **C-Hülse** | 3D-Druck-Adapter, damit die Hauptplatine ins Baby-Fach des alten Louie passt |
 
- ## Tricks
+Details: [docs/hardware-konzept.md](docs/hardware-konzept.md), [docs/software-konzept.md](docs/software-konzept.md)
 
- ### Read ttyUSB0 and connect with mpfshell in parallell
+## Verzeichnisse
+
+```
+docs/                 Konzept und Entwicklungsanleitung
+hardware/
+  bom/teile.csv       Stückliste mit Herstellerteilen, LCSC-Nummern, Alternativen
+  lib/                Projektbibliothek (Symbole, Footprints, 3D) – erzeugt mit just parts
+  main-board/         KiCad-Projekt Hauptplatine
+  scripts/            Hilfsskripte (Umriss, Teile holen, Werkzeugprüfung)
+justfile              alle Entwicklungsbefehle (just --list)
+setup.sh              installiert alle Werkzeuge
+```
+
+## Schnellstart
 
 ```bash
-mpfshell -o ttyUSB0
-cat < /dev/ttyUSB0
+./setup.sh     # alle Werkzeuge installieren (einmalig, Ubuntu/Debian)
+just check     # Werkzeuge prüfen
+just --list    # alle Befehle
 ```
+
+Einrichtung und Arbeitsweise: [docs/entwicklung.md](docs/entwicklung.md)

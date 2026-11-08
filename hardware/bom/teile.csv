@@ -1,0 +1,35 @@
+platine,ref,anzahl,funktion,wert,bauteil,hersteller,gehaeuse,lcsc,alternativen,bibliothek,status
+haupt,U1,1,MCU + WLAN,,ESP32-C3-MINI-1-N4,Espressif,Modul 13.2x16.6x2.4 mm,C2838502,ESP32-C3-MINI-1-N4X (Nachfolger! N4 laut Mouser abgekuendigt); ESP32-C3-MINI-1U (externe Antenne),lcsc,geprueft
+haupt,U2,1,Motortreiber H-Bruecke (beide Kanaele parallel),,DRV8833PWPR,Texas Instruments,HTSSOP-16 mit Thermal-Pad,C50506,,kicad,geprueft
+haupt,U3,1,LDO 3.3 V / 600 mA,,AP2112K-3.3TRG1,Diodes Inc.,SOT-23-5,C51118,TLV75533PDBVR (TI); ME6211C33M5G,kicad,geprueft
+haupt,J1,1,Kabel zur Ladeplatine (1 VSYS 2 D+ 3 D- 4 GND),,Loetpads (keine Bestueckung),,4 SMD-Pads 1.4x1.6 mm Raster 2 mm unten,,frueher JST SM04B-SRSS-TB (C160404),louie,
+haupt,R1,1,Shunt Motorstrom / Strombegrenzung 2 A,0.1 R 1% 0.25 W,generisch,,0805,,,kicad,
+haupt,C1-C3,3,Puffer Motorversorgung,47 uF 10 V X5R,generisch,,1206,,,kicad,
+haupt,C4-C5,2,Abblock VM,100 nF 16 V X7R,generisch,,0402,,,kicad,
+haupt,C6,1,DRV8833 VINT,2.2 uF 10 V X5R,generisch,,0402,,,kicad,
+haupt,C7,1,DRV8833 VCP (Ladungspumpe),10 nF 16 V X7R,generisch,,0402,,,kicad,
+haupt,C8,1,LDO Eingang,1 uF 10 V X5R,generisch,,0402,,,kicad,
+haupt,C9,1,3V3 Puffer ESP32,10 uF 10 V X5R,generisch,,0805,,,kicad,
+haupt,C10-C11,2,3V3 Abblock + LDO Ausgang,100 nF / 1 uF,generisch,,0402,,,kicad,
+haupt,R2+C12,1,ESP32 EN Reset-RC,10 k / 1 uF,generisch,,0402,,,kicad,
+haupt,R3,1,Schalter-Erkennung Pull-up an OUT_A,100 k,generisch,,0402,,,kicad,
+haupt,R4,1,Schalter-Erkennung Pull-down an OUT_B,10 k,generisch,,0402,,,kicad,
+haupt,R5,1,Schutzwiderstand SENSE -> GPIO,100 k,generisch,,0402,,,kicad,
+haupt,R6-R7+C13,1,Teiler Akkuspannung (4.5 uA Ruhestrom),470 k / 470 k / 100 nF,generisch,,0402,,,kicad,
+haupt,R8+C14,1,RC-Filter Shunt -> ADC,1 k / 100 nF,generisch,,0402,,,kicad,
+haupt,D1+R9,1,Status-LED,gruen / 1 k,generisch,,0402,,,kicad,
+haupt,R10-R11,2,Pull-ups Strapping-Pins IO2 und IO8,10 k,generisch,,0402,,,kicad,
+haupt,J2,1,Erweiterungs-Loetpads unten (3V3 GND SDA/IO8 SCL/IO2 INT/RXD) fuer externe I2C-Module,,Loetpads (keine Bestueckung),,5 Pads 1.4 mm Raster 2.54 mm,,,louie,
+haupt,J3,1,Service-Loetpads unten (EN TXD BOOT GND); Taster an BOOT+GND,,Loetpads (keine Bestueckung),,4 Pads 1.4 mm Raster 2.54 mm,,,louie,
+haupt,U4,1,Beschleunigungssensor (I2C 0x18 INT1 an RXD),,LIS2DH12TR,ST,LGA-12 2x2x1 mm,C110926,LIS2DW12TR; SC7A20 (Klon),louie,geprueft
+haupt,C15,1,Abblock LIS2DH12,100 nF 10 V X7R,generisch,,0402,,,kicad,
+haupt,BT1-BT2,2,Kontakte an den Platinenenden (OUT_A / OUT_B),,offen,,Platzhalter-Pad 3x3 mm,,,kicad,Mechanik klaeren
+lade,J101,1,USB-C Buchse (Laden + Daten),,TYPE-C-31-M-12,Korean Hroparts,USB-C 16-polig SMD,C165948,beliebige 16-polige USB-C-Buchse,lcsc,geprueft
+lade,U101,1,LiPo-Laderegler 1S,,MCP73831T-2ACI/OT,Microchip,SOT-23-5,C424093,TP4056 (mehr Strom),lcsc,geprueft
+lade,Q101+D101,1,Load-Sharing (Power-Path) P-MOSFET + Schottky,,DMG2305UX + B5819W,Diodes Inc.,SOT-23 / SOD-123,,,lcsc,zu pruefen
+lade,U102,1,ESD-Schutz USB,,USBLC6-2SC6,ST,SOT-23-6,,,lcsc,zu pruefen
+lade,J102,1,LiPo-Anschluss,,S2B-PH-SM4-TB,JST,JST-PH 2.0 mm 2-polig SMD,,,lcsc,zu pruefen
+lade,R101-R102,2,USB-C CC-Widerstaende,5.1 k,generisch,,0603,,,kicad,
+lade,R103,1,Ladestrom-Programmierung (500 mA),2 k,generisch,,0603,,,kicad,
+lade,C101-C102,2,Laderegler Ein-/Ausgang,4.7 uF 10 V,generisch,,0603,,,kicad,
+bruecke,-,0,reine Kupferbruecke ohne Bauteile,,,,,,,,
