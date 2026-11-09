@@ -21,6 +21,7 @@ estimate, or not checked in the datasheet.
   No shunt, no nSLEEP/nFAULT, only 2 GPIOs.
 - **Lever:** "lever closed" = HIGH (R3 to GND, R4 to 3V3); the lever wakes the chip with ANY_HIGH on IO3.
 - **USB-C J4** with ESD (flow-through), CC resistors and power path (D2 for VBUS, Q1 for BAT_IN).
+- **Supply:** VSYS 3.0–6.6 V: 1S Li-ion, USB, 3 × or 4 × AA; LDO SPX3819 (2.7). No 9 V block.
 - **Zigbee:** the hardware needs **nothing extra**. A coordinator alongside the device's own hotspot or alongside
   a BLE scan is **not supported (X)** by Espressif; Zigbee is only realistic on the home Wi-Fi.
 - **Layers:** 4 layers (JLC04081H-3313), In1 solid GND, rules 0.15/0.15 mm, via 0.3/0.5 mm (chapter 11).
@@ -80,7 +81,7 @@ small DRV8213 (chapter 3) sits at the −y corner of the module.
 
 | GPIO (pad) | Net | Function | Rationale |
 |---|---|---|---|
-| IO0 (12) | VBAT_ADC | divider 470k/470k | ADC1_CH0; C6 measures up to 3.3 V → 5.5 V gives 2.75 V |
+| IO0 (12) | VBAT_ADC | divider 680k/470k | ADC1_CH0; C6 measures up to 3.3 V → 6.6 V gives 2.7 V (2.7) |
 | IO1 (13) | ISEN_ADC | IPROPI via RC | ADC1_CH1, +y side like the driver tap |
 | IO2 (5) | INT | INT pad J2 (sensor INT1 or vibration switch) | LP GPIO → deep-sleep wake-up, no strapping |
 | IO3 (6) | SENSE | lever, deep-sleep wake-up | LP GPIO, unchanged |
@@ -123,7 +124,10 @@ pads and unpopulated footprints on the bottom (11.7, idea-optional-hardware.md 0
 
 ### 2.5 Wake-up via SENSE
 
-**Circuit: R3 100 k OUT_A → GND, R4 10 k OUT_B → 3V3, R5 100 k SENSE → IO3.** "Lever closed" = HIGH.
+**Circuit: R3 100 k OUT_A → GND, R4 10 k OUT_B → 3V3, R5 470 k SENSE → IO3.** "Lever closed" = HIGH.
+R5 is only a series resistor into the high-impedance input (it does not change the levels below); 470 k limits the
+current into the IO3 clamp diodes while OUT_A switches up to VSYS (6.6 V: approx. 6 µA; with 100 k it was 30 µA) and keeps
+the level error from input leakage small (approx. 50 nA × 470 k ≈ 25 mV).
 
 | State | SENSE | Wake-up |
 |---|---|---|
@@ -145,6 +149,28 @@ runs on the bottom in the edge strip. The edge strip is at the **−y** edge (OU
 (analysis-wireless-controllers.md 2.3).
 
 ---
+
+### 2.7 Supply voltage range
+
+**VSYS 3.0–6.6 V** (decision 2026-11-09, F18): protected 1S Li-ion cell on J5/J1 (3.0–4.2 V), USB via D2
+(approx. 4.6 V), **3 × or 4 × AA** (alkaline up to 6.4–6.6 V fresh, NiMH up to approx. 5.6 V) on BAT_IN. The motor
+voltage follows the profile of the game (`duty = U_target / U_battery`, hardware-concept.md 4); for games with
+4 × AA the motor reaches its usual voltage only with 4 cells on BAT_IN.
+
+| Part on VSYS | Choice | Why |
+|---|---|---|
+| U3 LDO 3.3 V | **SPX3819M5-L-3-3** (MaxLinear, C9055), pin-compatible with the former AP2112K (pin 4 BP open) | VIN up to 16 V, 500 mA. Quiescent current approx. 90 µA instead of 55 µA: board approx. 100 µA in deep sleep ≈ 2.4 mAh/day (14500 cell approx. 9 months, 4 × AA approx. 2 years standby). Dissipation at 6.4 V and 100 mA average approx. 0.3 W (SOT-23-5, warm but within limits) |
+| R6/R7 VBAT divider | **680 k / 470 k** (ratio 2.447) | 6.6 V → 2.7 V at the ADC; 3.0 V → 1.23 V |
+| C1/C2, C8 | **16 V** (47 µF 1206, 1 µF 0402) | margin and less DC-bias loss at 6.6 V |
+| U6 (DNP, LED option J7) | **SPX3819M5-L (adjustable) at 3.95 V** (R23/R24 220 k / 100 k, C18 2.2 µF at the output) instead of load switch TPS22918 | enable on IO15 (R22 keeps it off) switches off the quiescent current of the LEDs; limits VLED. At 3.95 V the V5 LED types need V_IH 0.63 · 3.95 = 2.49 V, below the guaranteed ESP32 V_OH of 2.64 V (at 5.0 V they would need 3.15 V and a level shifter, for which there is no room on the bottom). With a Li-ion cell it runs in dropout (VLED ≈ VSYS − 0.3 V). Keep the brightness cap (approx. 30 %) so the LDO stays below approx. 0.3 W |
+| F1 | **dropped** (VLED directly from U6) | U6 limits at approx. 0.8–0.95 A and has thermal shutdown; a 0.5 A PTC would hardly trip |
+| JP1 | **dropped** | a bypass would put up to 6.6 V on the LEDs |
+| U2 DRV8213, Q1 AO3401A, D2 SS34F | unchanged | VM up to 11 V; 30 V / VGS ±12 V; 40 V. **USB + 4 × AA:** Q1 only blocks while the battery is below VBUS. Above approx. 5.2 V the cells feed through its body diode even with USB plugged in; at a 2 A stall Q1 would dissipate up to approx. 1.6 W. Decision: no hardware change; use USB without AA cells, and the firmware lowers the stall limit to 0.8 A when VBUS is present and VSYS > 5.2 V (approx. 0.6 W for at most 300 ms). A real power mux is open item F28 |
+
+**Not supported:** 9 V block or 2S Li-ion (would need a switching regulator, other capacitors and a 2S charger; the
+snap terminals also do not fit next to the board in a 9 V shell). The charger board is for 1S Li-ion only and must
+not be connected to AA packs. Values marked "to check" in hardware/bom/parts.csv (ceramic stability of the SPX3819,
+LCSC number of the 5.0 V type, F1, availability of 47 µF 16 V) are part of the datasheet review.
 
 ## 3. Motor control
 
@@ -224,7 +250,7 @@ Requirement: **A works fully on its own** (second compartment = copper bridge or
 |---|---|---|
 | ESP32-C6-MINI-1 + C9, C10, R2, C12 | **Must** | – |
 | Motor driver DRV8213 + R1, C4, R8, C14 | **Must** | current sensing via IPROPI (chapter 3) |
-| LDO AP2112K + C8, C11 | **Must** | optionally RT9080 (C841192, approx. 2 µA quiescent current, check pinout before swapping, uncertain) |
+| LDO SPX3819-3.3 + C8, C11 | **Must** | VIN up to 16 V for 4 × AA (2.7); optionally MIC5219-3.3 (pin-compatible) |
 | SENSE (R3, R4, R5) | **Must** | levels 2.5 |
 | VBAT divider (R6, R7, C13) | **Must** (undervoltage, duty = U_target/U_battery) | – |
 | USB-C J4, ESD U5, CC R12/R13, D2, Q1, R14/R15 | **Must** | ESD second source UMW; R14/R15 = VBUS_DET divider and gate pull-down of Q1 |
@@ -232,8 +258,8 @@ Requirement: **A works fully on its own** (second compartment = copper bridge or
 | Status LED D1/R9 | useful (diagnostics without a phone) | – |
 | BOOT/EN/TXD/RXD | **pads only** (J3, bottom) | no button on top |
 | I²C pull-ups R10/R16, IO8 pull-up R11 | on A (breakouts without pull-ups, IO8 strapping) | – |
-| LIS2DH12 + C15 | top, **assembly optional** (DNP possible) | INT1 to IO2; pads J2 in parallel |
-| Optional pads/DNP on the bottom | J6, J7, TP1/TP2, JP1; DNP: U6, F1, C17, R19, R20, C16, R22 | 11.7 |
+| LIS2DH12 + C15 | top, **assembly optional** (DNP possible) | INT1 to IO2; SA0 on 3V3 → I²C address 0x19 (on GND the internal SA0 pull-up would draw approx. 150 µA); pads J2 in parallel |
+| Optional pads/DNP on the bottom | J6, J7, TP1/TP2; DNP: U6 (LED LDO), F1, C17, R19, R20, C16, R22 | 11.7, 2.7 |
 
 ### 5.2 Interfaces (bottom side of A)
 
@@ -468,15 +494,14 @@ tallest part U6 1.45 mm):
 | J6 "Players" | 1 3V3 · 2 S1 IO5 · 3 S2 IO20 · 4 S3 IO21 · 5 S4 IO8 · 6 GND, pitch **2.0 mm** | x −3.63 … −13.63, y +3.2 (under the module towards edge +y) | pads |
 | R19 / R20 / C16 | IO5 → 3V3 10 k / → GND 1 M / → GND 10 n (N4) | middle row of the module pad, x −11.9 / −9.8 / −7.8, y 0 | DNP |
 | J7 "LED" | 1 VLED · 2 IO23 · 3 GND | x +10.74 … +5.66, y −4.2 (side −y, away from the driver) | pads |
-| U6 | TPS22918 VSYS → VLED_SW, ON = IO15, CT and QOD open | centre (2.2; 1.5), above y −0.3 | DNP |
-| JP1 | solder jumper VSYS → VLED_SW (open by default, bypass of U6), 0603 pads (solder or 0 Ω) | (6.2; 1.8) between VSYS and VBUS track on the bottom | jumper |
-| F1 | PTC 0.5 A (0805) VLED_SW → VLED | (6.2; −1.5), VLED_SW north to JP1, VLED south to J7 | DNP |
+| U6 | LDO SPX3819 adjustable (3.95 V) VSYS → VLED, EN = IO15 (2.7) | (2.2; 1.2), rotated 90°, OUT/ADJ towards −y | DNP |
+| C18, R23, R24 | output capacitor 2.2 µF and feedback divider 220 k / 100 k of U6 | C18/R23 at (6.15; −2.65/−1.57) between the VSYS vias and the VBUS track, R24 above U6 | DNP |
 | C17, R22 | 10 µF on VLED; 100 k IO15 → GND | (14.7; −2.05) under USB-C / (−13.7; 0) | DNP |
 | TP1, TP2 | VSYS, VBUS (Ø 1.0 mm); TP3/TP4 dropped (measure ISEN at R1, SENSE at R5) | (8.4; 2.4), (12.2; −1.4) | pads |
 | J2 | as before | **y +4.3** (previously +5.3; pads now in the pocket) | pads |
 
-Assembly variants for J7: NeoPixel chain (fit U6 + F1 + C17; or close JP1 and fit F1), single
-LED or button on J7-2/J7-3 without parts. **Without F1 (or a 0 Ω bridge in its place), J7-1 is unpowered.**
+Assembly variants for J7: NeoPixel chain (fit U6 + R23 + R24 + C18 + C17), single
+LED or button on J7-2/J7-3 without parts. **Without U6, J7-1 is unpowered.**
 
 **Battery motor path (finding routing-score.md 8.1):** Q1 pin 2 (VSYS) is now pre-routed: top 0.5 mm to two
 vias at edge +y, bottom 0.5 mm between J2 pads 3/4 southwards, two vias to the right of C2 pin 1, on top into its pad
@@ -668,6 +693,30 @@ Implementation (all generated):
   - Component height on the bottom as in 11.7: generic U6 model 1.64 mm, real part 1.45 mm.
 
 ---
+
+### 11.9 Bottleneck at the right module pins (status 2026-11-09)
+
+Analysis with 13 attempts: SENSE, ISEN_ADC and VBAT_ADC stayed open in most attempts – always the same zone at the
+right lower module corner (x ≈ 96–103), where the fan-out of pads 15–20 (SDA, SCL, USB, LED) meets the ADC lines.
+Causes: the VBAT divider R6/R7 sat far from its ADC pin (R7 at x = 108), a locked GND fanout via sat in the 0.7 mm
+gap between pads 12/13 and C13/C14, and the USB pair runs as a horizontal wall on F.Cu.
+
+Current state (generator):
+- `placement.py`: **R6/R7 next to C13** at the ADC pin (VSYS from U3 pin 3), **R2/C12 (EN) at the top right module
+  corner** near J3.1 (side by side; their courtyards overlap by 0.08 mm, pads 0.34 mm apart – stacked instead they
+  blocked pads 22–25). R8 stays (no room below the USB pair).
+- `gen_main_pcb.py`: `preroute_adc_stubs()` replaces `preroute_vbat_escape()` and locks pad 12 → C13, pad 13 → C14,
+  C13 → R6 and R6 → R7.
+- `route_fix.FANOUT_MODULE_CLEAR` (keep fanout vias away from the module pads) exists but is off: in front of all
+  23 signal pads it displaced GND vias and left IO8 open.
+
+Result (6 attempts each, open connections): before 9/5/7/5/5/7; V1 placement alone 3/1/2/2/1/3; **V1 + ADC stubs
+0/1/0/1/1/1–2** (several runs), DRC errors 0. USB pair on In2 instead of F.Cu was worse (3/3/5/3/0/2) and is not used.
+Hole edge to hole edge 0.45 mm for different nets (JLC value, measuring method unverified;
+`route_fix.HOLE_TO_HOLE`, default 0.25) costs a little: 1/4/1/1/2/1, MOT_IN1 at the top right corner.
+
+**EN RC:** R2/C12 now sit approx. 10 mm from the EN pin (pad 8). Espressif recommends the RC close to EN; to be
+assessed in the datasheet review.
 
 ## Sources
 

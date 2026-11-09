@@ -1,4 +1,4 @@
-//! Pre-order check 4.5 (docs/test-hardware.md): ADC accuracy of the VSYS divider (IO0, 470 k / 470 k + 100 nF) and
+//! Pre-order check 4.5 (docs/test-hardware.md): ADC accuracy of the VSYS divider (IO0, 680 k / 470 k + 100 nF) and
 //! the VBUS divider (IO4, 100 k / 100 k). Also shows IO1 (ISEN pot in LED mode).
 //!
 //! Samples at 10 Hz like the firmware (one conversion every 100 ms) and logs once per second: mean, min, max of
@@ -10,7 +10,7 @@ use louie_fw::console;
 use louie_fw::hw::{Adc, AdcStats};
 
 /// Nominal divider ratios (input = pin × ratio)
-const VSYS_RATIO: f32 = 2.0;
+const VSYS_RATIO: f32 = 2.447; // (680 k + 470 k) / 470 k
 const VBUS_RATIO: f32 = 2.0;
 
 #[derive(Default)]

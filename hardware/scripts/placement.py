@@ -12,7 +12,7 @@ Layout from left (antenna end) to right (docs/main-board-c6.md, chapters 2.2 and
 - USB-C J4 at the +y edge (opening set back 0.7 mm), ESD U5 and CC resistors in the band in front of it (-y),
   right of J4 a row of 0402, in front of it on the right the LIS2DH12 (population optional)
 - bottom: J1 (charger cable) and J5 (cell) under J4, J2 (I2C) at the +y edge, J3 (service) and J6
-  (players) under the module, IO5 circuitry towards the +y edge; J7 (LED) with U6/F1/C17/JP1 under the driver
+  (players) under the module, IO5 circuitry towards the +y edge; J7 (LED) with U6/C18/R23/R24/C17 under the driver
 
 Coordinates in mm relative to the board centre (x along the length, antenna at -x),
 rotation in degrees, side "F" (top) or "B" (bottom, coordinates seen from the top).
@@ -43,15 +43,18 @@ PLACEMENT = {
     "R3": (2.1, -0.8, 180, "F"),         # OUT_A -> GND (lever detection)
     "R5": (2.1, 0.3, 180, "F"),         # OUT_A -> SENSE
     "R4": (RC1, -1.6, 270, "F"),        # OUT_B -> 3V3: OUT_B on top by via to the OUT_B track on the bottom
-    "R6": (0.1, -0.45, 180, "F"),           # divider VSYS top
-    "R7": (8.33, -1.0, 90, "F"),        # divider bottom
+    "R6": (-0.4, 5.6, 90, "F"),        # divider VSYS top, next to C13 at the ADC pin (VSYS from U3 pin 3)
+    "R7": (-0.4, 3.5, 90, "F"),        # divider bottom, next to R6 (VBAT_ADC stays local, docs/main-board-c6.md 11)
     "C1": (5.45, -2.7, 0, "F"),        # 47 µF
     "C2": (5.45, -0.3, 0, "F"),        # 47 µF
     "D2": (6.9, -5.25, 0, "F"),         # SS34F: cathode (VSYS) left, anode (VBUS) right
     # edge +y: LDO, power path FET, 3V3 capacitors
-    "R2": (-0.4, 5.6, 90, "F"),        # pull-up EN
-    "C12": (-0.4, 3.5, 90, "F"),       # EN capacitor
-    "U3": (2.35, 4.8, 0, "F"),         # AP2112K
+    # EN pull-up and capacitor side by side at the top right module corner near J3.1 (EN). Their courtyards overlap by
+    # 0.08 mm (pads 0.34 mm apart, fine for assembly); stacked horizontally instead they blocked pads 22-25 (variant
+    # test 2026-11-09: 2.0 instead of 0 unconnected on average)
+    "R2": (-2.62, -5.28, 90, "F"),
+    "C12": (-1.68, -5.28, 90, "F"),
+    "U3": (2.35, 4.8, 0, "F"),         # LDO SPX3819-3.3
     "Q1": (7.6, 4.85, 0, "F"),          # AO3401A
     "C8": (1.05, 2.3, 0, "F"),          # LDO input
     "C11": (3.05, 2.3, 0, "F"),         # LDO output
@@ -84,10 +87,11 @@ PLACEMENT = {
     "R20": (-9.8, 0.0, 0, "B"),         # IO5 to GND
     "C16": (-7.8, 0.0, 0, "B"),         # IO5 to GND
     "J7": (8.2, -4.2, 0, "B"),         # LED: VLED (x 10.74), IO23, GND (x 5.66); under D2/USB side −y, away from the driver
-    "U6": (2.2, 1.5, 0, "B"),          # load switch TPS22918 (no room under USB-C for U6 with F1/JP1)
+    "U6": (2.2, 1.2, 90, "B"),         # LDO for VLED (SPX3819 adj., enable IO15); OUT/ADJ face -y (towards C18/R23 and R24)
     "R22": (-13.7, 0.0, 90, "B"),       # IO15 → GND (U6 off in reset/deep sleep)
-    "JP1": (6.2, 1.8, 90, "B"),         # jumper VSYS (north) → VLED_SW (south), 0603 pads (solder or 0 Ω), between VSYS and VBUS track
-    "F1": (6.2, -1.5, 90, "B"),        # PTC 0.5 A: VLED_SW (north, to JP1) → VLED (south, to J7)
+    "C18": (6.15, -2.65, 0, "B"),      # output capacitor U6 (former F1 place; lower part blocked by the VSYS vias)
+    "R23": (6.15, -1.57, 0, "B"),      # U6 feedback top (VLED → ADJ)
+    "R24": (1.5, -1.6, 0, "B"),        # U6 feedback bottom (ADJ → GND), above U6 at the ADJ pin
     "C17": (14.7, -2.05, 0, "B"),        # 10 µF at VLED (under USB-C)
     "TP1": (8.4, 2.4, 0, "B"),          # VSYS
     "TP2": (12.2, -1.4, 0, "B"),        # VBUS

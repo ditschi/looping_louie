@@ -23,7 +23,7 @@ pub type Gpio = i32;
 
 /// Pin per function. Numbers as on the board (docs/main-board-c6.md 2.3); the dev board differs only where noted.
 pub struct Pins {
-    /// VBAT_ADC: VSYS divider 470 k / 470 k + 100 nF (ADC1_CH0)
+    /// VBAT_ADC: VSYS divider (main board 680 k / 470 k) + 100 nF (ADC1_CH0)
     pub vsys_adc: Gpio,
     /// ISEN_ADC: DRV8213 IPROPI via RC (ADC1_CH1)
     pub isen_adc: Gpio,

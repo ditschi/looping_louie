@@ -98,7 +98,7 @@ x +3.2 … +6.3, y −5.8 … −2.0 (under C1/C2, about 11 mm²).
 | **Antenna risk** | All pads are at x ≥ −13.6 (like J3). The keep-out areas at x < −14.6 stay untouched on all layers. |
 | **Strapping risk** | IO8 only as input (S4); a pressed button does not disturb normal boot (0b.6). RXD (IO17) is input only in the ROM. |
 | **ESD risk** | The pads are inside the closed battery compartment. For wires going outside (buttons, LED chain): **series resistor in the cable** (1 kΩ on inputs, 330 Ω on LED data), wire twisted with GND. No TVS diodes on the board (unverified whether the pin ESD of the C6 is enough for long lines). |
-| **Short circuit risk in the compartment** | VSYS is unfused (LiPo only via its protection IC, USB via D2). VSYS reaches J7 **only via U6 or the solder jumper JP1 (default open) and the PTC F1**, never directly to a pad and not next to GND. |
+| **Short circuit risk in the compartment** | VSYS is unfused (LiPo only via its protection IC, USB via D2). VSYS reaches J7 **only via the LED LDO U6 (3.95 V, current limit approx. 0.8–0.95 A, thermal shutdown)**, never directly to a pad and not next to GND. |
 | **Effort** | One via and a short trace on In2 per pad. The footprints under the module compete with the vias the router uses to escape the module pads (main-board-c6.md 11.7). Hence as few footprints as possible. |
 
 **No universal pad block:** The blocks are distributed by location. I²C stays on J2 (edge +y, where SDA/SCL/INT
@@ -119,7 +119,7 @@ the VSYS strip. Pads 1.4 mm, suitable for wire and pogo pins (e.g. P75/P100); te
 | K8 | DRV5032 | Hall switch | 1 GPIO | no footprint; external on J6 (3V3/GND/input) |
 | K15 | buttons | wired game buttons, second button | 4 | **J6** S1–S4 (S1 with deep sleep wake) |
 | K16 | piezo disc | knock per arm | 1 per arm | on J6 digital or on IO5 analog (0b.3) |
-| N2 | external LED chain (WS2812/SK6812) | status/effects on the outside of the game | IO23 + VLED | **J7** with U6/JP1/F1/C17 (0b.1) |
+| N2 | external LED chain (WS2812/SK6812) | status/effects on the outside of the game | IO23 + VLED | **J7** with U6/C18/R23/R24/C17 (0b.1) |
 | N3 | UART RX | debugging without USB | IO17 | **J3-5** |
 | N4 | DNP pre-circuit IO5 (R to 3V3, R and C to GND, 0402) | NTC, resistor ladder, potentiometer, piezo bleeder resistor | IO5 | **R19/R20/C16 DNP** |
 | N5 | test points VSYS, VBUS_J4, ISEN, SENSE | bring-up, test fixture | – | **TP1–TP4** |
@@ -140,9 +140,7 @@ GPIO assignment: 0b.4.
 | **J6** "Players" | pads 1 × 6, **2.0 mm** (room for the vias next to the module) | 1 3V3 · 2 S1 IO5 · 3 S2 IO20 · 4 S3 IO21 · 5 S4 IO8 · 6 GND |
 | **R19, R20, C16** (N4) | 0402 DNP | IO5 → 3V3 (10 k) / → GND (1 MΩ, piezo bleeder, value depends on use) / → GND (10 nF) |
 | **J7** "LED" | pads 1 × 3, 2.54 mm | 1 VLED · 2 IO23 · 3 GND |
-| **U6** | TPS22918 SOT-23-6, DNP | IN = VSYS, OUT = VLED_SW, ON = IO15, CT and QOD open |
-| **JP1** | solder jumper on 0603 pads (solder or 0 Ω), default open | VSYS → VLED_SW (bypass of U6) |
-| **F1** | PTC 0.5 A 0805, DNP | VLED_SW → VLED. **Without F1 (or 0 Ω bridge) J7-1 is unpowered** |
+| **U6** | LDO SPX3819M5-L (adjustable), SOT-23-5, DNP (since 2026-11-09, main-board-c6.md 2.7) | IN = VSYS, OUT = VLED (3.95 V via R23/R24 220 k / 100 k), EN = IO15; C18 2.2 µF at the output |
 | **C17, R22** | 10 µF 0805 / 100 k 0402, DNP | VLED → GND / IO15 → GND |
 | **TP1, TP2** | test points Ø 1.0 mm (`louie:TestPad_D1.0mm`) | VSYS, VBUS_J4; measure ISEN at R1 and SENSE at R5 on top (TP3/TP4 dropped, routing) |
 | **J2** | pads 1 × 5 | 3V3, GND, SDA, SCL, INT; center y = +4.3 so the pads lie in the pocket |
@@ -161,7 +159,7 @@ BOM (`--exclude-dnp`).
 | Hardware load pulse for power banks | firmware keeps the power bank awake (idea-power-bank.md, decision 2026-11-05); IO22 stays free |
 | Connectors on the bottom (JST-SH, Qwiic) | about 2.9 mm high (unverified); solder wires on |
 | Level shifter or series resistor in the LED data path | V5 LEDs do not need one; the resistor belongs at the cable end (0b.1) |
-| VSYS directly on a pad | unfused; only via U6/JP1 and F1 |
+| VSYS directly on a pad | unfused; only via U6 (LDO with current limit) |
 
 ---
 
@@ -233,12 +231,16 @@ Addressable LEDs draw current even when dark, depending on type a few 100 µA to
 ≤ 1 µA (WS2812B-2020 V6) (unverified, type-dependent). Eight LEDs at 0.6 mA = 5 mA; that is a hundred times the
 deep sleep budget (LDO 55 µA). A 1000 mAh battery would be empty in just over a week.
 
-**U6 (DNP): load switch TPS22918 (SOT-23-6)** between VSYS and VLED_SW: VIN 1–5.5 V, 2 A, 52 mΩ, quiescent current
-8.7 µA typ. (verified, TI); ON threshold V_IH 1.0 V / V_IL 0.5 V (verified, SLVSD76C). Enable ON on **IO15** with
-**R22 100 kΩ to GND**. IO15 has no pull at and after reset (IE only) and is not an LP pin → R22 keeps U6 safely off during
-reset and in deep sleep. **JP1 (open) is in parallel to U6**: anyone who does not want a switch closes JP1
-(then only LEDs with ≤ 1 µA quiescent current, or unplug the chain). TPS22918 has **no current limit**; hence **F1**
-(PTC 0.5 A) between VLED_SW and VLED.
+**U6 (DNP): LDO SPX3819M5-L, adjustable (SOT-23-5)** between VSYS and VLED (since 2026-11-09, previously load switch
+TPS22918, which allowed only 5.5 V): VIN up to 16 V, 500 mA, internal current limit (approx. 0.8–0.95 A) and thermal
+shutdown. VOUT = 1.235 V × (1 + R23/R24) = **3.95 V** (R23 220 k, R24 100 k), C18 2.2 µF directly at the output. It
+switches the LED supply (EN on **IO15**, V_IH 2.0 V, with **R22 100 kΩ to GND**; IO15 has no pull at and after reset and
+is not an LP pin, so R22 keeps U6 off during reset and in deep sleep) and limits VLED when VSYS is up to 6.6 V (4 × AA).
+Why 3.95 V and not a fixed 5.0 V type: V5 LED types need V_IH = 0.63 · VDD; at 3.95 V that is 2.49 V, below the
+guaranteed ESP32 V_OH of 2.64 V, at 5.0 V it would be 3.15 V and need a level shifter, for which there is no room on
+the bottom. V5 types run from 3.7 V. With a Li-ion cell U6 runs in dropout (VLED ≈ VSYS − 0.3 V). The brightness cap
+keeps its dissipation low. No PTC any more: U6 limits the current itself (a 0.5 A PTC would hardly trip below its
+current limit); a short circuit on J7 makes U6 cycle in thermal shutdown. The former bypass jumper JP1 is dropped.
 
 #### Current, voltage drop, decoupling, series resistor
 
@@ -257,7 +259,7 @@ reset and in deep sleep. **JP1 (open) is in parallel to U6**: anyone who does no
   in the housing under plastic; series resistor plus C6 ESD (HBM ± 2 kV, C6 DS) is enough (unverified).
 - **Power-on behavior:** IO23 has the internal pull-up during reset (C6 DS tab. 2-2: IO18–IO23 = WPU during reset),
   afterwards it is open. Until the firmware initializes the chain, DIN can float → random colors. With U6 off
-  (R22) nothing happens; with JP1 closed the firmware clears the chain early in boot.
+  (R22) nothing happens.
 
 #### Timing
 
@@ -274,9 +276,9 @@ reset and in deep sleep. **JP1 (open) is in parallel to U6**: anyone who does no
 **No component in the data path.** J7-2 is IO23 directly; everything else sits in the cable. The firmware learns from a
 setting ("J7: LED chain n / LED / button / off") what is connected.
 
-| Use | Connection | Firmware | U6/JP1/F1 |
+| Use | Connection | Firmware | U6 group |
 |---|---|---|---|
-| NeoPixel chain (also 1 LED = "RGB LED") | J7-1 VLED, J7-2 via 330 Ω to DIN, J7-3 GND, 10–47 µF at the start | RMT, IO15 = 1 to switch on | U6 + F1 assembled (or JP1 closed + F1) |
+| NeoPixel chain (also 1 LED = "RGB LED") | J7-1 VLED, J7-2 via 330 Ω to DIN, J7-3 GND, 10–47 µF at the start | RMT, IO15 = 1 to switch on | U6, R23, R24, C18 assembled |
 | single one-color LED | J7-2 → series resistor → LED → J7-3; e.g. 470 Ω–1 kΩ for 2–3 mA | LEDC PWM (6 channels, motor uses 2) | **leave open** |
 | button | J7-2 → button → J7-3, optionally 1 kΩ in series | input with internal pull-up, edge interrupt; wake only from light sleep | leave open |
 | analog RGB LED (4 legs) | does **not** work on J7 (needs 3 PWM pins); use a single WS2812/SK6812 instead | – | – |
@@ -434,7 +436,7 @@ IO2 (INT) and IO6/IO7 (I²C) stay on J2. Pads and footprints: 0.4; position: mai
 | Piezo per arm (digital) | 1 MΩ in parallel + 100 kΩ in series in the cable; only S1–S3 | input without pull, rising edge, 50–100 ms dead time |
 | Piezo sum / NTC / potentiometer on IO5 (analog) | R19 and/or R20, C16 depending on use (piezo: R20 1 MΩ; NTC: R19 as divider) | ADC1_CH5, single measurement or continuous |
 | Resistor ladder on IO5 | R19 10 k; buttons with 11/18/36/68 k to GND in the cable | ADC, only single presses reliable |
-| NeoPixel chain on J7 | U6, R22, F1, C17 (or JP1 closed + F1 + C17); 330 Ω and 10–47 µF at the start of the chain | RMT; IO15 = 1 before the first frame; brightness cap about 30 %; dim below about 3.6 V VBAT |
+| NeoPixel chain on J7 | U6, R22, R23, R24, C18, C17; 330 Ω and 10–47 µF at the start of the chain | RMT; IO15 = 1 before the first frame; brightness cap about 30 %; dim below about 3.6 V VBAT |
 | single LED on J7 | nothing; series resistor in the cable | LEDC PWM on IO23 |
 | button on J7 | nothing | input with pull-up on IO23 (light sleep) |
 | Console | wires or pogo adapter on J3 (EN, TXD, BOOT, GND, RXD) | UART0, 115200 baud ROM log |
@@ -462,13 +464,13 @@ Implemented in `gen_main_schematic.py`, `placement.py`, `gen_main_pcb.py` (all g
 | IO9 | BOOT | IE + WPU / IE + WPU | button on J3 |
 | IO12/IO13 | USB | USB pull-up | – |
 | IO14 | LED | – / IE | LED off at boot |
-| IO15 | IO15 (U6 ON) | IE / IE, **no internal pull** | **R22 required**, otherwise ON floats (TI: "do not leave floating"); ON threshold V_IH 1.0 V / V_IL 0.5 V (TPS22918 SLVSD76C, verified). Strapping (JTAG source) only with eFuse JTAG_SEL_ENABLE |
+| IO15 | IO15 (U6 ON) | IE / IE, **no internal pull** | **R22 required**, otherwise ON floats (TI: "do not leave floating"); EN threshold of the SPX3819: to check in the datasheet review. Strapping (JTAG source) only with eFuse JTAG_SEL_ENABLE |
 | IO16 | TXD | – / WPU + OE | ROM log |
 | IO17 | RXD | – / IE + WPU | console |
 | IO18, IO19 | MOT_IN1, MOT_IN2 | **WPU** / IE | During reset 45 k pull both DRV8213 inputs high (against its internal pull-down): IN1 = IN2 = 1 is "brake", no drive (DRV8213 truth table not re-read, unverified); afterwards the firmware takes control |
 | IO20, IO21 | S2, S3 | WPU / IE | inputs, not critical |
 | IO22 | – (reserve) | WPU / IE | free. For a later load on the pin (e.g. MOSFET gate): 45 k pull-up during reset, so gate pull-down ≤ 4.7 k |
-| IO23 | LED data | WPU / IE | DIN briefly high; no effect with U6 off (R22), with JP1 closed clear the chain early in boot |
+| IO23 | LED data | WPU / IE | DIN briefly high; no effect with U6 off (R22) |
 
 - **Glitches at power-on:** v1.5 has no glitch table (searched, verified). A forum report mentions a
   pulse < 10 µs on IO21 at start-up (unverified, not read); consistent with "WPU only during reset" on IO18–IO23. Not critical for the
