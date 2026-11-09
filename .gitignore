@@ -25,3 +25,6 @@ __pycache__/
 # Firmware build output (if built without just fw-*)
 firmware/louie-fw/target/
 firmware/louie-fw/.embuild/
+
+# Datasheets (copyrighted, download with: just datasheets)
+datasheets/

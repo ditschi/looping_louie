@@ -16,6 +16,10 @@ parts:
 parts-update:
     @python3 {{hw}}/scripts/fetch_parts.py --overwrite
 
+# Download the datasheets from docs/datasheets.md into datasheets/ (gitignored); force=1 downloads again
+datasheets force="0":
+    @FORCE={{force}} {{hw}}/scripts/fetch_datasheets.sh
+
 # Generate the project symbols (hardware/lib/louie.kicad_sym)
 symbols:
     @python3 {{hw}}/scripts/gen_symbols.py
