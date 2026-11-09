@@ -202,4 +202,8 @@ Changed in the main checkout after the delta review and confirmed in the schemat
 | W12 | firmware `VSYS_MIN_MV = 3600` | fixed |
 | N19 | U6 LCSC C13417; stale comments in board/mod.rs, placement.py, gen_main_pcb.py | fixed |
 
-W6, W13, W15, W16, W17 and the SPX3819 load-step test (W14) are open decisions (F22, F26, F27).
+| W13 | C18 2.2 µF at the U6 output (commit `8ce96f0`) | addressed |
+| W16, W17 | U6 now adjustable SPX3819 at 3.95 V (R23/R24); F1 and JP1 dropped, U6 limits the current | addressed; the adjustable circuit was **not** reviewed against the datasheet yet |
+| W15 | documented, firmware lowers the stall limit to 0.8 A on USB (F28) | accepted for this revision |
+
+Still open: W6 (EN RC, F22) and the SPX3819 load-step test (W14, F27, test-hardware.md 4.7).
