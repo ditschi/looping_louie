@@ -22,7 +22,8 @@ pub const BOARD: BoardDef = BoardDef {
         io23: 23,
         rgb_led: None,
     },
-    vsys_divider: 2.0,
+    // R6/R7 680 k / 470 k (VSYS up to 6.6 V for 4 x AA, docs/main-board-c6.md 2.7)
+    vsys_divider: 2.447,
     ipropi_mv_per_a: 255,
     // R14/R15 100 k / 100 k; may change after docs/test-hardware.md 4.3
     vbus_divider: Some(2.0),

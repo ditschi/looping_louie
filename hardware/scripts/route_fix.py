@@ -48,11 +48,14 @@ HOLE_CLEAR = 0.31    # component hole–copper inner 0.3 mm + margin
 VIA_HOLE_CLEAR = 0.26  # via hole–copper 0.25 mm + margin
 EDGE = 0.32          # copper–edge 0.3 mm + margin
 VIA_D, VIA_DRILL = 0.5, 0.3  # like RULES_4L in gen_main_pcb.py
+# Hole edge to hole edge for vias of other nets and drilled pads (board rule min_hole_to_hole 0.25 mm; at 0.25 the via
+# spacing from the copper clearance is larger anyway, so this only acts above about 0.36 mm, e.g. JLC's 0.45 mm)
+HOLE_TO_HOLE = 0.25
 SKIP_NETS = {"/GND"}  # GND through the In1 zone and stitch.py
 # Track widths per net (the first one first, the others at bottlenecks). The last one is the net's minimum width:
 # nothing is ever routed below it (formerly VSYS 0.2 mm, docs/routing-score.md 8.1). The main motor paths
 # (Schottky/Q1 → buffer → VM, OUT_A/OUT_B, VBUS, BAT_IN) are pre-routed in gen_main_pcb.py with 0.4–0.5 mm on the
-# outer layers; here only the LDO input (up to about 0.4 A), load switch U6/JP1 and VLED (up to 0.5 A, PTC F1).
+# outer layers; here only the LDO input (up to about 0.4 A), LED LDO U6 and VLED (up to 0.5 A, PTC F1).
 # Per IPC-2221 (20 K) 0.3 mm carries about 0.7 A outside, about 0.37 A inside (In2, 15 µm); so VLED at least 0.4 mm.
 WIDTHS = {"/VSYS": (0.4, 0.3), "/BAT_IN": (0.4,), "/+3V3": (0.25, 0.15), "/VLED": (0.4,), "/VLED_SW": (0.4,)}
 # pads with µA current in power nets (voltage divider VSYS, test point): the minimum track suffices there.
@@ -87,6 +90,12 @@ MAX_ROUNDS = 800
 #   fallback.
 # OVAL_DRILLS: block slotted holes (e.g. tabs of the USB-C connector) as a capsule instead of a circle.
 GND_FANOUT_FIRST = True
+# FANOUT_MODULE_CLEAR: no fanout via within this distance (mm) outward in front of a signal pad of the module. Between
+#   the right module pads and the 0402 row (C13/C14) there are only 0.7 mm; a locked GND via there (from the GND pad
+#   of C13/C14) blocked the 1.5 mm connections pad 12 -> C13 and pad 13 -> C14 (variant test 2026-11-08). 0 = off.
+#   Off by default: with 1.0 mm in front of all 23 signal pads the displaced GND vias left IO8 open in 17 of 18
+#   attempts and the mean got worse (base 6.3 -> 7.7, V1 4.3 -> 5.3 open); a narrower zone is still to be tested.
+FANOUT_MODULE_CLEAR = 0
 OVAL_DRILLS = True
 ENDPOINT_VIAS = True
 VIA_UNDER_BODIES = "bottom"
@@ -376,7 +385,7 @@ class Obstacles:
                 if same:  # hole clearance 0.25 mm to the own via
                     g.circle(via, p, VIA_DRILL + 0.3)
                     continue
-                g.circle(via, p, max(2 * rv + CLEAR, VIA_DRILL / 2 + VIA_HOLE_CLEAR + rv))
+                g.circle(via, p, max(2 * rv + CLEAR, VIA_DRILL / 2 + VIA_HOLE_CLEAR + rv, VIA_DRILL + HOLE_TO_HOLE + 0.01))
                 for L in SIGNAL_LAYERS:
                     g.circle(track[L], p, max(rv + CLEAR + half, VIA_DRILL / 2 + VIA_HOLE_CLEAR + half))
                 continue
@@ -394,7 +403,7 @@ class Obstacles:
                 a, b, r = drill_capsule(pad)
                 for L in SIGNAL_LAYERS:
                     g.segment(track[L], a, b, r + half)
-                g.segment(via, a, b, r + rv)
+                g.segment(via, a, b, max(r + rv, r - HOLE_CLEAR + VIA_DRILL / 2 + HOLE_TO_HOLE + 0.01))
             if pad.GetNetCode() == code and code != 0:
                 if drill.x <= 0:  # no via into the own SMD pad (no via-in-pad)
                     for L in (pcbnew.F_Cu, pcbnew.B_Cu):
@@ -1148,6 +1157,28 @@ def fix(pcb, nets=None, min_len=0.0, max_rounds=None, log=print, priority=(), gn
     return finish((done, len(todo) + len(gnd_open)), len(todo))
 
 
+def module_pad_fronts(board, depth):
+    """Rectangles (mm) outward in front of the module's signal pads (MODULE_REF), `depth` deep from the pad edge and
+    as wide as the pad pitch (0.8 mm), for FANOUT_MODULE_CLEAR."""
+    module = board.FindFootprintByReference(MODULE_REF)
+    if module is None or depth <= 0:
+        return []
+    c, out = module.GetPosition(), []
+    for pad in module.Pads():
+        net = pad.GetNetname()
+        if not net or net in SKIP_NETS or net.startswith("unconnected"):
+            continue
+        q, b = pad.GetPosition(), pad.GetBoundingBox()
+        x0, x1, y0, y1 = pcbnew.ToMM(b.GetLeft()), pcbnew.ToMM(b.GetRight()), pcbnew.ToMM(b.GetTop()), pcbnew.ToMM(b.GetBottom())
+        qx, qy = pcbnew.ToMM(q.x), pcbnew.ToMM(q.y)
+        dx, dy = q.x - c.x, q.y - c.y
+        if abs(dx) > abs(dy):  # pad on a long edge left/right: front in x direction
+            out.append((x1, qy - 0.4, x1 + depth, qy + 0.4) if dx > 0 else (x0 - depth, qy - 0.4, x0, qy + 0.4))
+        else:
+            out.append((qx - 0.4, y1, qx + 0.4, y1 + depth) if dy > 0 else (qx - 0.4, y0 - depth, qx + 0.4, y0))
+    return out
+
+
 def gnd_fanout(pcb, net_name="/GND", near=0.9, log=print, only=None, reach=3.0):
     """Every GND SMD pad without its own GND via nearby gets a short track to a via (Dijkstra on the pad's layer
     up to the nearest spot where a via fits). The via reaches the GND layer In1.
@@ -1159,6 +1190,7 @@ def gnd_fanout(pcb, net_name="/GND", near=0.9, log=print, only=None, reach=3.0):
     pads = [p for p in board.GetPads() if p.GetNetCode() == code and p.GetDrillSize().x <= 0
             and (only is None or (p.GetParentFootprint().GetReference(), p.GetNumber()) in only)]
     pads.sort(key=lambda p: (p.GetParentFootprint().GetReference(), p.GetNumber()))
+    keep_clear = module_pad_fronts(board, FANOUT_MODULE_CLEAR)
     for pad in pads:
         q = pad.GetPosition()
         if any(t.GetClass() == "PCB_VIA" and t.GetNetCode() == code and (t.GetPosition() - q).EuclideanNorm() < mm(near)
@@ -1170,6 +1202,11 @@ def gnd_fanout(pcb, net_name="/GND", near=0.9, log=print, only=None, reach=3.0):
         goal = None
         for width in (0.25, W_MIN):  # 0.25 mm if possible, 0.15 mm at bottlenecks
             track, via = obstacles.masks(net, width / 2)
+            for xa, ya, xb, yb in keep_clear:  # FANOUT_MODULE_CLEAR, widened by via radius + clearance
+                r = VIA_D / 2 + CLEAR
+                xa, ya, xb, yb = xa - r, ya - r, xb + r, yb + r
+                sl = grid._sel(xa, ya, xb, yb)
+                via[sl] |= (grid.X[sl] > xa) & (grid.X[sl] < xb) & (grid.Y[sl] > ya) & (grid.Y[sl] < yb)
             blocked = track[layer]
             start = grid.cell(q)
             dist = {start: 0.0}

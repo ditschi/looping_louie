@@ -536,7 +536,7 @@ def preroute_vbus(board, fps):
 def preroute_vbus_branches(board, fps):
     """VBUS to the gate of Q1 (edge +y, no load current, 0.25 mm) and VBUS_DET out of the band to the north:
     - VBUS: via above the anode of the Schottky, on the bottom to the north-west (west of the USB pair and right
-      past JP1), via right of the gate pad (between J2 pads 4 and 5 on the bottom), on top to the gate. On In2 it
+      past the U6 group), via right of the gate pad (between J2 pads 4 and 5 on the bottom), on top to the gate. On In2 it
       was a second wall parallel to the VSYS track on the bottom; then the router could hardly get from west to east
       (main-board-c6.md 11.7).
     - VBUS_DET: R14–R15 directly; the path to the module (pad 9) is routed by route_fix.py"""
@@ -604,29 +604,19 @@ def preroute_battery_vsys(board, fps):
         add_track(board, net, pcbnew.F_Cu, MAIN_TRACK, v, (c2.x + mm(0.3), v[1]))
 
 
-def preroute_vled(board, fps):
-    """Bottom side, optional: VLED_SW (output of load switch U6 pin 6 → solder jumper JP1 and PTC F1, up to 0.5 A)
-    with 0.4 mm on B.Cu under the VSYS vias next to C2. route_fix.py did not reliably find the path around the VSYS
-    track."""
-    out = pad_of(fps["U6"], "6")
-    net = out.GetNet()
-    q = out.GetPosition()
-    jp, fu = pad_of(fps["JP1"], "2").GetPosition(), pad_of(fps["F1"], "1").GetPosition()
-    y = mm(ORIGIN[1] - 1.44)
-    node = (jp.x, y)
-    add_track(board, net, pcbnew.B_Cu, 0.4, (q.x, q.y), (q.x + mm(0.74), q.y - mm(0.74)), rel(3.5, -0.69),
-              rel(4.25, -1.44), node, (jp.x, jp.y))
-    add_track(board, net, pcbnew.B_Cu, 0.4, node, (fu.x, fu.y))
-
-
-def preroute_vbat_escape(board, fps):
-    """VBAT_ADC: stub from R6 pin 2 to a via to its left (below R6 on the bottom is J6, to the right R6 pin 1 and
-    R8); without this via route_fix.py found no path for R6–R7/U1."""
-    pad = pad_of(fps["R6"], "2")
-    q = pad.GetPosition()
-    v = rel(-0.95, -0.15)
-    add_track(board, pad.GetNet(), pcbnew.F_Cu, SIGNAL_TRACK, (q.x, q.y), v)
-    add_via(board, pad.GetNet(), *v)
+def preroute_adc_stubs(board, fps):
+    """Short analog connections at the right module pins, locked so that no fanout via or foreign track takes the
+    0.7 mm gap between the module pads and the 0402 row (variant test 2026-11-08, docs/main-board-c6.md 11):
+    pad 12 (VBAT_ADC) -> C13, pad 13 (ISEN_ADC) -> C14, C13 -> R6 pin 2 above C13 pin 2 (GND), R6 pin 2 -> R7 pin 1.
+    Replaces the former VBAT_ADC escape via at the old R6 place."""
+    def q(ref, num):
+        p = pad_of(fps[ref], num).GetPosition()
+        return p.x, p.y
+    for (ra, na), (rb, nb) in ((("U1", "12"), ("C13", "1")), (("U1", "13"), ("C14", "1")), (("R6", "2"), ("R7", "1"))):
+        add_track(board, pad_of(fps[ra], na).GetNet(), pcbnew.F_Cu, SIGNAL_TRACK, q(ra, na), q(rb, nb))
+    c13, r6 = q("C13", "1"), q("R6", "2")
+    y = (c13[1] + q("C14", "1")[1]) // 2  # between C14 and C13 pin 2
+    add_track(board, pad_of(fps["C13"], "1").GetNet(), pcbnew.F_Cu, SIGNAL_TRACK, c13, (c13[0], y), (r6[0], y), r6)
 
 
 def preroute_bat_in(board, fps):
@@ -647,12 +637,14 @@ def preroute_bat_in(board, fps):
 
 def preroute_ties(board, fps):
     """Short connections where Freerouting fails:
-    - U4 (LIS2DH12): VDD pin 9–10
-    - U3 (AP2112K): VIN – EN around the GND pin
+    - U4 (LIS2DH12): 3V3 pins 9–10–2–3 (CS, SA0) and GND pins 5–6–7–8
+    - U3 (LDO SPX3819): VIN – EN around the GND pin
     - OUT_A to the detection resistors R3/R5: on In2 from the output via upwards, via, then R3.1 – R5.1
     """
-    # LIS2DH12: 3V3 (2–9) and GND (3–8) connected under the package; so only SCL, 3V3, SDA, INT go outside
-    for ref, a, b in (("U4", "9", "10"), ("U4", "2", "9"), ("U4", "3", "8")):
+    # LIS2DH12: 3V3 (9–10, 2–9 under the package, 2–3 for SA0) and the GND pins 5–8 connected; so only SCL, 3V3, SDA, INT
+    # and GND go outside
+    for ref, a, b in (("U4", "9", "10"), ("U4", "2", "9"), ("U4", "2", "3"), ("U4", "5", "6"), ("U4", "6", "7"),
+                      ("U4", "7", "8")):
         pa, pb = pad_of(fps[ref], a), pad_of(fps[ref], b)
         add_track(board, pa.GetNet(), pcbnew.F_Cu, 0.2, (pa.GetPosition().x, pa.GetPosition().y),
                   (pb.GetPosition().x, pb.GetPosition().y))
@@ -849,7 +841,7 @@ def main():
             fp.Reference().SetLayer(pcbnew.B_Fab)
         if comp["dnp"]:  # optional on the bottom: do not populate (placement file/BOM with --exclude-dnp)
             fp.SetDNP(True)
-        if comp["no_bom"]:  # e.g. JP1 (solder jumper on 0603 pads): as in the schematic not in BOM/placement
+        if comp["no_bom"]:  # e.g. solder jumpers: as in the schematic not in BOM/placement
             fp.SetExcludedFromBOM(True)
             fp.SetExcludedFromPosFiles(True)
         footprints[ref] = fp
@@ -868,8 +860,7 @@ def main():
     preroute_ties(board, footprints)
     preroute_bat_in(board, footprints)
     preroute_battery_vsys(board, footprints)
-    # preroute_vled(board, footprints)  # since 2026-11-06 the J7 group is under USB-C, route_fix connects it
-    preroute_vbat_escape(board, footprints)
+    preroute_adc_stubs(board, footprints)
     module_vias = module_ground_vias(board, footprints["U1"])
     for ref, num, ep_num in EP_TIES:
         pin, ep = pad_of(footprints[ref], num), pad_of(footprints[ref], ep_num)

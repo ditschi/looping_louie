@@ -35,7 +35,8 @@ manufacturing costs [cost-estimate.md](cost-estimate.md).
 | 4.2 Lever network R3/R4/R5 on the real Louie | R3/R4/R5 values, board orientation (diode in the new model), A4 |
 | 4.3 Boot, strapping, deep-sleep wake with the real external parts | IO8/S4, R22, VBUS divider R14/R15, wake pin assignment |
 | 4.4 IO18/IO19 level in reset, boot and deep sleep (F17) | 3.3 k pull-downs on IN1/IN2 yes/no |
-| 4.5 ADC accuracy VSYS 470 k/470 k + 100 nF and VBUS 100 k/100 k | R6/R7/C13, R14/R15, resistor tolerance (A5) |
+| 4.5 ADC accuracy VSYS 680 k/470 k + 100 nF and VBUS 100 k/100 k | R6/R7/C13, R14/R15, resistor tolerance (A5) |
+| 4.7 Load step of the 3.3 V LDO SPX3819 with ceramic capacitors | U3, C9/C11 (main-board-c6.md 2.7) |
 
 - **Only the prototype answers:** footprints and assembly, antenna in the compartment, DRV8213 (ITRIP, IPROPI
   accuracy, autosleep, heating), LDO under real load, quiescent current, mechanics (section 6).
@@ -52,7 +53,7 @@ manufacturing costs [cost-estimate.md](cost-estimate.md).
 | Deep-sleep wake on IO3 / IO2 / IO4 (and S1 on IO5) | **yes** | 4.3 with the real external parts | wake pin assignment, VBUS divider ratio |
 | Boot/strapping with the real external parts (IO8 incl. pressed S4, IO9, IO15, IO4, IO5) | **yes** | 4.3 | S4 on IO8 or another pin, R22 |
 | Reset and deep-sleep level of IO18/IO19 (F17) | **yes** | 4.4: 200 k pull-down emulates the DRV8213 input | 3.3 k pull-downs on IN1/IN2 |
-| VSYS divider 470 k/470 k + 100 nF with the C6 ADC; VBUS divider 100 k/100 k | **yes** | 4.5: lab supply sweep vs. multimeter | R6/R7/C13, R14/R15 (A5) |
+| VSYS divider 680 k/470 k + 100 nF with the C6 ADC; VBUS divider 100 k/100 k | **yes** | 4.5: lab supply sweep vs. multimeter | R6/R7/C13, R14/R15 (A5) |
 | Footprints, rotation, polarity, assembly | no | datasheet check, JLC preview (section 6) | – |
 | Antenna in the compartment, RSSI (T4, A7) | no | prototype | – |
 | DRV8213: IPROPI accuracy (A6), autosleep leakage, heating, ITRIP behavior | no | prototype; R1, R8, C14 are swappable 0402 parts | – |
@@ -151,7 +152,7 @@ Goal: **the same GPIO numbers as on the board** ([main-board-c6.md](main-board-c
 
 | GPIO (header pin) | PCB net / part | Pre-order checks (section 4) | Software, LED mode (section 5) |
 |---|---|---|---|
-| IO0 (P1-7) | VBAT_ADC, R6/R7 470 k/470 k + C13 | divider from the lab supply (4.5) | pot wiper (= VSYS / 2) |
+| IO0 (P1-7) | VBAT_ADC, R6/R7 680 k/470 k + C13 | divider from the lab supply (4.5) | pot wiper (= VSYS / 2) |
 | IO1 (P1-8) | ISEN_ADC, R8/C14 | free | pot wiper via 1 k / 100 nF (simulated current, 255 mV/A) |
 | IO2 (P1-12) | INT (LIS2DH12 INT1, J2) | button to 3V3 + 100 k to GND (wake, 4.3) | free |
 | IO3 (P1-13) | SENSE, R5 100 k | R3/R4/R5 network at the Louie (4.2) | switch to 3V3, 100 k to GND (lever) |
@@ -403,13 +404,13 @@ rising. If the 4.2 network is wired, also measure SENSE at IO3 with the lever cl
 
 ### 4.5 ADC accuracy of the VSYS and VBUS dividers
 
-**Goal:** the 470 k/470 k divider with 100 nF (source impedance 235 k) is accurate enough for the battery cut-off at
-3.3–3.4 V (A5); the VBUS divider gives a usable value.
+**Goal:** the 680 k/470 k divider with 100 nF (source impedance 278 k, VSYS up to 6.6 V, main-board-c6.md 2.7) is
+accurate enough for the battery cut-off at approx. 3.6 V (A5); the VBUS divider gives a usable value.
 
 **Circuit:**
 
 ```
-Lab + ──[470 k R7]──┬──[470 k R6]── GND        Lab + ──[100 k R14]──┬──[100 k R15]── GND
+Lab + ──[680 k R6]──┬──[470 k R7]── GND        Lab + ──[100 k R14]──┬──[100 k R15]── GND
                     ├── 100 nF C13 ── GND                          └── IO4
                     └── IO0
 Lab − ── dev board GND; multimeter on Lab + (reference)
@@ -454,6 +455,31 @@ error, 84 mV at 4.2 V) or a one-point calibration in the firmware.
 | 4.5 ADC error | R6/R7/C13, tolerance; A5 | parts.csv |
 
 ---
+
+### 4.7 Load step of the 3.3 V LDO (SPX3819)
+
+**Goal:** the SPX3819M5-L-3-3 (U3, main-board-c6.md 2.7) is stable with the ceramic capacitors of the board. The
+datasheet names only 2.2 µF electrolytic or 1 µF tantalum and gives no ESR range, so this is checked before ordering.
+
+**Setup:**
+
+```
+Lab + ──┬── SPX3819 IN (1) + EN (3)        OUT (5) ──┬── C11 1 µF ── C9 10 µF ── C10 100 nF ──┬── 11 Ω (1 W) ──┐
+        └── C8 1 µF ── GND        GND (2) ── GND      └── scope probe (ground spring at C11)    │          drain
+                                                                                     gate ── AO3400 ── GND
+                                                       function generator / dev board GPIO ──┘ (100 Ω in series)
+```
+
+- SPX3819 on a SOT-23-5 adapter, capacitors (X5R/X7R, same values as on the board) soldered **directly** at the pins.
+- Load: 11 Ω gives approx. 300 mA at 3.3 V (Wi-Fi peak order of magnitude); switched by a logic-level N-MOSFET
+  (e.g. AO3400) with a square wave of 100 Hz–1 kHz, 10–50 % duty, from a function generator or a GPIO of the dev board.
+- Scope: AC coupling, 20 MHz bandwidth limit, short ground spring at C11, trigger on the gate signal.
+- Run at **VIN 3.6 V** (near dropout) and **6.6 V** (4 × AA fresh); once without C9 (only 1 µF) to see the margin.
+
+**Pass:** no sustained oscillation (ringing decays within a few periods), dip on 3V3 below approx. 150 mV, back to
+3.3 V within approx. 100 µs.
+**On failure:** C9 as tantalum or polymer 10 µF, or 0.5–1 Ω in series with C9 (ESR); repeat.
+**Buy:** 2–3 × SPX3819M5-L-3-3 (C9055), SOT-23-5 adapter, AO3400, 11 Ω 1 W (or 2 × 22 Ω 0.5 W in parallel).
 
 ## 5. Software development setup (LED mode)
 

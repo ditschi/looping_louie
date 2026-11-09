@@ -13,10 +13,15 @@ const TICK_MS: u32 = 10;
 const RAMP_MV_PER_S: i32 = 4000;
 const SETPOINT_STEP_MV: i32 = 250;
 const SETPOINT_MAX_MV: i32 = 5000;
-/// Below this VSYS no start (battery cut-off 3.3–3.4 V, A5; placeholder)
-const VSYS_MIN_MV: u32 = 3300;
+/// Below this VSYS no start (placeholder, A5): the LDO SPX3819 needs approx. 0.2–0.45 V headroom at 150–500 mA, so below
+/// approx. 3.6 V the 3V3 rail drops (docs/main-board-c6.md 2.7)
+const VSYS_MIN_MV: u32 = 3600;
 /// Stall: current above the limit for this long → brake (placeholders until the prototype, test-hardware.md 6)
 const STALL_MA: u32 = 1500;
+/// USB plugged in and VSYS above this (4 × AA above the USB voltage): the cells feed through the body diode of Q1, which
+/// does not block then (docs/main-board-c6.md 2.7). Lower stall limit so Q1 sees at most approx. 0.6 W for STALL_MS.
+const USB_AA_VSYS_MV: u32 = 5200;
+const STALL_MA_USB_AA: u32 = 800;
 const STALL_MS: u32 = 300;
 const SWEEP_PERIOD_MS: u32 = 8000;
 const SWEEP_AMPLITUDE_MV: i32 = 3000;
@@ -153,11 +158,12 @@ fn main() -> anyhow::Result<()> {
                 let duty = (output_mv * 1000 / vsys_mv.max(1) as i32).clamp(-1000, 1000);
                 motor.set_duty(duty as i16);
             }
-            if motor.duty() != 0 && isen_ma > STALL_MA {
+            let stall_ma = if hw::level(p.vbus_det) && vsys_mv > USB_AA_VSYS_MV { STALL_MA_USB_AA } else { STALL_MA };
+            if motor.duty() != 0 && isen_ma > stall_ma {
                 over_ms += TICK_MS;
                 if over_ms >= STALL_MS {
                     state = State::Stall;
-                    log::warn!("stall: {isen_ma} mA > {STALL_MA} mA for {STALL_MS} ms → brake, clear with 'r'");
+                    log::warn!("stall: {isen_ma} mA > {stall_ma} mA for {STALL_MS} ms → brake, clear with 'r'");
                 }
             } else {
                 over_ms = 0;

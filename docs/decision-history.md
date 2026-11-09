@@ -78,6 +78,16 @@ can be found in Git.
 - Rejected stackups: B (L3 as 3V3 plane, only 2 signal layers), C (L2+L3 GND), D (GND outside, components on L1 impossible).
 - Source: main-board-c6.md 8.1, 9, 11.1, 11.5, 11.6; 2-layer board in commit c45c6de
 
+### Bottleneck at the right module pins: placement V1 and ADC pre-routes (2026-11-09)
+- Decision: R6/R7 next to C13 at the ADC pin, R2/C12 at the top right module corner, `preroute_adc_stubs()` locks the short ADC connections; this took the board from 5–9 to 0–2 unconnected per attempt.
+- Rejected: pin swap SENSE ↔ IO5 (V2) – gain within the spread (−0.4 ± 1.6 open per attempt over 12 pairs) and it changes pinout, firmware and docs; USB pair on In2 – worse (blocks the most important crossing layer); fanout keep-clear zone in front of all module pads – displaced GND vias, IO8 open in 17 of 18 attempts; moving J2 – no free space on the bottom outside the bottleneck (pre-routes); finer JLC rules 0.1/0.1 mm – free at JLC but not needed; R2/C12 stacked horizontally – blocked pads 22–25.
+- Source: main-board-c6.md 11.9
+
+### Supply up to 6.6 V for 4 × AA (2026-11-09)
+- Decision: VSYS 3.0–6.6 V: LDO SPX3819-3.3 (pin-compatible with AP2112K), divider 680k/470k, 16 V capacitors, LED option with LDO SPX3819 adjustable at 3.95 V (R23/R24, C18) instead of load switch TPS22918, F1 and JP1 dropped; USB + 4 × AA: Q1 does not block above approx. 5.2 V, documented, firmware lowers the stall limit (F28).
+- Rejected: TPS7A2633 (WSON-6, 2 µA, 18 V) – new footprint, low stock, 3× price; standby with SPX3819 still approx. 9 months (14500) / 2 years (4 × AA); 9 V block / 2S – switching regulator, 2S charger, and the snap terminals do not fit next to the board in a 9 V shell; fixed 5.0 V LED LDO – V5 LED types would need V_IH 3.15 V, above the guaranteed ESP32 V_OH 2.64 V, and there is no room for a level shifter on the bottom; PTC F1 – U6 limits at 0.8–0.95 A itself, a 0.5 A PTC would hardly trip; PWM limiting alone for the LEDs – limits current, not the supply voltage.
+- Source: main-board-c6.md 2.7, open-items.md F18
+
 ### Introduction of the 4-layer trial in the generator (2026-11-03)
 - Process: first a separate project `hardware/main-board-4l/` with selectable layer count (`just pcb einseitig 4`, `four-layer`, `images-4l`), then taken over unchanged (byte-identical) into `hardware/main-board/`; `placement_zweiseitig.py` (C3 state) removed, `placement_einseitig.py` → `placement.py`.
 - Freerouting 2.5.0 stayed at 10–18 unrouted signal connections on 4 layers → own router `route_fix.py`.

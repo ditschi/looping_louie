@@ -127,14 +127,15 @@ PARTS = [
     FLAG(4, "BAT_IN", (101.6, 162.56)),
 
     # --- LDO ----------------------------------------------------------------------------------
-    dict(ref="U3", lib="Regulator_Linear:AP2112K-3.3", value="AP2112K-3.3", lcsc="C51118",
+    # SPX3819 instead of AP2112K: same SOT-23-5 pinout (pin 4 BP stays open), VIN up to 16 V for 4 x AA (docs/main-board-c6.md 2.7)
+    dict(ref="U3", lib="Regulator_Linear:SPX3819M5-L-3-3", value="SPX3819M5-L-3-3", lcsc="C9055",
          fp="Package_TO_SOT_SMD:SOT-23-5", at=(63.5, 228.6), ref_at=(-5.08, -6.35), val_at=(1.27, 7.62),
          pins={"1": "VSYS", "3": "VSYS", "2": "GND", "5": "+3V3"}),
     C("C8", "1u", "VSYS", "GND", (38.1, 228.6)),
     C("C11", "1u", "+3V3", "GND", (88.9, 228.6)),
 
-    # --- Battery voltage: 470k/470k, VSYS up to 5.5 V -> 2.75 V (C6 ADC up to 3.3 V) -----------------
-    R("R6", "470k", "VSYS", "VBAT_ADC", (38.1, 264.16)),
+    # --- Battery voltage: 680k/470k, VSYS up to 6.6 V (4 x AA fresh) -> 2.7 V (C6 ADC up to 3.3 V) --------
+    R("R6", "680k", "VSYS", "VBAT_ADC", (38.1, 264.16)),
     R("R7", "470k", "VBAT_ADC", "GND", (50.8, 264.16)),
     C("C13", "100n", "VBAT_ADC", "GND", (76.2, 264.16)),
 
@@ -173,8 +174,8 @@ PARTS = [
          at=(304.8, 76.2), ref_at=(-10.16, -8.89), val_at=(2.54, 10.16),
          pins={"1": "VSYS", "2": "OUT_A", "3": "OUT_B", "4": "GND", "9": "GND", "5": "MOT_IN2", "6": "MOT_IN1",
                "7": "GND", "8": "ISEN"}),
-    C("C1", "47u 10V", "VSYS", "GND", (269.24, 124.46), fp=C1206),
-    C("C2", "47u 10V", "VSYS", "GND", (281.94, 124.46), fp=C1206),
+    C("C1", "47u 16V", "VSYS", "GND", (269.24, 124.46), fp=C1206),
+    C("C2", "47u 16V", "VSYS", "GND", (281.94, 124.46), fp=C1206),
     C("C4", "100n", "VSYS", "GND", (294.64, 124.46)),
     R("R1", "1.24k 1%", "ISEN", "GND", (269.24, 147.32)),
     # capacitor not directly at IPROPI (delays the current limit), but behind R8
@@ -184,14 +185,16 @@ PARTS = [
     # --- Lever detection: open -> SENSE 0 V, closed -> approx. 3.0 V (WAKEUP_ANY_HIGH) ----------------
     R("R3", "100k", "OUT_A", "GND", (269.24, 198.12)),
     R("R4", "10k", "OUT_B", "+3V3", (284.48, 198.12)),
-    R("R5", "100k", "OUT_A", "SENSE", (299.72, 198.12)),
+    # 470 k (was 100 k): limits the current into the IO3 clamp diodes while OUT_A switches up to VSYS 6.6 V to approx. 6 µA
+    R("R5", "470k", "OUT_A", "SENSE", (299.72, 198.12)),
     TP("BT1", "Contact A", "OUT_A", (322.58, 198.12), fp=TP_CONTACT),
     TP("BT2", "Contact B", "OUT_B", (337.82, 198.12), fp=TP_CONTACT),
 
     # --- Accelerometer: population optional (DNP possible), INT1 wakes from deep sleep via IO2 ---------
     dict(ref="U4", lib="louie:LIS2DH12", value="LIS2DH12TR", lcsc="C110926",
          fp="Package_LGA:LGA-12_2x2mm_P0.5mm", at=(304.8, 233.68), ref_at=(-7.62, -8.89), val_at=(2.54, 11.43),
-         pins={"9": "+3V3", "10": "+3V3", "2": "+3V3", "3": "GND", "5": "GND", "6": "GND",
+         # SA0 (pin 3) on 3V3: address 0x19, no current through the internal SA0 pull-up (on GND approx. 150 µA)
+         pins={"9": "+3V3", "10": "+3V3", "2": "+3V3", "3": "+3V3", "5": "GND", "6": "GND",
                "1": "SCL", "4": "SDA", "12": "INT"}),
     C("C15", "100n", "+3V3", "GND", (266.7, 233.68)),
 
@@ -206,22 +209,21 @@ PARTS = [
     DNP(R("R20", "1M", "IO5", "GND", (383.54, 48.26))),
     DNP(C("C16", "10n", "IO5", "GND", (396.24, 48.26), lcsc="C15195")),
 
-    # J7 "LED": 1 VLED, 2 IO23 (NeoPixel data/LED/button), 3 GND. VLED via load switch U6 (enable IO15,
-    # R22 keeps it off in reset and deep sleep) or via JP1 (solder jumper, open by default); behind it PTC F1 0.5 A
-    # (VSYS is otherwise unfused) and C17 as buffer. The 330 Ω series resistor belongs at the LED end of the cable.
+    # J7 "LED": 1 VLED, 2 IO23 (NeoPixel data/LED/button), 3 GND. VLED from LDO U6 (adjustable, approx. 3.95 V; enable
+    # IO15, R22 keeps it off in reset and deep sleep; switch, voltage and current limit for VSYS up to 6.6 V), C18 at its
+    # output, C17 as buffer. No PTC: U6 limits at approx. 0.8-0.95 A and has thermal shutdown. The 330 Ω series resistor
+    # belongs at the LED end of the cable.
     dict(ref="J7", lib="Connector_Generic:Conn_01x03", value="LED", bom=False,
          fp="louie:SolderPads_1x03_P2.54mm", at=(355.6, 154.94), pins={"1": "VLED", "2": "IO23", "3": "GND"}),
-    # TPS22918 (DBV): CT open = fastest edge; QOD open = no output discharge (TI: permitted). At VOUT
-    # the ERC reports power output on open collector, at VLED the router found no path; the LEDs discharge VLED.
-    DNP(dict(ref="U6", lib="Power_Management:TPS22917DBV", value="TPS22918DBVR", lcsc="C131941",
-             fp="Package_TO_SOT_SMD:SOT-23-6", at=(383.54, 144.78), ref_at=(-7.62, -8.89), val_at=(2.54, 10.16),
-             pins={"1": "VSYS", "2": "GND", "3": "IO15", "6": "VLED_SW"})),
-    # solder jumper as 0603 pads (solder or 0 Ω resistor): the SolderJumper footprint no longer fit on the bottom
-    dict(ref="JP1", lib="Jumper:SolderJumper_2_Open", value="VSYS->VLED", bom=False,
-         fp="Resistor_SMD:R_0603_1608Metric", at=(383.54, 127.0),
-         pins={"1": "VSYS", "2": "VLED_SW"}),
-    DNP(dict(ref="F1", lib="Device:Polyfuse", value="0.5A 6V", lcsc="C883108",
-             fp="Fuse:Fuse_0805_2012Metric", at=(401.32, 144.78), pins={"1": "VLED_SW", "2": "VLED"})),
+    # SPX3819 adjustable (EN V_IH 2.0 V): VOUT = 1.235 V × (1 + R23/R24) = 3.95 V. At 3.95 V the V5 LED types need
+    # V_IH 0.63 × 3.95 = 2.49 V, below the guaranteed ESP32 V_OH (2.64 V); at 5.0 V (3.15 V) the 3.3 V data line
+    # would be out of spec without a level shifter, and there is no room for one on the bottom.
+    DNP(dict(ref="U6", lib="Regulator_Linear:SPX3819M5-L", value="SPX3819M5-L (adj. 3.95 V)",
+             fp="Package_TO_SOT_SMD:SOT-23-5", at=(383.54, 144.78), ref_at=(-7.62, -8.89), val_at=(2.54, 10.16),
+             pins={"1": "VSYS", "2": "GND", "3": "IO15", "4": "VLED_ADJ", "5": "VLED"})),
+    DNP(R("R23", "220k", "VLED", "VLED_ADJ", (401.32, 139.7))),
+    DNP(R("R24", "100k", "VLED_ADJ", "GND", (401.32, 152.4))),
+    DNP(C("C18", "2.2u", "VLED", "GND", (414.02, 144.78))),
     DNP(C("C17", "10u", "VLED", "GND", (401.32, 167.64), fp=C0805, lcsc="C1713")),
     DNP(R("R22", "100k", "IO15", "GND", (370.84, 170.18), lcsc="C25741")),
 
