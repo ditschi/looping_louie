@@ -560,7 +560,7 @@ Heap too tight: limit clients to 6, send state as a binary/delta message, test a
 - LDO SPX3819 with an empty battery (dropout, VSYS minimum 3.6 V), brownout at Wi-Fi peak + motor start (A3).
 - **3V3 at the module during Wi-Fi TX:** scope directly at module pad 3 (3V3) and pad 1/2 (GND), AC coupling, while the
   firmware sends continuously (e.g. iperf or a Wi-Fi TX test). Pass: dips below approx. 150 mV, no brownout reset. If not:
-  hand-fit C19 (10 µF, DNP footprint on the bottom under pad 3; there is no room on top, main-board-c6.md 11.10).
+  the next revision needs a capacitor closer to the module (no room in this one, main-board-c6.md 11.10).
 - **Reset and boot with the EN RC approx. 12 mm from the EN pin and without an external IO9 pull-up:** 50 power cycles
   each from the cell and from USB, plus a few with the motor running; every one must boot normally (no download mode,
   no reset loop). Plus ESD/noise check: touch the board ends and J3 during operation.
