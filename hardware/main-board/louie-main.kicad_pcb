@@ -9944,15 +9944,6 @@
 		(uuid "7ce38cb2-5a46-4109-8a51-cde526034d29")
 	)
 	(segment
-		(start 122.475 71.274999)
-		(end 122.525 71.325)
-		(width 0.25)
-		(locked yes)
-		(layer "F.Cu")
-		(net 1)
-		(uuid "816ffdaf-0f63-4b3c-840c-b3cb4af36079")
-	)
-	(segment
 		(start 104.975 77.325)
 		(end 104.824999 77.325)
 		(width 0.25)
