@@ -557,8 +557,14 @@ Heap too tight: limit clients to 6, send state as a binary/delta message, test a
 
 - **Motor on the DRV8213:** ITRIP with R1, IPROPI accuracy at low currents (A6), heating during stall, autosleep and
   leakage on OUT_A/OUT_B (A4 final, T2), stall detection and its thresholds, jerks and kickback (T9).
-- AP2112K with an empty battery, brownout at Wi-Fi peak + motor start (A3).
-- Power path Q1/D2, USB-C J4, ESD U5, CC resistors.
+- LDO SPX3819 with an empty battery (dropout, VSYS minimum 3.6 V), brownout at Wi-Fi peak + motor start (A3).
+- **3V3 at the module during Wi-Fi TX:** scope directly at module pad 3 (3V3) and pad 1/2 (GND), AC coupling, while the
+  firmware sends continuously (e.g. iperf or a Wi-Fi TX test). Pass: dips below approx. 150 mV, no brownout reset. If not:
+  hand-fit C19 (10 µF, DNP footprint on the bottom under pad 3; there is no room on top, main-board-c6.md 11.10).
+- **Reset and boot with the EN RC approx. 12 mm from the EN pin and without an external IO9 pull-up:** 50 power cycles
+  each from the cell and from USB, plus a few with the motor running; every one must boot normally (no download mode,
+  no reset loop). Plus ESD/noise check: touch the board ends and J3 during operation.
+- Power path Q1/D2, USB-C J4, ESD U5, CC resistors; USB + 4 × AA (F28): VSYS, temperature of Q1 at stall.
 - LIS2DH12 vs. motor vibration (T6, A19), INT on IO2 (A18).
 - Antenna in the compartment with metal contact, RSSI in both orientations (T4, A7, F1).
 - Deep-sleep quiescent current of the whole board.

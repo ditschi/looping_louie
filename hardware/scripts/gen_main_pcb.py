@@ -604,6 +604,14 @@ def preroute_battery_vsys(board, fps):
         add_track(board, net, pcbnew.F_Cu, MAIN_TRACK, v, (c2.x + mm(0.3), v[1]))
 
 
+def preroute_led_ldo(board, fps):
+    """LED LDO U6 (bottom, DNP): VIN (pin 1) with 0.4 mm on B.Cu straight to the battery VSYS track at x = 4.67, which
+    runs 1.5 mm to its right; route_fix.py did not find this short path (variant test 2026-11-10)."""
+    pad = pad_of(fps["U6"], "1")
+    q = pad.GetPosition()
+    add_track(board, pad.GetNet(), pcbnew.B_Cu, 0.4, (q.x, q.y), (rel(4.67, 0)[0], q.y))
+
+
 def preroute_adc_stubs(board, fps):
     """Short analog connections at the right module pins, locked so that no fanout via or foreign track takes the
     0.7 mm gap between the module pads and the 0402 row (variant test 2026-11-08, docs/main-board-c6.md 11):
@@ -861,6 +869,7 @@ def main():
     preroute_bat_in(board, footprints)
     preroute_battery_vsys(board, footprints)
     preroute_adc_stubs(board, footprints)
+    preroute_led_ldo(board, footprints)
     module_vias = module_ground_vias(board, footprints["U1"])
     for ref, num, ep_num in EP_TIES:
         pin, ep = pad_of(footprints[ref], num), pad_of(footprints[ref], ep_num)

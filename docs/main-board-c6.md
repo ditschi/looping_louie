@@ -94,7 +94,7 @@ small DRV8213 (chapter 3) sits at the −y corner of the module.
 | IO12 (17) | USB_D− | J4 A7/B7 via ESD U5 (pin 3 → 4) | fixed in the chip |
 | IO13 (18) | USB_D+ | J4 A6/B6 via ESD U5 (pin 1 → 6) | fixed in the chip |
 | IO14 (19) | LED | status LED via 1 k | below the USB channel |
-| IO15 (20) | IO15 | enable of load switch U6 (VLED on J7), R22 100 k to GND | strapping JTAG source, no effect without eFuse; no internal pull |
+| IO15 (20) | IO15 | enable of LED LDO U6 (VLED on J7), R22 100 k to GND | strapping JTAG source, no effect without eFuse; no internal pull |
 | IO18 (24) | MOT_IN1 | DRV8213 IN1 (LEDC PWM) | module corner bottom right, close to driver and VSYS band |
 | IO19 (25) | MOT_IN2 | DRV8213 IN2 (LEDC PWM) | same |
 | IO20 / IO21 (26/27) | IO20 / IO21 | S2 / S3 player inputs (J6-3/-4) | internal pull-up |
@@ -259,7 +259,7 @@ Requirement: **A works fully on its own** (second compartment = copper bridge or
 | BOOT/EN/TXD/RXD | **pads only** (J3, bottom) | no button on top |
 | I²C pull-ups R10/R16, IO8 pull-up R11 | on A (breakouts without pull-ups, IO8 strapping) | – |
 | LIS2DH12 + C15 | top, **assembly optional** (DNP possible) | INT1 to IO2; SA0 on 3V3 → I²C address 0x19 (on GND the internal SA0 pull-up would draw approx. 150 µA); pads J2 in parallel |
-| Optional pads/DNP on the bottom | J6, J7, TP1/TP2; DNP: U6 (LED LDO), F1, C17, R19, R20, C16, R22 | 11.7, 2.7 |
+| Optional pads/DNP on the bottom | J6, J7, TP1/TP2; DNP: U6 (LED LDO), R23, R24, C18, C17, R19, R20, C16, R22 | 11.7, 2.7 |
 
 ### 5.2 Interfaces (bottom side of A)
 
@@ -496,7 +496,7 @@ tallest part U6 1.45 mm):
 | J7 "LED" | 1 VLED · 2 IO23 · 3 GND | x +10.74 … +5.66, y −4.2 (side −y, away from the driver) | pads |
 | U6 | LDO SPX3819 adjustable (3.95 V) VSYS → VLED, EN = IO15 (2.7) | (2.2; 1.2), rotated 90°, OUT/ADJ towards −y | DNP |
 | C18, R23, R24 | output capacitor 2.2 µF and feedback divider 220 k / 100 k of U6 | C18/R23 at (6.15; −2.65/−1.57) between the VSYS vias and the VBUS track, R24 above U6 | DNP |
-| C17, R22 | 10 µF on VLED; 100 k IO15 → GND | (14.7; −2.05) under USB-C / (−13.7; 0) | DNP |
+| C17, R22 | 10 µF on VLED; 100 k IO15 → GND | (14.7; −2.05) under USB-C / (−0.15; 2.0) next to the EN pin of U6 | DNP |
 | TP1, TP2 | VSYS, VBUS (Ø 1.0 mm); TP3/TP4 dropped (measure ISEN at R1, SENSE at R5) | (8.4; 2.4), (12.2; −1.4) | pads |
 | J2 | as before | **y +4.3** (previously +5.3; pads now in the pocket) | pads |
 
@@ -717,6 +717,24 @@ Hole edge to hole edge 0.45 mm for different nets (JLC value, measuring method u
 
 **EN RC:** R2/C12 now sit approx. 10 mm from the EN pin (pad 8). Espressif recommends the RC close to EN; to be
 assessed in the datasheet review.
+
+### 11.10 Review findings accepted for this revision (status 2026-11-10)
+
+From the datasheet and wiring review (wiring-review.md); checked whether placement can improve them:
+- **C12 (EN capacitor) approx. 12 mm from EN pad 8:** pad 8 is on the module edge at the board edge; the best free top
+  spot would be 9.6 mm, the former place (approx. 7 mm) now holds the VBAT divider. EN has a continuous GND reference on
+  In1; C12 mainly sets the reset delay. Accepted; prototype check test-hardware.md 6 (power cycles, noise).
+- **No 3V3 capacitor at module pad 3:** below it is the board edge, to the left the antenna keepout, above it the
+  module. A DNP 10 µF footprint on the bottom under pad 3 (tested as C19) made routing worse (2.7 instead of 1.7
+  unconnected on average, no complete attempt) and was dropped. The module has its own decoupling; C9/C10/C11 sit
+  14 mm away at the LDO. Accepted; measure 3V3 at the module during Wi-Fi TX (test-hardware.md 6).
+- **C15 approx. 6 mm from the LIS2DH12:** no closer free spot; the sensor draws a few µA. Accepted.
+- **No external pull-up on IO9 (BOOT):** internal pull-up, only the service pad J3 is connected; a resistor would need a
+  track through the bottleneck. Accepted; boot check test-hardware.md 6.
+
+LED LDO U6 after the 4 × AA change: its VIN pin is locked to the battery VSYS track on the bottom
+(`preroute_led_ldo()`), and R22 sits next to its EN pin. Before, VSYS and IO15 stayed open in most attempts
+(1.7 → 1.0 unconnected on average, 2 of 6 attempts complete).
 
 ## Sources
 

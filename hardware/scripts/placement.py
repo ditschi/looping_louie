@@ -88,7 +88,7 @@ PLACEMENT = {
     "C16": (-7.8, 0.0, 0, "B"),         # IO5 to GND
     "J7": (8.2, -4.2, 0, "B"),         # LED: VLED (x 10.74), IO23, GND (x 5.66); under D2/USB side −y, away from the driver
     "U6": (2.2, 1.2, 90, "B"),         # LDO for VLED (SPX3819 adj., enable IO15); OUT/ADJ face -y (towards C18/R23 and R24)
-    "R22": (-13.7, 0.0, 90, "B"),       # IO15 → GND (U6 off in reset/deep sleep)
+    "R22": (-0.15, 2.0, 90, "B"),       # IO15 → GND (U6 off in reset/deep sleep), next to the EN pin of U6
     "C18": (6.15, -2.65, 0, "B"),      # output capacitor U6 (former F1 place; lower part blocked by the VSYS vias)
     "R23": (6.15, -1.57, 0, "B"),      # U6 feedback top (VLED → ADJ)
     "R24": (1.5, -1.6, 0, "B"),        # U6 feedback bottom (ADJ → GND), above U6 at the ADJ pin
