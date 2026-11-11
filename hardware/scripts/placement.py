@@ -43,8 +43,8 @@ PLACEMENT = {
     "R3": (2.1, -0.8, 180, "F"),         # OUT_A -> GND (lever detection)
     "R5": (2.1, 0.3, 180, "F"),         # OUT_A -> SENSE
     "R4": (RC1, -1.6, 270, "F"),        # OUT_B -> 3V3: OUT_B on top by via to the OUT_B track on the bottom
-    "R6": (-0.4, 5.6, 90, "F"),        # divider VSYS top, next to C13 at the ADC pin (VSYS from U3 pin 3)
-    "R7": (-0.4, 3.5, 90, "F"),        # divider bottom, next to R6 (VBAT_ADC stays local, docs/main-board-c6.md 11)
+    "R6": (-0.46, 5.6, 90, "F"),        # divider VSYS top, next to C13 at the ADC pin (0.1 mm left of rev A: room for C8)
+    "R7": (-0.46, 3.5, 90, "F"),        # divider bottom, next to R6 (VBAT_ADC stays local, docs/main-board-c6.md 11)
     "C1": (5.45, -2.7, 0, "F"),        # 47 µF
     "C2": (5.45, -0.3, 0, "F"),        # 47 µF
     "D2": (6.9, -5.25, 0, "F"),         # SS34F: cathode (VSYS) left, anode (VBUS) right
@@ -54,11 +54,15 @@ PLACEMENT = {
     # test 2026-11-09: 2.0 instead of 0 unconnected on average)
     "R2": (-2.62, -5.28, 90, "F"),
     "C12": (-1.68, -5.28, 90, "F"),
-    "U3": (2.35, 4.8, 0, "F"),         # LDO SPX3819-3.3
-    "Q1": (7.6, 4.85, 0, "F"),          # AO3401A
-    "C8": (1.05, 2.3, 0, "F"),          # LDO input
-    "C11": (3.05, 2.3, 0, "F"),         # LDO output
-    "C9": (5.6, 2.3, 0, "F"),          # 10 µF 3V3 (0603)
+    # 3.3 V buck TPS62162 (rev B, docs/proposal-supply-buck.md): rotation 90 puts PGND/VIN/EN/AGND (pins 1-4) on the +y
+    # side at y 5.9 and FB/VOS/SW/PG (pins 5-8) on the -y side at y 4.0; SW faces L1 below it, VIN faces C8 at the
+    # edge. One thermal via in the EP, placed in the gap between J2 pads 2 and 3 on the bottom (gen_main_pcb).
+    "U3": (2.4, 4.97, 90, "F"),        # TPS62162DSG
+    "L1": (2.4, 2.2, 0, "F"),          # 2.2 uH 2016: pad 1 (SW) left under SW pin 7, pad 2 (+3V3) right towards C9;
+                                       # pads end 0.2 mm above the USB pair in the channel (y 1.13)
+    "Q1": (7.6, 4.95, 0, "F"),          # AO3401A (rev B: 0.1 mm towards the edge, clears the C9 courtyard)
+    "C8": (0.58, 5.6, 90, "F"),         # 10 uF buck input, vertical left of U3: pad 1 (VSYS) at the edge side, pad 2 GND
+    "C9": (5.45, 2.1, 0, "F"),         # 22 uF buck output (0805): pad 1 (+3V3) towards L1 pad 2, below Q1
     "C10": (8.3, 2.3, 0, "F"),         # 100 nF 3V3
     # USB-C and ESD
     "J4": (USB_X, USB_Y, 0, "F"),

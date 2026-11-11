@@ -13,9 +13,10 @@ const TICK_MS: u32 = 10;
 const RAMP_MV_PER_S: i32 = 4000;
 const SETPOINT_STEP_MV: i32 = 250;
 const SETPOINT_MAX_MV: i32 = 5000;
-/// Below this VSYS no start (placeholder, A5): the LDO SPX3819 needs approx. 0.2–0.45 V headroom at 150–500 mA, so below
-/// approx. 3.6 V the 3V3 rail drops (docs/main-board-c6.md 2.7)
-const VSYS_MIN_MV: u32 = 3600;
+/// Below this VSYS no start (placeholder, A5). Rev B (buck TPS62162, docs/proposal-supply-buck.md): in 100 % mode the
+/// converter passes VSYS minus about 0.2 V at a 380 mA peak, so 3V3 stays above 3.0 V down to about VSYS 3.5 V.
+/// Final value from the prototype test (review R-B2: filtered reading, hysteresis).
+const VSYS_MIN_MV: u32 = 3500;
 /// Stall: current above the limit for this long → brake (placeholders until the prototype, test-hardware.md 6)
 const STALL_MA: u32 = 1500;
 /// USB plugged in and VSYS above this (4 × AA above the USB voltage): the cells feed through the body diode of Q1, which

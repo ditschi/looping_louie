@@ -132,6 +132,44 @@ def drv8213dsg():
     )
 
 
+def tps62162dsg():
+    """TI TPS62162DSG (WSON-8 2 × 2 mm, DSG0008A like the DRV8213): synchronous buck 3–17 V in, 3.3 V fixed,
+    1 A, 17 µA (docs/proposal-supply-buck.md). Pinout per datasheet SLVSAM2E: 1 PGND, 2 VIN, 3 EN, 4 AGND,
+    5 FB (tie to AGND on the fixed version), 6 VOS, 7 SW, 8 PG (open drain), 9 thermal pad (AGND)."""
+    half_w, top, bottom = 10.16, 5.08, -7.62
+    pins = []
+    left = [("VIN", "2", "power_in"), ("EN", "3", "input")]
+    right = [("SW", "7", "power_out"), ("VOS", "6", "input"), ("FB", "5", "input"), ("PG", "8", "open_collector")]
+    for i, (name, num, ptype) in enumerate(left):
+        pins.append(pin(ptype, -half_w - 2.54, round(top - 2.54 * (i + 1), 2), 0, name, num))
+    for i, (name, num, ptype) in enumerate(right):
+        pins.append(pin(ptype, half_w + 2.54, round(top - 2.54 * (i + 1), 2), 180, name, num))
+    pins.append(pin("power_in", -2.54, bottom - 2.54, 90, "PGND", "1"))
+    pins.append(pin("power_in", 2.54, bottom - 2.54, 90, "AGND", "4"))
+    pins.append(pin("passive", 2.54, bottom - 2.54, 90, "AGND", "9", hidden=True))
+    return (
+        '\t(symbol "TPS62162DSG"\n'
+        '\t\t(pin_names (offset 1.016))\n'
+        '\t\t(exclude_from_sim no) (in_bom yes) (on_board yes)\n'
+        f'\t\t(property "Reference" "U" (at {-half_w} {top + 1.27} 0) (effects (font (size 1.27 1.27)) (justify left)))\n'
+        f'\t\t(property "Value" "TPS62162DSG" (at {half_w} {bottom - 1.27} 0) (effects (font (size 1.27 1.27)) (justify right)))\n'
+        '\t\t(property "Footprint" "Package_SON:WSON-8-1EP_2x2mm_P0.5mm_EP0.9x1.6mm"'
+        f' (at 0 0 0) {HIDDEN})\n'
+        f'\t\t(property "Datasheet" "https://www.ti.com/lit/ds/symlink/tps62160.pdf" (at 0 0 0) {HIDDEN})\n'
+        f'\t\t(property "Description" "Step-down converter 3-17 V, 3.3 V fixed, 1 A, 17 uA, 100 % mode" (at 0 0 0) {HIDDEN})\n'
+        f'\t\t(property "LCSC Part" "C40256" (at 0 0 0) {HIDDEN})\n'
+        '\t\t(symbol "TPS62162DSG_0_1"\n'
+        f'\t\t\t(rectangle (start {-half_w} {top}) (end {half_w} {bottom})\n'
+        '\t\t\t\t(stroke (width 0.254) (type default)) (fill (type background)))\n'
+        '\t\t)\n'
+        '\t\t(symbol "TPS62162DSG_1_1"\n'
+        + "".join(pins) +
+        '\t\t)\n'
+        '\t\t(embedded_fonts no)\n'
+        '\t)\n'
+    )
+
+
 def drv8833_parallel():
     """DRV8833PWP with both H-bridges in parallel (datasheet section 8.3.5): AIN1+BIN1, AIN2+BIN2,
     AOUT1+BOUT1, AOUT2+BOUT2, AISEN+BISEN. The paralleled pins are stacked on top of each other.
@@ -276,7 +314,7 @@ def main():
         '\t(generator "louie_gen_symbols")\n'
         '\t(generator_version "1.0")\n'
         + esp32_mini_1("ESP32-C3-MINI-1", ESP_C3) + esp32_mini_1("ESP32-C6-MINI-1", ESP_C6)
-        + drv8213dsg() + drv8833_parallel() + lis2dh12() +
+        + drv8213dsg() + tps62162dsg() + drv8833_parallel() + lis2dh12() +
         ')\n'
     )
     print(f"{LIB.relative_to(LIB.parent.parent.parent)} written")

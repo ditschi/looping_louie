@@ -1,7 +1,8 @@
 board,ref,qty,function,value,part,manufacturer,package,lcsc,alternatives,library,status
 main,U1,1,MCU + Wi-Fi/BLE/802.15.4,,ESP32-C6-MINI-1-H8,Espressif,module 13.2x16.6x2.4 mm,C42403058,ESP32-C6-MINI-1-N4 C5736265 (4 MB; pin- and footprint-identical; fallback if H8 is not available at JLC - 2026-11-06: 620 pcs.),lcsc,verified
 main,U2,1,Motor driver H-bridge with current sensing (IPROPI) current limit and autosleep; GAINSEL to GND,,DRV8213DSGR,Texas Instruments,WSON-8 2x2 mm with thermal pad,C22407186,DRV8833PWPR C50506 (different layout; fallback),kicad,verified
-main,U3,1,LDO 3.3 V / 500 mA; VIN up to 16 V (VSYS up to 6.6 V for 4 x AA); Iq approx. 90 uA,,SPX3819M5-L-3-3/TR,MaxLinear,SOT-23-5,C9055,MIC5219-3.3YM5 C29613 (12 V; pin 4 BYP); pin 4 BP open; ceramic output caps: check datasheet,kicad,to check
+main,U3,1,Step-down converter 3.3 V / 1 A (rev B instead of the LDO SPX3819); VIN 3-17 V (VSYS 3.0-6.6 V); Iq 17 uA; 100 % mode near the cell voltage; EN to VIN FB to AGND PG open,,TPS62162DSGR,Texas Instruments,WSON-8 2x2 mm with thermal pad (DSG0008A like U2),C40256,TPS62160DSGR C324077 (adjustable; needs an FB divider); TPS62840DLCR C2071859 (60 nA; 6.5 V max; other footprint),kicad,to check (docs/proposal-supply-buck.md)
+main,L1,1,Buck inductor 2.2 uH (ripple approx. 0.33 A p-p at 6.6 V; peak < 0.7 A at 0.5 A load),2.2 uH 1.5 A 144 mOhm,DFE201612P-2R2M=P2,Murata,2016 (2.0x1.6x1.2 mm),C79317,DFE201610E-2R2M=P2 C337891 (1.0 mm high); Sunlord WPN201610H2R2MT C97005 (cheaper 170 mOhm),kicad (Inductor_SMD:L_Murata_DFE201610P),to check (land pattern vs Murata drawing)
 main,J4,1,USB-C receptacle horizontal at the long edge +y (flashing + 5 V operation incl. motor),,TYPE-C-31-M-12,Korean Hroparts,USB-C 16-pin SMD + 4 THT tabs,C165948,HCTL HC-TYPE-C-16P-01A C2894897 (same hole positions),kicad,verified
 main,U5,1,ESD protection USB D+/D- and VBUS,,USBLC6-2SC6,ST,SOT-23-6,C7519,UMW USBLC6-2SC6 C2687116,kicad,verified
 main,R12-R13,2,USB-C CC resistors (sink),5.1 k,generic,,0402,,,kicad,
@@ -13,9 +14,9 @@ main,J5,1,Battery solder pads on the bottom (1 BAT_IN + / 2 GND -) for a protect
 main,R1,1,R_IPROPI: current sensing and current limit 2 A (ITRIP = 0.51 V / (R x 205 uA/A)),1.24 k 1%,generic,,0402,,,kicad,
 main,C1-C2,2,Buffer motor supply (VSYS up to 6.6 V),47 uF 16 V X5R,generic,,1206,,,kicad,availability at JLC to check
 main,C4,1,Decoupling VM,100 nF 16 V X7R,generic,,0402,,,kicad,
-main,C8,1,LDO input,1 uF 16 V X5R,generic,,0402,,,kicad,
-main,C9,1,3V3 buffer ESP32,10 uF 10 V X5R,generic,,0603,,,kicad,
-main,C10-C11,2,3V3 decoupling + LDO output,100 nF / 1 uF,generic,,0402,,,kicad,
+main,C8,1,Buck input (VIN; VSYS up to 6.6 V),10 uF 10 V X5R,generic,,0402,,,kicad,
+main,C9,1,Buck output / 3V3 buffer (VOS sense at this capacitor),22 uF 10 V X5R,generic,,0805,,,kicad,
+main,C10,1,3V3 decoupling,100 nF,generic,,0402,,,kicad,
 main,R2+C12,1,ESP32 EN reset RC,10 k / 1 uF,generic,,0402,,,kicad,
 main,R3,1,Lever detection pull-down at OUT_A (lever closed = SENSE HIGH; WAKEUP_ANY_HIGH),100 k,generic,,0402,,,kicad,
 main,R4,1,Lever detection pull-up at OUT_B to 3V3,10 k,generic,,0402,,,kicad,
