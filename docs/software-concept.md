@@ -199,7 +199,9 @@ A mode is a JSON description, not code. Building blocks (evolved from v1 `config
   (about 0.5–1 s) to annoy others. Limited by quota per round, cooldown
   and the global reverse limits above. Simultaneous requests do not add up.
 - Built-in modes (proposal): Classic, Relaxed, Escalation, Random, Chaos (with reverse),
-  Last Chicken Standing (boosts for players who are out).
+  Last Chicken Standing (boosts for players who are out). They ship with the UI package; Classic is also in the
+  firmware as fallback. The device keeps **one catalog** of all modes (firmware, UI package, own modes) and can
+  offer them without a phone ([firmware-architecture.md](firmware-architecture.md) 6.4).
 
 ### 5.3 May users save modes?
 
@@ -275,13 +277,15 @@ connection loss a clear notice and automatic reconnect.
 |---|---|---|
 | GET | `/api/state` | view |
 | POST | `/api/session` (nickname, seat) | – |
-| GET / POST | `/api/modes` | view / modes.create |
-| PUT / DELETE | `/api/modes/{id}` | creator or admin |
+| GET / POST | `/api/modes` (merged catalog / save own mode) | view / modes.create |
+| GET | `/api/modes/{src}/{id}` (complete program) | view |
+| PUT / DELETE | `/api/modes/own/{id}` | creator or admin |
 | POST | `/api/admin/login`, `/api/admin/logout` | – / admin |
 | GET / PUT | `/api/admin/config` | admin |
 | GET | `/api/admin/wifi/scan` | admin |
 | POST / DELETE | `/api/admin/wifi`, `/api/admin/wifi/{ssid}` | admin |
 | POST | `/api/admin/update`, `/api/admin/reboot`, `/api/admin/reset` | admin |
+| POST | `/api/admin/ui` (UI package, from stage 2) | admin |
 
 WebSocket messages (selection):
 
@@ -290,7 +294,7 @@ Server → Client: {"t":"state", "phase":"running", "speed":62, "mode":"chaos", 
                   "battery":3.85, "players":[…], "leader":"s_ab12"}
                  {"t":"event", "kind":"boost", "seat":2}
 Client → Server: {"t":"boost"}  {"t":"rewind"}  {"t":"claim", "seat":3}  {"t":"lead"}
-                 {"t":"select_mode", "id":"chaos"}  {"t":"out", "seat":1}  {"t":"stop"}
+                 {"t":"select_mode", "src":"ui", "id":"chaos", "hash":"…"}  {"t":"out", "seat":1}  {"t":"stop"}
 ```
 
 ## 8. Firmware structure

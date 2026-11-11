@@ -1,6 +1,7 @@
 # Firmware architecture (Rust, std on ESP-IDF)
 
-Status: 2026-11-06 · Draft, revised after critical review; basis for starting the implementation.
+Status: 2026-11-09 · Draft, revised after critical review; basis for starting the implementation. Mode catalog and
+UI package added 2026-11-09 (6.4).
 Language decision: [firmware-language.md](firmware-language.md). Functional basis:
 [software-concept.md](software-concept.md) (network, roles, game, protocol section 7),
 [web-ui-concept.md](web-ui-concept.md), [mode-builder.md](mode-builder.md) (schema 2),
@@ -32,6 +33,14 @@ setup.
 - **Network:** STA with AP fallback, captive DNS and DHCP option 114, mDNS, `EspHttpServer` with **one** WebSocket
   `/ws` and REST. One JSON state for all clients, at most 10/s during the game, **own non-blocking
   send path with backpressure** (not `EspHttpWsDetachedSender::send()`).
+- **Modes are data, the core owns the catalog:** The core provides hardware abstraction, safety layer and the mode
+  interpreter (the vocabulary of building blocks). Game flows are JSON programs. They come from three sources:
+  1–2 fallback modes in the firmware, the modes shipped with the **UI package**, and own modes in LittleFS. The core
+  reads all of them into **one catalog**, validates them, offers them without a phone (lever gesture, buttons) and
+  plays exactly one current program. Selection is **by reference**, not by uploading JSON (6.4).
+- **UI package:** web UI, languages and the modes that belong to this UI, with a manifest (version, protocol and
+  schema range). V1 embeds it in the firmware; later it moves to the `www` partition and can be updated
+  separately, so the same core can run different UIs or games (6.4).
 - **Storage:** H8 (8 MB) with OTA is the target. On N4 (4 MB) it gets tight with embedded web files
   (realistically 1.6–2.0 MB): there OTA only if the measurement in step 0 fits, otherwise a separate `www` partition or
   update via USB. User data in LittleFS, Wi-Fi credentials and hotspot password in NVS.
@@ -48,6 +57,7 @@ setup.
 | Motor safety independent of network and logic | separate motor thread with watchdog, limits in the lowest layer; lever in series with the motor |
 | A slow client slows nobody down | Sending to WebSockets is never blocking, backpressure per client, silent clients are disconnected (5.4) |
 | Playable without a phone | The lever starts the lever mode; network is optional |
+| The core knows all modes | One catalog in the core from firmware, UI package and LittleFS; selection by reference; offline selection without a UI (6.4) |
 | Development before the board | Simulator on the PC with the same app layer and actor loop, test setup on the breadboard |
 | One implementation of the mode interpreter | `louie-core` runs on ESP, PC and as WebAssembly in the browser |
 | Offline | all files in flash, no CDN |
@@ -80,7 +90,7 @@ firmware/
     src/net/              wifi.rs, captive_dns.rs, mdns.rs, http.rs, ws_send.rs (adapters to louie-app)
     src/main.rs
   tests/modes/            golden tests (*.mode.json + *.curve.json)
-web/                      web UI sources (output → firmware/louie-fw/assets/*.gz)
+web/                      web UI sources incl. modes/ of the default UI (output → UI package, 6.4)
 ```
 
 **Why `louie-fw` is a separate workspace:** The ESP target needs nightly, `build-std` and `ldproxy`
@@ -353,8 +363,9 @@ receive, not on send (verified, IDF `httpd_sess.c`). A spectator who only receiv
   handler. The firmware therefore does **not** rely on `is_new()`: a client counts as connected only
   with its **first message** (`hello` with token, protocol version and time); only then
   is its `ClientSink` created.
-- **Static files:** gzip from the firmware (`include_bytes!`) or from the `www` partition (6.1),
-  `Content-Encoding: gzip`, `Cache-Control` with version hash in the file name.
+- **Static files:** gzip from the UI package (embedded in the firmware or in the `www` partition, 6.4),
+  `Content-Encoding: gzip`, `Cache-Control` with version hash in the file name. If the installed package does not fit
+  the firmware, the fallback UI from the firmware is served (6.4).
 - **No HTTPS** (rationale software-concept.md 2.4).
 - **Admin password:** salted, iterated hash (PBKDF2-SHA-256) on the server, computed in the httpd task
   (4.2); without HTTPS the browser lacks Web Crypto.
@@ -376,6 +387,10 @@ The basis is software-concept.md section 7. Additions the firmware knows from th
   learn mode 30 s), assignment as a WS command of the game master; event
   `{"t":"event","kind":"joker","seat":2,"src":"button"}`; in the state optionally per player
   `"button":{"rssi":-71,"battery":90}`.
+- **Mode selection by reference** (6.4): `{"t":"select_mode","src":"ui","id":"gewitter","hash":"…","fies":3}` with
+  `modes.select`; "this round" sliders as `{"t":"tweak",…}` with `modes.tweak`. A complete mode JSON
+  ("play this round only", mode-builder.md 4.7) only with "Create modes" ≥ Drafts. `GET /api/modes` returns the
+  merged catalog (source, status, hints).
 - **Preview** is computed by the browser with `louie-wasm`. The server checks on save (`POST/PUT /api/modes`) with
   the same core and returns the same hints. `POST /api/modes/preview` stays as a **fallback** (e.g. if
   the WASM does not load); it calls the same core function in the `worker`, so it only costs compute time, no code.
@@ -446,6 +461,9 @@ No HTTPS, so only what works without encryption protects:
 - **Cookie** (admin session for REST): `HttpOnly; SameSite=Strict; Path=/`.
 - **OTA for admin only**, size limited to the slot size; **project name** (`louie-fw`) and
   **board** in the app header are checked before `EspOta::complete()` is called; wrong image → abort without restart.
+- **UI package update (from stage 2, 6.4) for admin only**, same checks: size ≤ `www`, manifest and hash of the whole
+  package before it is activated. A UI package has full access to all controls of the logged-in user, so it is treated
+  like firmware (optional signature as below).
 - **Optional signed images without Secure Boot:** `CONFIG_SECURE_SIGNED_APPS_NO_SECURE_BOOT` is available on the C6
   (RSA or ECDSA V2 scheme, verified, Kconfig 5.5). Protects against foreign images over the network, not against
   USB. Costs key management; decision after step 6.
@@ -472,7 +490,8 @@ No HTTPS, so only what works without encryption protects:
 with 0x20000; rest as above. The web files then live not in the app but in `www`.
 
 **H8 (8 MB):** ota_0 / ota_1 each **0x300000 (3 MiB)** from 0x20000 and 0x320000, `storage` 0x620000 with
-**0x1E0000 (1.875 MiB)**; rest as N4.
+**0x1E0000 (1.875 MiB)**; rest as N4. **From stage 2 (6.4):** `storage` 0x620000 with **0x160000 (1.375 MiB)**, **`www`
+0x780000 with 0x80000 (512 KB)** for the separately updatable UI package.
 
 - **Realistic size estimate:** code with esp-idf-svc, Wi-Fi + NimBLE + httpd + mDNS + serde_json,
   `opt-level = "s"`, LTO: **1.3–1.7 MB** (unverified; Wi-Fi+BLE firmwares in C are about 1.2–1.6 MB, Rust std and
@@ -494,12 +513,14 @@ with 0x20000; rest as above. The web files then live not in the app but in `www`
 
 | Content | Location | Rationale |
 |---|---|---|
-| Web UI (HTML/JS/CSS in 2–3 files, gzip, target ≤ 100 KB) | **in the firmware** (`include_bytes!`); N4 plan B: `www` | Updated together with the firmware, rollback included; UI and protocol always match |
-| Language files (gzip, 5–8 KB per language) | in the firmware; N4 plan B: `www` | about 100 KB for 16 languages (unverified) |
-| `louie_core.wasm` (gzip, 60–120 KB) | in the firmware; N4 plan B: `www` | loaded only by the editor |
+| **UI package** (manifest, web UI in 2–3 files gzip ≤ 100 KB, languages about 100 KB, `modes/index.json` + `modes/*.json`) | **V1: in the firmware** (`include_bytes!`); from stage 2 and on N4 plan B: `www` | 6.4; V1 updated together with the firmware, rollback included |
+| Fallback UI (lobby, mode pick, start/stop, update page; H8 ≤ 30 KB, N4 emergency page ≤ 10 KB) | in the firmware | served when the UI package is missing or does not fit (6.4) |
+| Fallback modes (Classic, optionally one more) | in the firmware | lever mode on a fresh device or after a broken `current.json` |
+| `louie_core.wasm` (gzip, 60–120 KB) | **in the firmware**; N4 plan B: `www`, but as part of the firmware release with the hash known to the app, never from the UI package | built from `louie-core`, so preview and device must come from the same build |
+| `current.json` (reference + copy of the current program + meanness) | LittleFS | written on selection (never during a round); loaded at boot, so the lever plays the last selection |
 | `config.json` (model profile, limits, permissions, admin hash, power) | LittleFS | write atomically (temp + rename) |
 | `devices.json` (paired buttons) | LittleFS | device-pairing.md 7 |
-| `modes/*.json` (own modes; built-in ones in the firmware) | LittleFS | |
+| `modes/*.json` (own modes) | LittleFS | source `own` in the catalog (6.4) |
 | Wi-Fi credentials, hotspot password (random, 5.1) | **NVS** (encrypted if flash encryption comes later) | robust against power loss, never in Git |
 | Last panic reason, recent errors, restart counter | **RTC memory (`RTC_NOINIT`)**, moved to NVS at the next start | survives software reset and brownout without flash writes in the failure case |
 
@@ -535,6 +556,75 @@ Starting point: **259 KB free** with Wi-Fi + BLE initialized (verified, ESP-Tech
 free block **≥ 16 KB**, both without a downward trend in the last hour. If this is missed: sessions to 12,
 `TCP_SND_BUF`/`TCP_WND` to 2–3 MSS, split the state (5.3), BLE scan only when needed.
 
+### 6.4 Mode catalog and UI package
+
+**Layers.** The core is not a game; it is a player for game programs:
+
+| Layer | Runs on | Content |
+|---|---|---|
+| HAL | ESP (`louie-fw`) | LEDC, ADC, GPIO, BLE … (3) |
+| Safety layer | ESP, cannot be bypassed | model profile, owner limits, ramps, dead-man timer, emergency stop (4.1); applies to **every** command, also `workshop.motor` |
+| Mode runtime | ESP (`louie-core`) | plays **one** program: flight plan segments, spice, jokers, end (mode-builder.md 2); joker accounts and permissions |
+| Mode catalog | ESP (`louie-app`) | knows all available programs, validates, selects, stores the current one |
+| Web UI | browser | displays, editor, sends selection and player inputs |
+
+The **vocabulary** of the runtime (segment types, spice kinds, joker kinds, schema version) is the core's API. A new
+program from existing building blocks is pure data and needs no firmware update; a new building block needs one.
+A game flow is never executed in the browser: background tabs are throttled or stopped, several phones would need
+one "executing" phone, and permissions and timing must stay on the device anyway.
+
+**Catalog sources:**
+
+| Source `src` | Location | Content | Writable |
+|---|---|---|---|
+| `fw` | app image | Classic (default lever mode), optionally one more | no |
+| `ui` | UI package `modes/index.json` + `modes/<id>.json` | the modes this UI brings (V1: the built-in modes of web-ui-concept.md 6.2) | only by replacing the package |
+| `own` | LittleFS `modes/<id>.json` | modes saved in the editor | per permission (mode-builder.md 7) |
+
+- A mode is identified by **`src` + `id`**; the same `id` in two sources is allowed. A reference also carries the
+  **hash** of the program, so a selection never silently plays a changed program.
+- **At boot** the core reads only the indexes (`id`, `name`, `icon`, `desc`, `schema`, `needs`, hash; for `own`
+  built by scanning once and kept in RAM, about 100 B per mode). Only the current program is parsed completely
+  (6.3).
+- **Validation:** every program is validated with `louie-core` when the package is installed and when an own mode is saved.
+  Programs with an unknown schema or building block get `status: "incompatible"` with a hint and are not offered.
+  This also covers a firmware rollback: an older core hides modes that use newer building blocks.
+- **Current program:** selecting writes `current.json` (reference and a copy of the program), only in READY/END
+  and with the lever off (software-concept.md 5.1). At boot the core plays this copy even if the source has
+  disappeared in the meantime; if the copy is broken or incompatible → fallback mode `fw:classic`, hint in the UI.
+- **Offline selection:** `config.json` holds an `offline_order` (admin favourites, default: catalog order `fw`, `ui`,
+  `own`). Lever gesture "next mode" (ideas.md modi-39), paired buttons or J6 step through this list without a
+  phone; the status LED or a short motor twitch confirms. External clients (Home Assistant, a native app) use the
+  same `GET /api/modes`.
+- **Permissions:** select by reference with `modes.select`, sliders "this round" with `modes.tweak`, a complete JSON
+  only with "Create modes" ≥ Drafts (5.3). So a game master who may only select cannot upload arbitrary programs.
+
+**UI package format** (one image for `www`, the same layout embedded in V1):
+
+```json
+{
+  "pkg": "louie-ui", "name": "Family", "version": "1.4.0",
+  "proto": [3, 4], "schema": [2, 2], "requires": ["jokers", "buttons"],
+  "files": { "index.html": "…hash", "app.js": "…hash", "modes/index.json": "…hash" }
+}
+```
+
+The firmware serves the package only if its own protocol version lies in `proto` and it supports `schema` and
+`requires` (capability flags of the firmware); otherwise it serves the fallback UI with the hint "UI package does
+not fit this firmware" and keeps the `ui` modes that still validate. `louie_core.wasm` is **not** part of the UI
+package (6.2).
+
+**Stages:**
+
+| Stage | What | Why |
+|---|---|---|
+| **1 (V1)** | One release: the UI package is embedded in the firmware, but read through the same package reader (manifest, `modes/index.json`). Catalog, selection by reference, `current.json`, `offline_order` already as above | no compatibility matrix, rollback includes the UI; later only the storage location changes |
+| **2 (when a second UI or game exists)** | Package in the `www` partition (6.1), separate update `POST /api/admin/ui`, several packages available for download, only one installed | same core for different UIs or games |
+
+**`www` has no A/B slot:** During writing and after an interrupted write the fallback UI is served; the package is
+activated only after the hash over all files matches. The game keeps working, because the current program lives in
+`current.json`.
+
 ## 7. Updates, logging, diagnostics, errors
 
 - **OTA with rollback:** `POST /api/admin/update` streams the image into `EspOta::initiate_update()` →
@@ -548,6 +638,10 @@ free block **≥ 16 KB**, both without a downward trend in the last hour. If thi
   is `PENDING_VERIFY`**; the self-test does not need the motor. If the firmware rolls back anyway and the
   reset reason was brownout, the old version shows "Update discarded due to supply interruption, repeat with a USB power
   supply".
+- **UI package update (stage 2, 6.4):** `POST /api/admin/ui` streams the package into `www` (first erased and marked
+  invalid, fallback UI meanwhile), then hash and manifest check, then activation and catalog reload without restart.
+  Same conditions as the firmware update (lever off, no round). A firmware rollback leaves `www` in place; the
+  manifest check decides whether the package is still served.
 - **Update file:** one `.bin` from `espflash save-image`; the UI checks board name and version in the app header
   before uploading, the server checks again (5.5). Updates only with lever "off" and no running round.
 - **USB:** flashing and console via J4 (USB-Serial-JTAG), `espflash flash --monitor`.
@@ -581,7 +675,8 @@ free block **≥ 16 KB**, both without a downward trend in the last hour. If thi
 | Protocol | Serialization `louie-proto` ↔ example JSON from the docs; generate TS types and check them in the web UI | `cargo test`, `tsc` |
 | Simulator | Whole system with web UI, several browsers, load client (also "stops reading") | `just sim` |
 | WASM | Same golden files in the browser build (`wasm-bindgen-test`) | `just wasm-test` |
-| Device | `GET /api/admin/diag/golden` computes the built-in modes on the ESP and returns a checksum per curve; must match the PC checksum | HIL |
+| UI package | every `modes/*.json` of the package validates with `louie-core` of every firmware version in the manifest range; golden curves for the default package | `cargo test`, CI |
+| Device | `GET /api/admin/diag/golden` computes the `fw` modes and the modes of the installed UI package on the ESP and returns a checksum per curve; must match the PC checksum | HIL |
 | Hardware-in-the-loop | Test setup: load client (8 WS, 10/s, one hanging), BLE button simulator, measurement of heap/largest block (6.3), latency, jitter, flash writes, sleep/wake-up, stall (simulated by pot; real motor on the prototype board), emergency stop, reset behaviour | [test-hardware.md](test-hardware.md) 4, 5 |
 
 **Determinism:** The core computes time in ms (`u32`, `wrapping_sub`), randomness from its own small PRNG with
@@ -640,11 +735,11 @@ Loaded only in the editor, not at startup. If it is too large: mode input as `Js
 |---|---|---|
 | **0 – Toolchain and test setup** | `esp-idf-template` for C6, dated nightly, `Cargo.lock`; blink, LEDC 20 kHz on IO18/IO19 in **LED mode** (test-hardware.md 5), ADC (VSYS, ISEN pot), lever ISR; small test binaries for the **pre-order checks** (test-hardware.md 4: `lever_probe`, `boot_probe`, `pin_probe`, `adc_probe`); probe with Wi-Fi + NimBLE scan + httpd/WS **and placeholder assets** (UI 100 KB, languages 100 KB, WASM 120 KB) | LEDs follow the setpoint; pre-order checks 4.2–4.5 done. **Measurement points:** release app size (decision 6.1: N4 with OTA / `www` / without OTA / H8 only), free heap and largest block with Wi-Fi+BLE+httpd, stack high-water mark, PBKDF2 duration, IO18/IO19 on the oscilloscope during reset and deep sleep (test-hardware.md 4.4, F17) |
 | **1 – Core** | `louie-core` with schema 2, meanness, jokers, limits; golden tests for the built-in modes and the examples from mode-builder.md 5 and 6 | `cargo test` green, curves match the PoC (tolerance, 8) |
-| **2 – App and simulator** | `louie-proto`, `louie-app` with actor loop and `ClientSink`, `louie-sim`; switch the PoC UI to the real protocol | Game playable in the browser against the simulator; load client with a hanging client does not disturb the others |
+| **2 – App and simulator** | `louie-proto`, `louie-app` with actor loop and `ClientSink`, mode catalog with package reader, selection by reference and `current.json` (6.4), `louie-sim`; switch the PoC UI to the real protocol | Game playable in the browser against the simulator; load client with a hanging client does not disturb the others |
 | **3 – Network on the ESP** | STA/AP/fallback, captive DNS + option 114, mDNS, httpd + own send path (5.4), header checks (5.5), NVS, LittleFS | 8 phones on the hotspot; load client 2 h without errors, **heap ≥ 60 KB, largest block ≥ 16 KB** (6.3); hanging client disconnected after ≤ 15 s, others without gap > 200 ms; captive behaviour on Android + iOS recorded |
 | **4 – Motor and power** | Motor thread with dead-man timer, emergency stop, stall, TWDT panic, second dead-man timer, restart rule; sleep/wake-up, battery/USB | HIL tests stall (motor and stall on the prototype board, test-hardware.md 6), dead-man timer, emergency stop latency (≤ 20 ms), wake-up passed; deliberate panic/WDT/brownout → no start without lever edge; jitter of the motor thread during flash writes measured |
 | **5 – Wireless buttons** | NimBLE passive (wrapper from esp-idf-svc, E8), BTHome parser, pairing, assignment | Joker latency and hit rate per test-hardware.md |
-| **6 – OTA and diagnostics** | Update with rollback and header check, diagnostics page, core dump, golden checksum on the device | Deliberately broken firmware rolls back; reset in the first 30 s after an update → fallback with notice; golden checksum device = PC |
+| **6 – OTA and diagnostics** | Update with rollback and header check, diagnostics page, core dump, golden checksum on the device; fallback UI; separate UI package update only when stage 2 (6.4) is due | Deliberately broken firmware rolls back; reset in the first 30 s after an update → fallback with notice; golden checksum device = PC |
 | **7 – WASM preview** | `louie-wasm` in the editor | Preview = device (golden tests in the browser) |
 | **8 – Options** | LED chain J7, player inputs J6, accelerometer, power bank pulse | depending on assembly |
 
@@ -662,7 +757,7 @@ the bring-up in LED mode and the four probes for test-hardware.md 4.2–4.5; wri
 | E2 | JSON or a more compact format (CBOR, binary, delta)? | **JSON** (serde_json), one buffer for all | about 150–300 KB/s with 10 clients (unverified) is acceptable, readable in the browser log; fast/slow split or delta only if the test requires it |
 | E3 | Board by feature or at runtime? | **Feature** for pins, flash and motor driver, **runtime** for options | a wrong pin assumption can drive hardware; options can be detected harmlessly |
 | E4 | Web server: esp-idf-svc `EspHttpServer` or `picoserve`? | **EspHttpServer**, with own WS send path (E13) | Routing, WS receive and sessions exist, no second network stack; picoserve only with a later move to no_std |
-| E5 | File system | **LittleFS** (joltwallet) for user data, **NVS** for Wi-Fi and hotspot password, **web UI in the firmware** (N4 plan B: `www` partition) | atomic updates, a small FS is enough on N4 |
+| E5 | File system | **LittleFS** (joltwallet) for user data, **NVS** for Wi-Fi and hotspot password, **UI package in the firmware** in V1 (stage 2 and N4 plan B: `www` partition, 6.4) | atomic updates, a small FS is enough on N4 |
 | E6 | Repo structure | **`firmware/`** with host workspace `crates/` and separate workspace `louie-fw/`, both `Cargo.lock` checked in, dated nightly | separate toolchains (stable/nightly) without conflict, reproducible |
 | E7 | ESP-IDF version | Pin **v5.5.x** to a fixed tag, check v6.x after step 0 | Honest rationale: 5.5 because of the longer maintenance period (30 months per minor version, verified, IDF support policy) and because esp-idf-svc 0.53 covers it. The esp32-nimble CI builds the C6 **only with 5.3.6** (5.5.5 only for C3/ESP32, verified) – so 5.5 is not tested there for the C6. WS handshake behaviour changed from 5.5.5 (5.2) |
 | E8 | BLE crate | **NimBLE wrapper from esp-idf-svc 0.53** (GAP scan) first; fallback **esp32-nimble 0.13**, then directly `esp-idf-sys` (`ble_gap_disc`) | only passive scan needed, small surface; the wrapper comes with the same crate as the rest, esp32-nimble 0.13 depends on esp-idf-svc 0.53 anyway (verified, crates.io) and is only tested on the C6 with IDF 5.3.6. Previously the other way round (decision-history.md 8) |
@@ -675,6 +770,7 @@ the bring-up in LED mode and the four probes for test-hardware.md 4.2–4.5; wri
 | E15 | Restart after an unexpected reset | **No start without a lever edge open → closed**; restart counter in RTC; locked from 3 in 60 s; motor locked while a new image is unconfirmed (4.1, 7) | prevents surprise starts and brownout loops; otherwise a brownout right after an update discards a good firmware |
 | E16 | `louie-proto` as a separate crate or as a feature in `louie-core`? | **Separate crate**; mode types in `louie-core` | REST bodies, `Config`, `ts-rs` do not belong in the core and WASM; one more crate costs hardly anything (2.1) |
 | E17 | Hotspot password | **Random at first start**, in NVS, output for the sticker; reset via workshop or factory reset | derived from the MAC it could be computed by anyone in radio range; previously planned that way in software-concept.md 3.2 (decision-history.md 8) |
+| E18 | Where do game flows live and who executes them? | **Core executes, catalog in the core.** Programs are JSON from `fw`, UI package and LittleFS; selection by reference with hash; `current.json`; offline selection; UI package separately updatable from stage 2 (6.4) | same core for different UIs and games without losing offline play, permissions and timing; flows in the browser fail on throttled tabs and several phones; previously "built-in modes in the firmware" (decision-history.md 8) |
 
 ## 13. Risks and fallbacks
 
@@ -689,6 +785,7 @@ the bring-up in LED mode and the four probes for test-hardware.md 4.2–4.5; wri
 | Thread with too small a stack (std default 3 KB) | medium | `Builder::stack_size` everywhere, HW stack guard, high-water mark in diagnostics (4.3) |
 | C panic or core dump: motor runs with the last duty cycle until reset | low–medium | second dead-man timer, `--wrap=esp_panic_handler` (unverified), core dump not to flash; measure in HIL |
 | Reset state IO18/IO19: **brake** instead of coast during reset (internal 45 k pull-up against 200 k in the DRV8213, verified) | certain, minor consequences | no drive possible (both inputs equal). Correct the docs; if coast during reset is wanted: external pull-downs ≤ 4.7 k on IN1/IN2 (hardware, not decided) |
+| UI package and firmware drift apart (stage 2) | medium | manifest ranges for `proto`/`schema`/`requires`, per-mode validation, fallback UI, CI check against all firmware versions in the range (6.4, 8) |
 | Flash writes stall motor thread and Wi-Fi | medium | do not write during a round, measure jitter (6.2) |
 | esp-idf-svc NimBLE wrapper (new in 0.53) immature | medium | esp32-nimble 0.13, then `esp-idf-sys` (`ble_gap_disc`, about 100 lines of FFI) |
 | BLE scan + SoftAP with 8 clients unstable (C1) | medium | scan only when needed, small scan window; offer buttons only in STA mode; state rate in hotspot mode 5/s |
