@@ -38,5 +38,7 @@ SPX3819_datasheet_en.pdf https://www.maxlinear.com/ds/spx3819.pdf
 TECHFUSE_SMD0805-050-16V_datasheet_LCSC.pdf https://datasheet.lcsc.com/datasheet/pdf/f5237ed89b0fc8241b445f57de0422a2.pdf
 BNstar_SMD0805-050C-16V_datasheet_LCSC.pdf https://datasheet.lcsc.com/datasheet/pdf/0968bf8022715ab846303180c68ce292.pdf
 RO_SMD0805-050-16_datasheet_LCSC.pdf https://datasheet.lcsc.com/datasheet/pdf/828ea1364ab569d31fa1abd643133b81.pdf
+TPS6216x_datasheet_en.pdf https://www.ti.com/lit/ds/symlink/tps62160.pdf
+Murata_DFE201612P-2R2M_datasheet_LCSC.pdf https://datasheet.lcsc.com/datasheet/pdf/3da72e1ea2c544751f1a10542ca0aaa4.pdf
 LIST
 exit $fail

@@ -6,7 +6,9 @@ Requirement from the project owner: **one main board for 1S Li-ion up to 4 × AA
 hardware can also be used for other devices. Sections 1–9 are kept unchanged as the record of the proposal (written
 before the implementation, so they speak of what "would" change); section 10 is the implemented state. Answers to
 section 9: TPS62162, Murata DFE201612P, rev B now, 9 V / 2S stays out. The current numbers are maintained in
-[main-board-c6.md](main-board-c6.md) 2.7, the decision record is in [decision-history.md](decision-history.md).
+[main-board-c6.md](main-board-c6.md) 2.7, the decision record is in [decision-history.md](decision-history.md). **Datasheet delta review against the implemented
+rev B: [wiring-review.md](wiring-review.md) section 8** (findings W18–W21, among them W21: no power-save mode below
+VSYS ≈ 3.8 V, which limits the standby gain of section 4).
 
 Markers: **(verified)** = read in the datasheet PDF (TI SLVSAM2E for the TPS6216x, SLVSE23 for the TPS62840) or
 queried live from the JLCPCB parts API on 2026-11-10 · **(unverified)** = estimate; the generator, the router or a

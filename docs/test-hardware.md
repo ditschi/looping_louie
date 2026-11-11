@@ -476,7 +476,7 @@ limit and a short ground spring directly at C9; electronic load or switched resi
 | **T10** ripple and spikes | VSYS 3.0 / 3.7 / 5.0 / 6.6 V, each with no load and with 300 mA; scope at C9 | ≤ 30 mV p-p, no sustained ringing |
 | **T11** load step | 0 → 300 mA with the switched 11 Ω (100 Hz–1 kHz, 10–50 % duty), trigger on the gate, at VSYS 3.7 V and 6.6 V | dip ≤ 150 mV, recovery ≤ 100 µs |
 | **T12** 100 % mode entry | sweep VSYS down from 4.0 to 3.0 V at 150 mA and at 380 mA load, read 3V3 with the multimeter | 3V3 ≥ 3.0 V down to VSYS ≈ 3.3 V at 150 mA and ≈ 3.5 V at 380 mA; the measured values set the cut-off thresholds in main-board-c6.md 2.7 |
-| **T13** standby | board in deep sleep, current at BAT_IN at VSYS 3.7 V and 6.0 V (multimeter µA range, short it during boot) | ≤ 40 µA |
+| **T13** standby | board in deep sleep, current at BAT_IN at VSYS 3.5 / 3.7 / 4.0 / 6.0 V (multimeter µA range, short it during boot) | ≤ 40 µA above 3.8 V; below 3.8 V the converter stays in PWM (wiring review W21): record the value, it decides F29 |
 | **T14** temperature | Wi-Fi TX continuously at VSYS 6.6 V for 10 min, temperature of U3 and L1 (thermocouple or IR) | < 60 °C in free air |
 | **T15** ADC noise | VBAT_ADC and ISEN_ADC at 10 Hz with the buck in power-save mode vs. 3V3 from a bench LDO | no visible difference |
 | **T4** addition | RSSI test with the buck running and with 3V3 from the bench supply | no RSSI difference > 2 dB |

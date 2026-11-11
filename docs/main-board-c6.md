@@ -23,7 +23,8 @@ estimate, or not checked in the datasheet.
 - **Lever:** "lever closed" = HIGH (R3 to GND, R4 to 3V3); the lever wakes the chip with ANY_HIGH on IO3.
 - **USB-C J4** with ESD (flow-through), CC resistors and power path (D2 for VBUS, Q1 for BAT_IN).
 - **Supply:** VSYS 3.0–6.6 V: 1S Li-ion, USB, 3 × or 4 × AA; buck converter **TPS62162** (U3) with 2.2 µH (L1):
-  approx. 50 mW loss at 6.4 V, board standby approx. 25 µA, cut-off at 3.4–3.5 V filtered. No 9 V block. All supply
+  approx. 50 mW loss at 6.4 V, board standby approx. 25 µA above VSYS 3.8 V (below that higher, W21), cut-off at
+  3.4–3.5 V filtered. No 9 V block. All supply
   numbers: 2.7.
 - **Zigbee:** the hardware needs **nothing extra**. A coordinator alongside the device's own hotspot or alongside
   a BLE scan is **not supported (X)** by Espressif; Zigbee is only realistic on the home Wi-Fi.
@@ -168,20 +169,21 @@ Sources on VSYS: protected 1S Li-ion cell on J5/J1 (3.0–4.2 V), USB via D2 (ap
 (`duty = U_target / U_battery`, hardware-concept.md 4); for games with 4 × AA the motor reaches its usual voltage only
 with 4 cells on BAT_IN.
 
-Markers in this section: **(verified)** = TI SLVSAM2E or the JLC parts API (2026-11-10), see the proposal ·
-**(unverified)** = estimate, the prototype decides (tests in [test-hardware.md](test-hardware.md) 4.7).
+Markers in this section: **(verified)** = TI SLVSAM2E, the Murata specification or the JLC parts API, see the proposal
+and the delta review [wiring-review.md](wiring-review.md) 8 · **(unverified)** = estimate, the prototype decides (tests
+in [test-hardware.md](test-hardware.md) 4.7). **Open findings of the delta review: W18–W21** (below and wiring-review.md 8.2).
 
 | Item | Value | Note |
 |---|---|---|
 | VSYS range | **3.0–6.6 V** continuous, 7 V transient (4 fresh alkaline cells, unloaded) | 9 V block and 2S Li-ion are not supported (below) |
 | 3.3 V regulator U3 | **TPS62162DSGR** (TI), synchronous buck, 3.3 V fixed, 1 A, VIN 3–17 V recommended (20 V abs. max), 2.25 MHz with power-save mode at light load, WSON-8 2 × 2 mm (DSG, same package as U2), LCSC C40256 | (verified) |
-| Inductor L1 | **2.2 µH Murata DFE201612P-2R2M=P2**, 2016 (2.0 × 1.6 × 1.2 mm), 144 mΩ, 1.5 A Irms / 2.1 A Isat, LCSC C79317; KiCad footprint `Inductor_SMD:L_Murata_DFE201610P` | ripple approx. 0.33 A p-p at 6.6 V; land pattern vs. Murata drawing still to check (parts.csv) |
-| C8 / C9 / C10 | C8 **10 µF 10 V 0402** at VIN · C9 **22 µF 10 V 0805** at the output, VOS senses here · C10 100 nF 0402 at the module side; **C11 dropped** | (unverified: effective C8 at 6.6 V under DC bias) |
-| U3 pin wiring | EN tied to VIN, FB to AGND (fixed version), PG open, VOS to C9, PGND/AGND/EP to GND, one thermal via in the EP | (verified against SLVSAM2E) |
+| Inductor L1 | **2.2 µH Murata DFE201612P-2R2M=P2**, 2016 (2.0 × 1.6 × 1.2 mm), 144 mΩ max, 1.5 A (40 K rise) / 2.1 A (30 % L drop), LCSC C79317; KiCad footprint `Inductor_SMD:L_Murata_DFE201610P` | (verified, Murata). Ripple approx. 0.33 A p-p at 6.6 V. **W18:** the stock footprint is smaller than Murata's land pattern (0.8 × 1.8 mm pads, 2.4 mm over all) and its 3D model is 1.0 instead of 1.2 mm high |
+| C8 / C9 / C10 | C8 **10 µF 10 V 0402** at VIN · C9 **22 µF 10 V 0805** at the output, VOS senses here · C10 100 nF 0402 at the module side; **C11 dropped** | **W19:** C8 sits about 1.6 mm from VIN and keeps only a fraction of 10 µF at 6.6 V (unverified, no part number yet) |
+| U3 pin wiring | EN tied to VIN, FB to AGND (fixed version), PG open, VOS at L1 pad 2 (output node), PGND/AGND/EP to GND, one tented thermal via in the EP | (verified against SLVSAM2E, wiring-review.md 8.1; VOS position: W20) |
 | Dissipation of U3 | **approx. 50 mW** at 6.4 V / 150 mA (η ≈ 90 %), approx. 40 mW at 4.0 V / 150 mA; θJA 61.8 K/W | (unverified estimate; LDO rev A: 0.47 W) |
-| Standby, board total in deep sleep | **approx. 25 µA**: U3 17 µA typ (30 µA max) + VBAT divider approx. 5 µA + LIS2DH12 approx. 2 µA + leakage; 14500 cell approx. 3 years, 4 × AA approx. 10 years | (unverified; test T13) |
-| Low end (100 % mode) | below approx. VSYS 3.5 V the buck passes VSYS minus I × (RDS(on) + DCR): **approx. 0.2 V at 380 mA** (high side 430 mΩ at 3 V + L1); 3V3 ≥ 3.0 V down to approx. VSYS 3.3 V at 150 mA and 3.5 V at 380 mA | (unverified at low VIN; test T12) |
-| UVLO of U3 | 2.7 V falling typ (2.6–2.82 V), 180 mV hysteresis; a cell at 3.0 V starts | (verified) |
+| Standby, board total in deep sleep | **approx. 25 µA with VSYS above about 3.8 V**: U3 17 µA typ (30 µA max) + VBAT divider approx. 5 µA + LIS2DH12 approx. 2 µA + leakage; 4 × AA approx. 10 years. **Below about 3.8 V** (most of a Li-ion cell, low 3 × AA) the converter does not enter power-save mode and switches in PWM until 100 % mode at about 3.4 V: standby likely several hundred µA to a few mA (W21) | (unverified; test T13 at 3.5 / 3.7 / 4.0 / 6.0 V) |
+| Low end (100 % mode) | below approx. VSYS 3.5 V the buck passes VSYS minus I × (RDS(on) + DCR): **approx. 0.2 V at 380 mA** (high side 430 mΩ typ at 3 V + L1 144 mΩ), about 0.26 V when hot; 3V3 ≥ 3.0 V down to approx. VSYS 3.3 V at 150 mA and 3.5 V at 380 mA | (unverified at low VIN; test T12) |
+| UVLO of U3 | 2.7 V falling typ (2.6–2.82 V), 180 mV hysteresis: stops at about 2.7 V, starts at about 2.9 V typ, 3.0 V worst case; recommended VIN minimum 3.0 V | (verified) |
 | Cut-off thresholds (review R-B2) | evaluate **filtered, low-load** VSYS only (e.g. median over 2 s while duty ≤ 20 %), never during the first 300 ms of a ramp or during a stall. **Warn below 3.6 V; end the round at the next pause below 3.4–3.5 V.** Firmware placeholder `VSYS_MIN_MV = 3500` (`firmware/louie-fw/src/main.rs`). Hard floor: UVLO 2.7 V; brownout reset of the C6 as the last resort | final numbers from the sag measurement (test-hardware.md 4.1) and T12 |
 | VBAT divider R6/R7, C13 | **680 k / 470 k** (ratio 2.447), 100 nF; 6.6 V → 2.7 V at the ADC, 3.0 V → 1.23 V; 3–6 µA | ADC check test-hardware.md 4.5 |
 
@@ -205,14 +207,18 @@ Markers in this section: **(verified)** = TI SLVSAM2E or the JLC parts API (2026
   to x 4.67.
 - GND of C8, C9 and the PGND/AGND/FB stubs meet at the exposed pad (single-point ground as in the datasheet layout);
   **one** thermal via at (2.13, 4.97), centred in the gap between J2 pads 2 and 3 on the bottom (two do not fit).
-- 3V3 leaves the block on In2; `PWR_FLAG` on +3V3 in the schematic. The pre-routes are part of the routing baseline
-  (11.4).
+- 3V3 leaves the block on In2 (one take-off via on the VOS trace, one at C9); `PWR_FLAG` on +3V3 in the schematic.
+  The pre-routes are part of the routing baseline (11.4).
+- No via and no foreign copper under L1 on F.Cu (Murata notice). L1 pad 1 (SW) is 0.18 mm from the USB D− track (N23).
+- **Open from the delta review (wiring-review.md 8.2):** W18 own L1 footprint (L1 then about 0.1 mm towards U3),
+  W19 C8 at the pins with a higher voltage rating, W20 VOS from C9 (optional). Each of them needs a new routing run
+  and baseline.
 
 **Not supported:** 9 V block or 2S Li-ion. The TPS62162 would accept 17 V, but the VBAT divider, the DRV8213
 (11 V max), the R4 back-feed and a 2S charger would need a review, and the snap terminals do not fit next to the board
 in a 9 V shell. The charger board is for 1S Li-ion only and must not be connected to AA packs. Values marked "to
 check" in hardware/bom/parts.csv (U3, the L1 land pattern, LCSC number of the adjustable SPX3819 for U6, availability
-of 47 µF 16 V) are part of the delta review of the buck block, which runs separately ([wiring-review.md](wiring-review.md)).
+of 47 µF 16 V) are listed in the delta review of the buck block ([wiring-review.md](wiring-review.md) 8).
 
 ## 3. Motor control
 
@@ -365,8 +371,8 @@ Remedy: shorter and deeper window, or a support ledge between J1 and J5 (test on
    ANY_HIGH on IO3, strapping, levels of IO18/IO19 (F17), ADC divider.
 2. DRV8213 on the Louie motor: current, heating when stalled, lever detection in autosleep (outputs Hi-Z).
 3. Check H8 stock at JLC at the time of ordering (2026-11-06: 620 pcs), otherwise N4.
-4. ~~Finish routing~~ done: rev B routed completely, ERC 0, DRC 0, 0 unconnected (11.4). Before ordering: delta
-   review of the buck block (runs separately, [wiring-review.md](wiring-review.md)).
+4. ~~Finish routing~~ done: rev B routed completely, ERC 0, DRC 0, 0 unconnected (11.4). Before ordering: decide the
+   delta-review findings W18–W21 of the buck block ([wiring-review.md](wiring-review.md) 8, open-items.md F29).
 5. Load the Gerbers (`just fab`) into the JLC calculator (website and JLCONE), select stack-up JLC04081H-3313, read off price and
    manufacturing time for 0.8 mm (cost-estimate.md 5.7).
 6. Look at the layout in the KiCad GUI (router detours, via count), smooth individual tracks if needed – after that the GUI state is authoritative.

@@ -161,7 +161,8 @@ flipping the original lever several times.
 ### 5.3 Power saving and wake-up (no extra main switch)
 
 - After a configurable idle time (e.g. 15 min without game and without client): **deep sleep**.
-  DRV8213 in autosleep, buck converter with 17 µA quiescent current → board approx. 25 µA (main-board-c6.md 2.7).
+  DRV8213 in autosleep, buck converter with 17 µA quiescent current → board approx. 25 µA above VSYS 3.8 V; below that the converter
+  stays in PWM and the standby is higher (to be measured, main-board-c6.md 2.7).
 - **Wake-up by flipping the Louie lever**: SENSE is on IO3 (LP GPIO) and wakes the ESP32-C6
   from deep sleep with ANY_HIGH. Further wake sources: INT (IO2), VBUS_DET (IO4), S1 (IO5).
 - After wake-up Wi-Fi starts first; the round starts only on the next lever flip or on
@@ -309,7 +310,8 @@ The turbo limits are estimates and will be set during operation.
    strapping, deep-sleep wake, ADC dividers); no motor driver on the breadboard, stall tests on the prototype
    ([test-hardware.md](test-hardware.md) 4).
 2. Firmware skeleton in Rust on the test setup ([firmware-architecture.md](firmware-architecture.md)).
-3. Main board: routing done (main-board-c6.md 11.4); delta review of the buck block, then order; charger board; printed parts.
+3. Main board: routing done (main-board-c6.md 11.4); decide the delta-review findings of the buck block (open-items.md
+   F29), then order; charger board; printed parts.
 
 ## Appendix A: Market research (status 2026-10)
 

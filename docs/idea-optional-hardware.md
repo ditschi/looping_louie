@@ -229,7 +229,7 @@ the firmware dims the LEDs or switches them off (VBAT_ADC is measured anyway).
 
 Addressable LEDs draw current even when dark, depending on type a few 100 µA to about 1 mA per LED (old types) or
 ≤ 1 µA (WS2812B-2020 V6) (unverified, type-dependent). Eight LEDs at 0.6 mA = 5 mA; that is about two hundred times the
-deep sleep budget (board approx. 25 µA, main-board-c6.md 2.7). A 1000 mAh battery would be empty in just over a week.
+deep sleep budget (board approx. 25 µA above 3.8 V, main-board-c6.md 2.7). A 1000 mAh battery would be empty in just over a week.
 
 **U6 (DNP): LDO SPX3819M5-L, adjustable (SOT-23-5)** between VSYS and VLED (since 2026-11-09, previously load switch
 TPS22918, which allowed only 5.5 V): VIN up to 16 V, 500 mA, internal current limit (approx. 0.8–0.95 A) and thermal

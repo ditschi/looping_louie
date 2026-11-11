@@ -42,8 +42,10 @@ these parts on the main board.
 
 | Ref | Part | Manufacturer | Document, revision | URL | File |
 |---|---|---|---|---|---|
-| U3 | TPS62162DSGR (C40256); TPS62160DSGR (C324077) as adjustable fallback | Texas Instruments | TPS62160, TPS62161, TPS62162, TPS62163 datasheet SLVSAM2E | [ti.com](https://www.ti.com/lit/ds/symlink/tps62160.pdf) | not yet in `fetch_datasheets.sh` |
-| L1 | DFE201612P-2R2M=P2 (C79317) | Murata | product page with the DFE201612P series datasheet; the values in main-board-c6.md 2.7 (144 mΩ, 1.5 / 2.1 A) come from the JLC parts API (2026-11-10), the Murata sheet itself has not been read yet | [murata.com](https://www.murata.com/en-us/products/productdetail?partno=DFE201612P-2R2M%3DP2), [JLC C79317](https://jlcpcb.com/partdetail/C79317) | not yet in `fetch_datasheets.sh` |
+| U3 | TPS62162DSGR (C40256); TPS62160DSGR (C324077) as adjustable fallback | Texas Instruments | TPS62160/1/2/3 datasheet SLVSAM2E (Rev. E, May 2017; DSG land pattern 4218900/E 08/2022) | [ti.com](https://www.ti.com/lit/ds/symlink/tps62160.pdf) | `TPS6216x_datasheet_en.pdf` |
+| L1 | DFE201612P-2R2M=P2 (C79317) | Murata | DFE201612P reference specification J(E)TE243A-0033-01, 9 pages (electrical values, recommended land pattern, notice on copper under the coil) | [LCSC](https://datasheet.lcsc.com/datasheet/pdf/3da72e1ea2c544751f1a10542ca0aaa4.pdf) (product page: [murata.com](https://www.murata.com/en-us/products/productdetail?partno=DFE201612P-2R2M%3DP2)) | `Murata_DFE201612P-2R2M_datasheet_LCSC.pdf` |
+
+Review of both against rev B: [wiring-review.md](wiring-review.md) section 8.
 
 From rev B on, the SPX3819 row above applies to U6 (LED LDO, DNP) only; on `main` (rev A) it is also U3.
 

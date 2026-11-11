@@ -99,6 +99,9 @@ can be found in Git.
   extra cost about 1.1–1.6 € per board; the routing closed with the own router (5 of 8 attempts complete, 0 open,
   DRC 0, 162 vias, 805 mm; rev A 157 vias, 808 mm), so the owner's rule "if it does not auto-route, the option is out"
   is met.
+- Later finding (delta review the same day, wiring-review.md W21, to be measured): below VSYS ≈ 3.8 V the TPS6216x
+  does not enter power-save mode, so the standby gain holds only above about 3.8 V; with a Li-ion cell between 3.8 and
+  3.4 V the standby is likely higher than with the LDO. The decision was not revisited (open-items.md F29).
 - Unchanged: the empty-cell end (in 100 % mode the buck drops about 0.2 V at 380 mA like a good LDO, cut-off 3.4–3.5 V
   filtered), the Q1 body-diode case with USB + pack above 5.2 V (F28) and the LED LDO U6.
 - Rejected: **O1 better LDO** (≥ 7 V, low Iq and dropout, e.g. TPS7A26, AP7375, NCP718) – the heat at 6.4 V stays
