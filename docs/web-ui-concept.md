@@ -236,6 +236,10 @@ owner password plus lever confirmation → home Wi-Fi (optional) → done (QR st
 
 ### 6.2 Built-in modes
 
+The built-in modes ship with the default UI package; Classic is also in the firmware as fallback lever mode. The
+device reads them into its mode catalog and can offer them without a phone
+([firmware-architecture.md](firmware-architecture.md) 6.4). Another UI package can bring other modes.
+
 | Mode | Idea | Phones |
 |---|---|---|
 | ✈️ **Classic** (PoC: „Klassisch“) | constant speed, gentle start (also the default lever mode) | 0 |

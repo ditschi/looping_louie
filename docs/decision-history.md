@@ -22,6 +22,7 @@ can be found in Git.
 | 2026-11-06 | Firmware | Rust (std on ESP-IDF) | MicroPython (+ C++ as plan B) |
 | 2026-11-06 | Mode preview | in the browser via WebAssembly | on the server or JS interpreter |
 | 2026-11-06 | License | PolyForm Noncommercial (software), CC BY-NC-SA 4.0 (hardware/docs) | – (previously open) |
+| 2026-11-09 | Game modes | catalog in the core from firmware, UI package and LittleFS; selection by reference; UI package separately updatable later | built-in modes in the firmware; flows in the browser |
 | 2026-11-09 | Supply range | VSYS 3.0–6.6 V (1S Li-ion up to 4 × AA) | 3.0–5.5 V with LDO AP2112K |
 | 2026-11-11 | 3.3 V regulator | buck converter TPS62162 + 2.2 µH (rev B trial) | LDO SPX3819 (rev A, stays on `main` as fallback); better LDO, buck-boost, limit to 6.0 V |
 | 2026-11-11 | 3.3 V regulator | low-Iq LDO TPS7A2633 in WSON-6 (rev B, the design to order) | buck TPS62162 (no power-save mode below 3.8 V), buck TPS62840 (6.5 V limit), hybrid buck + LDO |
@@ -336,6 +337,16 @@ can be found in Git.
 - Rejected: "N4 with OTA supported" as the normal case – because the app with embedded web files will realistically be
   1.6–2.0 MB.
 - Source: firmware-architecture.md 6.1
+
+### Mode catalog and UI package (2026-11-09)
+- Decision: the core plays one JSON program and keeps a catalog of all modes (firmware fallback, UI package, own
+  modes); selection by reference with hash, `current.json`, offline selection; UI package with manifest, embedded in
+  V1, separately updatable via `www` later (E18).
+- Rejected: built-in modes only in the firmware – because a different UI or game would need a new firmware; game flows
+  executed in the browser with the core as remote-controlled HAL – because of throttled background tabs, several
+  phones, permissions and timing; selection by uploading the full JSON – because select-only users could then play
+  arbitrary programs.
+- Source: firmware-architecture.md 6.2, 12 (E5)
 
 ### Hotspot password (2026-11-06)
 - Decision: random on first start, in NVS (E17).

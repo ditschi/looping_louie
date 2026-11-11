@@ -56,6 +56,10 @@ examples are in sections 5 and 6.
 Derived (not in the JSON): `needs.phones` (there are jokers), `needs.out_report` (a joker with
 `who: "alive"/"out"` or `end.last_player`). Only then does "I'm out" appear on the gamepads.
 
+Where modes come from (firmware, UI package, own modes in LittleFS) and how they are selected:
+[firmware-architecture.md](firmware-architecture.md) 6.4. The segment, spice and joker types of this schema are the
+vocabulary of the core; a new type needs a firmware update, a new mode from existing types does not.
+
 Compared with schema 1 (PoC), `profile` is now `flight.segments`, `actions` is called `jokers.items`, and `end` is flat
 instead of `any/of`. The server upgrades schema 1 automatically on load.
 
