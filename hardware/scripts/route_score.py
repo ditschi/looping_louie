@@ -466,7 +466,7 @@ def ipc_width(i, dt, k, t_mm):
 
 def power_paths(B, cfg):
     """For each path (pad → pad, same net) the route with the lowest resistance through tracks and vias (Dijkstra);
-    width against IPC-2221 (current_a), voltage drop at peak_a."""
+    width against IPC-2221 (current_a), voltage drop at peak_a, optionally against max_drop_mv."""
     th = cfg["thermal"]
     rho = th["resistivity_ohm_m"]
     results = []
@@ -547,10 +547,14 @@ def power_paths(B, cfg):
             elif kind == "v":
                 nvia += 1
         r = dist[goal]
+        drop = r * path["peak_a"] * 1e3
+        # optional max_drop_mv per path (e.g. 3V3 regulator -> module): a larger drop counts like an under-width path
+        too_much_drop = "max_drop_mv" in path and drop > path["max_drop_mv"]
         results.append(dict(name=path["name"], connected=True, r_mohm=round(r * 1e3, 1),
-                            drop_mv=round(r * path["peak_a"] * 1e3, 1), length_mm=round(length, 2),
+                            drop_mv=round(drop, 1), length_mm=round(length, 2),
                             inner_mm=round(inner, 2), min_width_mm=round(minw, 3), vias=nvia,
-                            under_width_mm=round(under, 2), violation=under > th["neckdown_allow_mm"]))
+                            under_width_mm=round(under, 2), drop_violation=too_much_drop,
+                            violation=under > th["neckdown_allow_mm"] or too_much_drop))
     return results
 
 

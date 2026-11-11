@@ -1,8 +1,8 @@
 # Main board with ESP32-C6: module, pinout, motor driver, layer stack, routing
 
 Status: 2026-11-11 · Describes the current state of the main board (board A, `hardware/main-board/`): **rev B**
-(low-Iq LDO TPS7A2633 for 3.3 V, branch `revb-buck`), the design to order; rev A with the SPX3819 LDO stays on `main`
-as a fallback.
+(low-Iq LDO TPS7A2633 for 3.3 V), the design to order. Rev A with the SPX3819 LDO is kept as a fallback under the
+Git tag `rev-a-spx3819`.
 Current decisions: **ESP32-C6-MINI-1**, motor driver **DRV8213DSG**, **USB-C J4** on the board (flashing
 only via J4), **LDO TPS7A2633** for 3.3 V, **4 layers**, machine-assembled on one side only (bottom side only pads, test points and DNP footprints).
 Rejected variants (C3, DRV8833, 2 layers, earlier USB variants, SPX3819, buck TPS62162): [decision-history.md](decision-history.md).
@@ -162,8 +162,8 @@ runs on the bottom in the edge strip. The edge strip is at the **−y** edge (OU
 cut-off thresholds, divider); other documents link here instead of repeating them. Decisions: VSYS 3.0–6.6 V
 (2026-11-09, F18) and **low-Iq LDO TPS7A2633 for 3.3 V (2026-11-11, rev B = the design to order)**, so that a 1S Li-ion
 cell keeps a low standby current over its whole range. The buck TPS62162 tried earlier the same day did not enter
-power-save mode below about 3.8 V input (finding W21). Rev A with the LDO SPX3819 in SOT-23-5 stays on branch `main` as a
-fallback. Reasons and rejected options: [decision-history.md](decision-history.md); comparison and sources:
+power-save mode below about 3.8 V input (finding W21). Rev A with the LDO SPX3819 in SOT-23-5 is kept as a fallback under
+the Git tag `rev-a-spx3819`. Reasons and rejected options: [decision-history.md](decision-history.md); comparison and sources:
 [proposal-supply-standby.md](proposal-supply-standby.md).
 
 Sources on VSYS: protected 1S Li-ion cell on J5/J1 (3.0–4.2 V), USB via D2 (approx. 4.6 V), **3 × or 4 × AA**
@@ -484,10 +484,11 @@ No router change and no manual clean-up were needed.
 The first run on the LDO block (without the 3V3 trunk) was also complete in six of eight attempts, but the router had
 connected the module side of +3V3 through a detour of about 40 mm around the USB end: about 0.36 Ω from U3 OUT to module
 pad 3, 137 mV at the 380 mA radio peak. Since then `preroute_ldo()` lays a locked 3V3 trunk (via, 0.3 mm on In2, via,
-B.Cu into J2 pad 1, 2.7). Result: **48 mΩ, about 18 mV at 380 mA** (graph calculation over the copper, pcbnew; the buck
-trial had 52 mΩ). The +3V3 path is not part of the routing score; it was checked separately.
+B.Cu into J2 pad 1, 2.7). Result: **48 mΩ, about 18 mV at 380 mA** (own graph calculation over the copper; the buck trial had
+52 mΩ). Since then the routing score contains this path with a hard limit of 50 mV at 380 mA (routing-score.md 3); its
+model gives 38 mΩ / 14.6 mV for the current board and rejects the detour state.
 
-| Check | **Rev B** (LDO, design to order) | Buck trial (same day, superseded) | Rev A (SPX3819, `main`, fallback) |
+| Check | **Rev B** (LDO, design to order) | Buck trial (same day, superseded) | Rev A (SPX3819, tag `rev-a-spx3819`) |
 |---|---|---|---|
 | ERC (`just erc`) | 0 errors, 0 warnings | 0 | 0 |
 | DRC (`just drc`) | **0 errors, 0 warnings, 0 unconnected**, schematic parity 0 | 0 / 0 / 0 | 0 / 0 / 0 |
@@ -496,7 +497,7 @@ trial had 52 mΩ). The +3V3 path is not part of the routing score; it was checke
 | Track length | **796 mm** (F.Cu 273, In2.Cu 255, B.Cu 268; **In1.Cu 0**, GND layer free of tracks) | 805 mm | 808 mm |
 | Routing score S (lower is better) | 111.2 (best of 8 attempts) | 110.3 (best of 8) | 98.0 (best of a 120-attempt long run) |
 | Complete attempts | 7 of 8 | 5 of 8 | 19 of 120 |
-| 3V3 from the regulator to module pad 3 | 48 mΩ | 52 mΩ | not checked |
+| 3V3 from the regulator to module pad 3 | 48 mΩ (score model: 38 mΩ, 14.6 mV) | 52 mΩ | not checked |
 | Antenna keepout, power widths | 0 intrusions, 0 width violations | 0 / 0 | 0 / 0 |
 | Envelope | largest radius 6.94 mm (J4) < 7.25 mm, chapter 6; U3 (0.8 mm) and C9 (0805) are lower than the module | – | – |
 

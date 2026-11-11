@@ -21,7 +21,7 @@ rated list and the recommended order live there and are not repeated here.
 | Step | Content | Reference |
 |---|---|---|
 | 1 | **Buy the dev board** (Waveshare ESP32-C6-DEV-KIT-N8 or ESP32-C6-DevKitC-1-N8; no motor driver board) and **run the pre-order checks** 4.1–4.5: motor current on the lab supply, lever network on the real Louie, boot/strapping/wake, IO18/IO19 levels (F17), ADC dividers (T1, T5, part of T2; A2–A5). Software tests in LED mode (T3, T7, T8) run in parallel | [test-hardware.md](test-hardware.md) 2, 4, 5 |
-| 2 | ~~Finish routing~~ **done:** rev B (LDO TPS7A2633) routed completely, ERC 0, DRC 0, 0 unconnected, 149 vias, 3V3 to the module 48 mΩ; rev A (SPX3819) on `main` likewise as fallback (F15) | [main-board-c6.md](main-board-c6.md) 11.4 |
+| 2 | ~~Finish routing~~ **done:** rev B (LDO TPS7A2633) routed completely, ERC 0, DRC 0, 0 unconnected, 149 vias, 3V3 to the module 48 mΩ; rev A (SPX3819) likewise, kept as fallback under the Git tag `rev-a-spx3819` (F15) | [main-board-c6.md](main-board-c6.md) 11.4 |
 | 3 | ~~Delta review of the 3.3 V block~~ **done 2026-11-11** for the LDO (wiring review 9); the buck findings W18–W21 (wiring review 8) are gone with the LDO (F29). Then the remaining wiring-review items F20–F25 | [wiring-review.md](wiring-review.md) 9 |
 | 3a | **Order preparation:** check before ordering (F13, F14, A9, A11, inspect the layout in the GUI), real quote with Gerber/BOM/CPL (`just fab`), stock of TPS7A2633 (809 on 2026-11-11) and the H8 at order time | [main-board-c6.md](main-board-c6.md) 7, [cost-estimate.md](cost-estimate.md) |
 | 4 | **Order the prototype batch** (F16) | [cost-estimate.md](cost-estimate.md), [test-hardware.md](test-hardware.md) |

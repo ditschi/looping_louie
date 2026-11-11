@@ -73,7 +73,7 @@
     }
   },
   "decision": "hard+weighted",
-  "score_config_sha256": "2319346a2217afef573d250d043bf9352c103f19ad9630cbee691ffb983f572f",
+  "score_config_sha256": "a2709b0ce57afffb248436ada5326b1b7747acff66584124f578135974ad28cf",
   "metrics_version": 1,
   "details": {
     "paths": [
@@ -87,6 +87,7 @@
         "min_width_mm": 0.3,
         "vias": 1,
         "under_width_mm": 1.15,
+        "drop_violation": false,
         "violation": false
       },
       {
@@ -99,6 +100,7 @@
         "min_width_mm": 0.3,
         "vias": 1,
         "under_width_mm": 1.87,
+        "drop_violation": false,
         "violation": false
       },
       {
@@ -111,6 +113,7 @@
         "min_width_mm": 0.3,
         "vias": 0,
         "under_width_mm": 1.1,
+        "drop_violation": false,
         "violation": false
       },
       {
@@ -123,6 +126,7 @@
         "min_width_mm": 0.5,
         "vias": 0,
         "under_width_mm": 0.0,
+        "drop_violation": false,
         "violation": false
       },
       {
@@ -135,6 +139,7 @@
         "min_width_mm": 0.5,
         "vias": 1,
         "under_width_mm": 0.0,
+        "drop_violation": false,
         "violation": false
       },
       {
@@ -147,6 +152,20 @@
         "min_width_mm": 0.3,
         "vias": 2,
         "under_width_mm": 1.1,
+        "drop_violation": false,
+        "violation": false
+      },
+      {
+        "name": "3V3 U3 -> U1 3V3",
+        "connected": true,
+        "r_mohm": 38.4,
+        "drop_mv": 14.6,
+        "length_mm": 19.27,
+        "inner_mm": 4.42,
+        "min_width_mm": 0.25,
+        "vias": 3,
+        "under_width_mm": 0.0,
+        "drop_violation": false,
         "violation": false
       }
     ],
@@ -195,11 +214,10 @@
   },
   "router": "own",
   "variant": "attempt 4: own router, via cost 30, F 1.6, B 1.3",
-  "runs": 8,
-  "note": "design changed, baseline reset (before: 0 open, DRC 0, islands 0, 156 Vias, 789.6 mm)",
-  "timestamp": "2026-11-11T23:00:47+01:00",
+  "note": "created from the official board (route_gate.py init)",
+  "timestamp": "2026-11-11T23:13:08+01:00",
   "tools": {
     "kicad": "9.0.8",
-    "repo": "v1-legacy-31-g111d1f9-dirty"
+    "repo": "rev-a-spx3819-5-g4cfa080-dirty"
   }
 }

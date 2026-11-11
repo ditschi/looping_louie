@@ -24,6 +24,7 @@ drc_errors = 0          # kicad-cli DRC, severity error, without library checks
 unconnected = 0         # kicad-cli DRC unconnected_items
 antenna_intrusions = 0  # copper of non-allowed nets inside the antenna rule areas (any layer)
 power_width_violations = 0  # current paths with more under-width length than neckdown_allow_mm (IPC-2221)
+                            # or a drop above their max_drop_mv
 
 # Soft metrics: weight (importance) and scale (value that counts as one point before weighting).
 # max_regression: optional veto, the candidate is rejected if value_new - value_official > max_regression.
@@ -164,7 +165,8 @@ allowed = ["U2:*", "U1:*"]       # DRV8213 thermal pad, module GND pads (Espress
 ref = "U1"
 thermal_pad = "U2:9"
 
-# Current paths: pad -> pad on one net; current_a = continuous current (width check), peak_a = peak (voltage drop).
+# Current paths: pad -> pad on one net; current_a = continuous current (width check), peak_a = peak (voltage drop),
+# optional max_drop_mv = largest allowed drop at peak_a (counts as power_width_violations).
 # Motor current up to 2 A (IPROPI limit, R1 1.24 k); continuous current not measured yet (hardware-concept.md).
 [[boards.main-board.paths]]
 name = "OUT_A U2 -> BT1"
@@ -207,6 +209,16 @@ from = "Q1:2"
 to = "U2:1"
 current_a = 1.5
 peak_a = 2.0
+
+# 3V3 from the LDO U3 to the module supply pin (ESP32-C6 TX peak about 380 mA, average about 150 mA in hotspot mode).
+# Added 2026-11-11 after a complete, DRC-clean run had routed it through a 40 mm detour (0.36 ohm, 137 mV).
+[[boards.main-board.paths]]
+name = "3V3 U3 -> U1 3V3"
+from = "U3:1"
+to = "U1:3"
+current_a = 0.15
+peak_a = 0.38
+max_drop_mv = 50
 
 # --- charger board (2 layers, Freerouting) ---------------------------------------------------------------
 [boards.charger-board.nets]

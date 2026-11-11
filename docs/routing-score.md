@@ -145,7 +145,7 @@ Column **Type**: H = hard (limit), S = soft (weight/scale), I = information only
 | `drc_errors` | DRC violations with severity *error*, without library check (as today) | count | H ≤ 0 | – | – | not manufacturable/testable |
 | `unconnected` | `unconnected_items` of the DRC | count | H ≤ 0 | – | – | function |
 | `antenna_intrusions` | track/via pieces of other nets in a keep-out area `Antenna*` (on its layers), plus zone fill inside it > 0.01 mm²; allowed: `OUT_A` (edge strip to BT1) | count | H ≤ 0 | – | – | Espressif: no copper under the antenna on any layer |
-| `power_width_violations` | For each defined current path (pad → pad, table 3) the lowest-resistance route through tracks/vias (Dijkstra). Violation if more than `neckdown_allow_mm` = 2 mm of track is narrower than IPC-2221 requires for `current_a` at 20 K | count of paths | H ≤ 0 | – | – | heating, motor current up to 2 A (IPROPI limit) |
+| `power_width_violations` | For each defined current path (pad → pad, table 3) the lowest-resistance route through tracks/vias (Dijkstra). Violation if more than `neckdown_allow_mm` = 2 mm of track is narrower than IPC-2221 requires for `current_a` at 20 K, or if the drop at `peak_a` exceeds the path's optional `max_drop_mv` | count of paths | H ≤ 0 | – | – | heating, motor current up to 2 A (IPROPI limit) |
 | `drc_warnings` | remaining DRC messages (dangling tracks/vias, silk …) | count | S | 1 | 2 | each one is rework |
 | `gnd_islands` | GND fill fragments without via/through-hole pad (as today) | count | S | 1 | 3 | attached only to SMD pads/tracks, weak ground |
 | `signal_vias` | vias other than GND | count | S | 10 | 2 | layer change = antipad in L2, space, inductance. **GND vias are not penalized** (today they are included in `via_count`) |
@@ -251,6 +251,14 @@ to = "BT1:1"
 current_a = 1.5
 peak_a = 2.0
 # likewise: OUT_B U2:3 -> BT2:1, VSYS D2:1 -> U2:1, VBUS J4:A4 -> D2:2, BAT J5:1 -> Q1:3, VSYS Q1:2 -> U2:1
+
+[[paths]]                   # since 2026-11-11: 3V3 from the LDO to the module, with a drop limit
+name = "3V3 U3 -> U1 3V3"
+from = "U3:1"
+to = "U1:3"
+current_a = 0.15
+peak_a = 0.38
+max_drop_mv = 50            # hard: counts as power_width_violations
 ```
 
 **Current paths:** 1.5 A continuous current at 20 K requires at least **0.35 mm** on the outside (35 µm) according to
@@ -258,6 +266,10 @@ IPC-2221. Inside (15.2 µm) it is 2.07 mm with k = 0.024 or 0.80 mm with k = 0.0
 outer layers.** The 2 A is the IPROPI current limit (R1 1.24 k). Continuous current and heating have not been
 measured (uncertain): only a current measurement at the motor (hardware-concept.md, open items) will provide
 reliable values for `current_a`.
+
+**3V3 path (since 2026-11-11):** a complete, DRC-clean run of rev B had connected the module side of +3V3 through a
+40 mm detour around the USB end (75 mV at 380 mA in this model). The path U3 → module pad 3 now has a hard limit of
+50 mV at the TX peak; the current board has 14.6 mV (38 mΩ, main-board-c6.md 11.4).
 
 ## 4. Report
 

@@ -50,7 +50,7 @@ these parts on the main board.
 The TPS6216x and DFE201612P rows describe the buck trial of rev B (review: [wiring-review.md](wiring-review.md)
 section 8); the TPS7A26 is the current U3 (review: section 9). Comparison: [proposal-supply-standby.md](proposal-supply-standby.md).
 
-From rev B on, the SPX3819 row above applies to U6 (LED LDO, DNP) only; on `main` (rev A) it is also U3.
+From rev B on, the SPX3819 row above applies to U6 (LED LDO, DNP) only; in rev A (tag `rev-a-spx3819`) it is also U3.
 
 ## Charger board
 

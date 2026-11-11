@@ -25,6 +25,7 @@ can be found in Git.
 | 2026-11-09 | Supply range | VSYS 3.0–6.6 V (1S Li-ion up to 4 × AA) | 3.0–5.5 V with LDO AP2112K |
 | 2026-11-11 | 3.3 V regulator | buck converter TPS62162 + 2.2 µH (rev B trial) | LDO SPX3819 (rev A, stays on `main` as fallback); better LDO, buck-boost, limit to 6.0 V |
 | 2026-11-11 | 3.3 V regulator | low-Iq LDO TPS7A2633 in WSON-6 (rev B, the design to order) | buck TPS62162 (no power-save mode below 3.8 V), buck TPS62840 (6.5 V limit), hybrid buck + LDO |
+| 2026-11-11 | Board revision | rev B replaces rev A on `main`; rev A kept as Git tag `rev-a-spx3819` | rev A and rev B maintained in parallel on two branches |
 
 
 ## 1. Controller
@@ -135,6 +136,15 @@ can be found in Git.
   IO22 – two regulators, ESP at 3.1 V, most parts; TPS62160 at 3.1 V out, TPS62125 (300 mA), TPS62177 (VIN from 4.75 V),
   TPS7A25 (300 mA), LT8607/LTC3621 (stock, price), L6981 (VIN from 3.5 V).
 - Source: proposal-supply-standby.md, wiring-review.md 8 (W21) and 9
+
+### Rev B replaces rev A on `main` (2026-11-11)
+- Decision (project owner): branch `revb-buck` (rev B with the LDO TPS7A2633) merged into `main`; rev A (SPX3819, routed
+  completely, 157 vias) kept as the annotated Git tag `rev-a-spx3819` on commit `93cbe9c`. The earlier statements "rev A
+  stays on `main` as a fallback" in the entries above describe the state before this step.
+- Rejected: rev A and rev B in parallel on two branches – generators, BOM, firmware and documents are shared, so every
+  change would have to be made twice; the fallback had been decided because of the buck risk, which is gone with the
+  LDO; rev B routes more easily (7 of 8 attempts complete); no board has been ordered.
+- Same day: the routing score got the path "3V3 U3 -> U1 3V3" with a hard limit of 50 mV at 380 mA (routing-score.md 3).
 
 ### Introduction of the 4-layer trial in the generator (2026-11-03)
 - Process: first a separate project `hardware/main-board-4l/` with selectable layer count (`just pcb einseitig 4`, `four-layer`, `images-4l`), then taken over unchanged (byte-identical) into `hardware/main-board/`; `placement_zweiseitig.py` (C3 state) removed, `placement_einseitig.py` → `placement.py`.

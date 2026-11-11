@@ -19,8 +19,8 @@ envelope check `just hull` confirms it stays inside the AA diameter.*
 
 ## Status
 
-> 2026-11-11 · second version, nothing ordered yet. Rev B of the main board (low-Iq LDO TPS7A2633 for 3.3 V,
-> branch `revb-buck`) is the design to order; rev A with the SPX3819 LDO stays on `main` as a fallback.
+> 2026-11-11 · second version, nothing ordered yet. The main board is rev B (low-Iq LDO TPS7A2633 for 3.3 V),
+> the design to order; rev A with the SPX3819 LDO is kept as a fallback under the Git tag `rev-a-spx3819`.
 
 | Part | State |
 |---|---|

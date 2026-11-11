@@ -1,6 +1,6 @@
 # Proposal: low standby current with a Li-ion cell (finding W21)
 
-Status: **decided 2026-11-11: option A (LDO TPS7A2633) is implemented in rev B** (branch `revb-buck`); the sections
+Status: **decided 2026-11-11: option A (LDO TPS7A2633) is implemented in rev B** (branch `revb-buck`, merged into `main`); the sections
 below are kept as the record of the comparison. Decision proposal for open item F29 / finding W21
 ([wiring-review.md](wiring-review.md) 8.2).
 Requirement from the project owner: **a 1S Li-ion cell must be usable**, including a low standby current, on the same
