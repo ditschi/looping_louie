@@ -1,6 +1,6 @@
 # Datasheets: index
 
-Status: 2026-11-09 · The PDFs themselves are copyrighted and are **not** committed: `datasheets/` is in
+Status: 2026-11-11 · The PDFs themselves are copyrighted and are **not** committed: `datasheets/` is in
 `.gitignore`. Download them again with `just datasheets` (`just datasheets force=1` overwrites); the URL list lives in
 `hardware/scripts/fetch_datasheets.sh`. Extracted and verified facts: [datasheet-facts.md](datasheet-facts.md);
 review result: [wiring-review.md](wiring-review.md).
@@ -37,6 +37,15 @@ part page (the PDF there is the manufacturer's document). All files were downloa
 
 The AP2112K, TPS22918 and BSMD0805-050-6V rows above describe the state at commit `32a3535` and are superseded by
 these parts on the main board.
+
+### Added 2026-11-11 (rev B: buck converter U3 instead of the 3.3 V LDO)
+
+| Ref | Part | Manufacturer | Document, revision | URL | File |
+|---|---|---|---|---|---|
+| U3 | TPS62162DSGR (C40256); TPS62160DSGR (C324077) as adjustable fallback | Texas Instruments | TPS62160, TPS62161, TPS62162, TPS62163 datasheet SLVSAM2E | [ti.com](https://www.ti.com/lit/ds/symlink/tps62160.pdf) | not yet in `fetch_datasheets.sh` |
+| L1 | DFE201612P-2R2M=P2 (C79317) | Murata | product page with the DFE201612P series datasheet; the values in main-board-c6.md 2.7 (144 mΩ, 1.5 / 2.1 A) come from the JLC parts API (2026-11-10), the Murata sheet itself has not been read yet | [murata.com](https://www.murata.com/en-us/products/productdetail?partno=DFE201612P-2R2M%3DP2), [JLC C79317](https://jlcpcb.com/partdetail/C79317) | not yet in `fetch_datasheets.sh` |
+
+From rev B on, the SPX3819 row above applies to U6 (LED LDO, DNP) only; on `main` (rev A) it is also U3.
 
 ## Charger board
 

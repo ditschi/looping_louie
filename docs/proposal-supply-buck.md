@@ -1,9 +1,12 @@
 # Proposal: buck converter instead of the 3.3 V LDO (supply range 3.0–6.6 V)
 
-Status: 2026-11-11 · Decision proposal for review finding R-B1; **rev B trial implemented on branch `revb-buck`** (section 10) ([review-2026-11-10.md](review-2026-11-10.md)).
+Status: **decided 2026-11-11: rev B is the design to order** (branch `revb-buck`, section 10); rev A with the LDO stays
+on `main` as a fallback. Decision proposal for review finding R-B1 ([review-2026-11-10.md](review-2026-11-10.md)).
 Requirement from the project owner: **one main board for 1S Li-ion up to 4 × AA (VSYS 3.0–6.6 V)**, so the
-hardware can also be used for other devices. Nothing in the generators, BOM or firmware has been changed yet; this
-document lists what would change.
+hardware can also be used for other devices. Sections 1–9 are kept unchanged as the record of the proposal (written
+before the implementation, so they speak of what "would" change); section 10 is the implemented state. Answers to
+section 9: TPS62162, Murata DFE201612P, rev B now, 9 V / 2S stays out. The current numbers are maintained in
+[main-board-c6.md](main-board-c6.md) 2.7, the decision record is in [decision-history.md](decision-history.md).
 
 Markers: **(verified)** = read in the datasheet PDF (TI SLVSAM2E for the TPS6216x, SLVSE23 for the TPS62840) or
 queried live from the JLCPCB parts API on 2026-11-10 · **(unverified)** = estimate; the generator, the router or a

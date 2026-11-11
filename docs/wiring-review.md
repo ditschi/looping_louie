@@ -9,6 +9,9 @@ SPX3819, see [main-board-c6.md](main-board-c6.md) 2.7). Sections 1–6 describe 
 delta review of the new state (uncommitted in the main checkout at review time) and supersedes the U3, U6 and F1 rows
 and the 5.5 V table.
 
+**Note 2026-11-11:** rev B replaces U3 by the buck converter TPS62162 with L1, C8 and C9 ([main-board-c6.md](main-board-c6.md) 2.7);
+the delta review of this block against TI SLVSAM2E is being done separately and is not part of this document yet.
+
 ## 1. Method
 
 | Step | Who | What |

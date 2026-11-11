@@ -1,7 +1,7 @@
 # Optional extra hardware on the bottom side
 
-Status: 2026-11-06 · **Pads and DNP footprints from section 0/0b are implemented in schematic and placement,
-routing not finished yet** (3 signals + 9 GND zone pieces open, 0 DRC errors) (position and routing status: [main-board-c6.md](main-board-c6.md) 11.7).
+Status: 2026-11-11 · **Pads and DNP footprints from section 0/0b are implemented in schematic and placement, and
+the board is routed completely** (0 unconnected, DRC 0; positions: [main-board-c6.md](main-board-c6.md) 11.7, routing result 11.4).
 Complements [hardware-concept.md](hardware-concept.md), [main-board-c6.md](main-board-c6.md) and [ideas.md](ideas.md).
 
 Applies to the main board with **ESP32-C6-MINI-1, DRV8213, 4 layers**. Rejected candidates and earlier
@@ -145,8 +145,8 @@ GPIO assignment: 0b.4.
 | **TP1, TP2** | test points Ø 1.0 mm (`louie:TestPad_D1.0mm`) | VSYS, VBUS_J4; measure ISEN at R1 and SENSE at R5 on top (TP3/TP4 dropped, routing) |
 | **J2** | pads 1 × 5 | 3V3, GND, SDA, SCL, INT; center y = +4.3 so the pads lie in the pocket |
 
-All parts within |y| ≤ 4.8; tallest part U6 (TPS22918-DBV max. 1.45 mm according to TI; the generic KiCad model is
-1.64 mm, so `just hull` reports an overrun). `just fab` omits all DNP parts from the placement file and
+All parts within |y| ≤ 4.8; tallest part U6 (then the TPS22918-DBV, max. 1.45 mm according to TI; the generic KiCad model is
+1.64 mm, so `just hull` reported an overrun; U6 is now the SPX3819 in SOT-23-5, main-board-c6.md 2.7). `just fab` omits all DNP parts from the placement file and
 BOM (`--exclude-dnp`).
 
 **Deliberately not planned:**
@@ -210,7 +210,7 @@ What arrives at DIN (3.3 V from the C6) versus the threshold:
 | VSYS on battery (via Q1) | 3.0–4.2 V | 2.1–2.94 V | 1.9–2.65 V | level **ok**; **below 3.7 V VDD out of spec** (blue/green get weaker, color shifts) |
 | VSYS via USB (J4 → D2 SS34) or charger board | about 4.6 V | **3.22 V** (tight, only 80 mV margin) | 2.90 V (ok) | 0.63 types ok, 0.7 types a matter of luck |
 | VBUS 5 V directly | 5.0 V | **3.5 V** (out of range) | 3.15 V (tight) | not planned; also only with USB |
-| 3V3 from the LDO | 3.3 V | – | – | no: VDD below spec, and Wi-Fi peaks (382 mA) plus LEDs overload the AP2112K (600 mA) |
+| 3V3 from the LDO | 3.3 V | – | – | no: VDD below spec, and Wi-Fi peaks (382 mA) plus LEDs would load the 3.3 V regulator (TPS62162, 1 A) without need |
 
 **Conclusion:** On VSYS with **V5 types (0.63 · VDD)** the 3.3 V level is sufficient over the whole range, without a
 level shifter. In practice SK6812 and old WS2812B mostly work too (unverified). Below about 3.6 V battery voltage
@@ -228,8 +228,8 @@ the firmware dims the LEDs or switches them off (VBAT_ADC is measured anyway).
 #### Quiescent current, switch in the supply
 
 Addressable LEDs draw current even when dark, depending on type a few 100 µA to about 1 mA per LED (old types) or
-≤ 1 µA (WS2812B-2020 V6) (unverified, type-dependent). Eight LEDs at 0.6 mA = 5 mA; that is a hundred times the
-deep sleep budget (LDO 55 µA). A 1000 mAh battery would be empty in just over a week.
+≤ 1 µA (WS2812B-2020 V6) (unverified, type-dependent). Eight LEDs at 0.6 mA = 5 mA; that is about two hundred times the
+deep sleep budget (board approx. 25 µA, main-board-c6.md 2.7). A 1000 mAh battery would be empty in just over a week.
 
 **U6 (DNP): LDO SPX3819M5-L, adjustable (SOT-23-5)** between VSYS and VLED (since 2026-11-09, previously load switch
 TPS22918, which allowed only 5.5 V): VIN up to 16 V, 500 mA, internal current limit (approx. 0.8–0.95 A) and thermal

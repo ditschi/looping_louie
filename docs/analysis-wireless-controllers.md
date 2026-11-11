@@ -146,7 +146,7 @@ Sources: datasheets ESP32-C6 v1.5 and C6-MINI-1 v1.5 (PDF read), ESP-IDF docs.
 | JTAG pins | IO4–IO7 (MTMS/MTDI/MTCK/MTDO); not critical because JTAG runs over USB | (verified, datasheet 2.3.4) |
 
 Consequences: The sensor INT on IO2 does not block boot. The ADC range up to 3.3 V allows the VBAT divider
-470k/470k (5.5 V → 2.75 V). The authoritative pin assignment is in [main-board-c6.md](main-board-c6.md) 2.3,
+680k/470k (6.6 V → 2.7 V, [main-board-c6.md](main-board-c6.md) 2.7). The authoritative pin assignment is in [main-board-c6.md](main-board-c6.md) 2.3,
 free GPIOs and their use in [idea-optional-hardware.md](idea-optional-hardware.md).
 
 ### 3b.2 LP core and LP peripherals
@@ -199,8 +199,8 @@ partition table after that ([firmware-architecture.md](firmware-architecture.md)
 | Light sleep | 180 µA (35 µA with peripherals powered down) | (verified) |
 | Deep sleep | 7 µA | (verified) |
 
-In deep sleep the LDO quiescent current dominates (approx. 55 µA). TX peak 382 mA: LDO and buffer are enough (unverified,
-AP2112K 600 mA). **Wi-Fi 6 / TWT** only works in **STA mode** (verified, IDF example `itwt`). In hotspot mode with
+In deep sleep the quiescent current of the 3.3 V regulator dominates (buck TPS62162 17 µA, board approx. 25 µA,
+main-board-c6.md 2.7). TX peak 382 mA: regulator and buffer are enough (TPS62162 1 A). **Wi-Fi 6 / TWT** only works in **STA mode** (verified, IDF example `itwt`). In hotspot mode with
 8 phones it brings nothing. Whether the C6 SoftAP speaks 802.11ax does not matter for phones anyway (unverified).
 
 ### 3b.6 Free heap (ESP-IDF examples)

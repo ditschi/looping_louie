@@ -69,7 +69,9 @@ power banks switch off below 50–200 mA, measured e.g. 150 mA [0110.be][0110] o
 [ESP32_KeepPowerbankAlive][kpa]. Whether a USB-C port with a 5.1 k resistor attached (Rd: main board R12/R13 on J4, charger board R101/R102)
 stays on longer depends on the manufacturer. You cannot rely on it **(unverified)**.
 
-Consumption of the Louie at 5 V: through the LDO (AP2112K) the input current equals the 3.3 V current.
+Consumption of the Louie at 5 V: through the buck converter (U3, main-board-c6.md 2.7) the input current is roughly
+the 3.3 V current × 3.3 V / (5 V × η), about 0.75 × the 3.3 V current at η ≈ 0.9 (unverified). The figures below are
+3.3 V-side currents (with the earlier LDO input and output current were equal), so the power bank sees somewhat less.
 
 | State | Current | Power bank stays on? |
 |---|---|---|
@@ -127,7 +129,7 @@ timer wake plus short radio burst (solution D). Reasons:
 - 47 Ω at 5 V draws about 105 mA; a Wi-Fi burst of the C6 draws about 80–120 mA. For the power bank's shut-off detection
   this is the same stimulus, just without an extra component (unverified per model, P3).
 - Using the motor as a load via PWM does not work: the lever disconnects the motor circuit at rest.
-- A cell in a holder on BAT_IN (3.0–4.2 V, already covered by the power path 3.0–5.5 V) never sleeps; it is the
+- A cell in a holder on BAT_IN (3.0–4.2 V, already covered by the power path 3.0–6.6 V) never sleeps; it is the
   safe solution if the power bank switches off despite the radio burst.
 
 IO22 stays free (reserve). Solution C on the charger board remains an idea. The DNP load pulse formerly planned

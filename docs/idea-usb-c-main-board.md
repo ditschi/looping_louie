@@ -46,7 +46,8 @@ A 6-pin USB-C type (e.g. TYPE-C-31-M-17) is not suitable: it has no data lines (
 | USB + cell | USB supplies, the cell rests: **flashing with battery connected without backfeed**. D2 prevents backfeed into the host. |
 | cell reversed | Q1 blocks (Vgs = 0, body diode in reverse direction) → **reverse polarity protection** for everything behind VSYS (recalculated, check on the prototype) |
 
-- Input range 3.0–5.5 V. No Schottky for BAT_IN: 0.35 V loss at a 3.2 V cell would push the LDO into dropout.
+- Input range at the time 3.0–5.5 V; **today VSYS 3.0–6.6 V with a buck converter for 3.3 V, all current supply
+  numbers in [main-board-c6.md](main-board-c6.md) 2.7.** The following points are the original analysis. No Schottky for BAT_IN: 0.35 V loss at a 3.2 V cell would push the LDO into dropout.
 - D2 for the motor current: at 2 A about 0.45 V drop, VSYS about 4.5 V. Firmware: limit motor power on USB (VBUS_DET);
   a USB 2.0 port supplies only 500 mA.
 - Voltage limits: AO3401A (30 V, ±12 V gate), DRV8213 (up to 11 V), AP2112K (max. 6 V) tolerate 5.5 V (unverified, datasheets).
@@ -63,9 +64,9 @@ A 6-pin USB-C type (e.g. TYPE-C-31-M-17) is not suitable: it has no data lines (
 - **Only one source per input:** never cell **and** charger board on BAT_IN at the same time.
 - **Battery voltage never goes onto a USB socket.** The charger board is connected via pads and a soldered cable; for
   detachability use a dedicated, mistake-proof connector (e.g. JST-PH), not USB-C.
-- **Direct cell only with protection circuit** (protected 18650/14500, LiPo pouch with PCM). Quiescent current in deep sleep roughly
-  65 µA (LDO 55 µA + divider 4.5 µA + ESP about 5 µA, estimate) ≈ 1.6 mAh/day; from 3.3 V to deep discharge takes
-  weeks to a few months (unverified). An LDO with low quiescent current (e.g. RT9080, about 2 µA, unverified) extends this.
+- **Direct cell only with protection circuit** (protected 18650/14500, LiPo pouch with PCM). Quiescent current in deep sleep today
+  approx. 25 µA with the buck converter (main-board-c6.md 2.7) ≈ 0.6 mAh/day; from 3.3 V to deep discharge still takes
+  weeks to months (unverified), so a cell must not stay connected forever.
 - **Warning:** **Never** put a 14500 cell (3.7 V) **into the original compartment**. The compartment is in the motor circuit; the
   cell would be in series with the motor and would drive it uncontrolled via the body diodes of the H-bridge.
 - **Power bank:** CC resistors switch on VBUS; the sleep current is far below any cut-off threshold. Keep it awake via

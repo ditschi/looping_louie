@@ -1,6 +1,6 @@
 # Decision history
 
-Status: 2026-11-06 · This is a short record of **what was planned or investigated earlier and then rejected or replaced**, and why.
+Status: 2026-11-11 · This is a short record of **what was planned or investigated earlier and then rejected or replaced**, and why.
 The other documents describe only the current state. The full old text is in Git: commit
 `dc555c7` (last state before the cleanup on 2026-11-06), the 2-layer board in commit `c45c6de`, the C3 state in
 earlier commits of the former branch `v2` (merged into `main` on 2026-11-08), the old MicroPython/ESP8266 version in tag `v1-legacy`.
@@ -22,6 +22,8 @@ can be found in Git.
 | 2026-11-06 | Firmware | Rust (std on ESP-IDF) | MicroPython (+ C++ as plan B) |
 | 2026-11-06 | Mode preview | in the browser via WebAssembly | on the server or JS interpreter |
 | 2026-11-06 | License | PolyForm Noncommercial (software), CC BY-NC-SA 4.0 (hardware/docs) | – (previously open) |
+| 2026-11-09 | Supply range | VSYS 3.0–6.6 V (1S Li-ion up to 4 × AA) | 3.0–5.5 V with LDO AP2112K |
+| 2026-11-11 | 3.3 V regulator | buck converter TPS62162 + 2.2 µH (rev B, the design to order) | LDO SPX3819 (rev A, stays on `main` as fallback); better LDO, buck-boost, limit to 6.0 V |
 
 
 ## 1. Controller
@@ -87,6 +89,28 @@ can be found in Git.
 - Decision: VSYS 3.0–6.6 V: LDO SPX3819-3.3 (pin-compatible with AP2112K), divider 680k/470k, 16 V capacitors, LED option with LDO SPX3819 adjustable at 3.95 V (R23/R24, C18) instead of load switch TPS22918, F1 and JP1 dropped; USB + 4 × AA: Q1 does not block above approx. 5.2 V, documented, firmware lowers the stall limit (F28).
 - Rejected: TPS7A2633 (WSON-6, 2 µA, 18 V) – new footprint, low stock, 3× price; standby with SPX3819 still approx. 9 months (14500) / 2 years (4 × AA); 9 V block / 2S – switching regulator, 2S charger, and the snap terminals do not fit next to the board in a 9 V shell; fixed 5.0 V LED LDO – V5 LED types would need V_IH 3.15 V, above the guaranteed ESP32 V_OH 2.64 V, and there is no room for a level shifter on the bottom; PTC F1 – U6 limits at 0.8–0.95 A itself, a 0.5 A PTC would hardly trip; PWM limiting alone for the LEDs – limits current, not the supply voltage.
 - Source: main-board-c6.md 2.7, open-items.md F18
+
+### LDO → buck converter (2026-11-11)
+- Decision (project owner): U3 = synchronous buck **TPS62162DSGR** (3.3 V fixed, 1 A, VIN 3–17 V, 17 µA, WSON-8 2 × 2)
+  with L1 2.2 µH Murata DFE201612P, C8 10 µF and C9 22 µF 0805; C11 dropped. **Rev B (branch `revb-buck`) is the design
+  to order; rev A with the LDO stays on `main` as a fallback.** Current numbers: main-board-c6.md 2.7.
+- Reasons: dissipation at 6.4 V / 150 mA about 50 mW instead of 0.47 W (SOT-23-5 was at its θJA limit in the closed
+  compartment); board standby about 25 µA instead of about 100 µA; one board for 3.0–6.6 V (1S Li-ion up to 4 × AA);
+  extra cost about 1.1–1.6 € per board; the routing closed with the own router (5 of 8 attempts complete, 0 open,
+  DRC 0, 162 vias, 805 mm; rev A 157 vias, 808 mm), so the owner's rule "if it does not auto-route, the option is out"
+  is met.
+- Unchanged: the empty-cell end (in 100 % mode the buck drops about 0.2 V at 380 mA like a good LDO, cut-off 3.4–3.5 V
+  filtered), the Q1 body-diode case with USB + pack above 5.2 V (F28) and the LED LDO U6.
+- Rejected: **O1 better LDO** (≥ 7 V, low Iq and dropout, e.g. TPS7A26, AP7375, NCP718) – the heat at 6.4 V stays
+  because any linear regulator dissipates (VIN − 3.3 V) × I; **O3 buck-boost** (e.g. TPS63802) – would also fix the
+  empty-cell end but is too large for the free area; **O5 limit VSYS to 6.0 V** (AP2112K-class LDO, 3 × AA / 4 × NiMH)
+  with adapters for 4 × alkaline – gives up the "one board for everything" requirement. Also considered: TPS62840
+  (60 nA, but 6.5 V max at the edge for fresh alkaline cells, 3× the price, own footprint), TPS62160 adjustable (kept
+  as fallback with an FB divider), TPS62170 (500 mA too close to the TX peak), TPS62085 / TPS628501 (6 V limit).
+- Superseded with it: the load-step test of the SPX3819 as U3 (test-hardware.md 4.7 then; now the buck tests T10–T15)
+  and the firmware cut-off of 3.6 V (now 3.4–3.5 V filtered, placeholder `VSYS_MIN_MV = 3500`).
+- Source: proposal-supply-buck.md (sections 3, 4, 8, 10), review-2026-11-10.md R-B1/R-B2/R-B4, main-board-c6.md 2.7
+  of rev A (SPX3819 table)
 
 ### Introduction of the 4-layer trial in the generator (2026-11-03)
 - Process: first a separate project `hardware/main-board-4l/` with selectable layer count (`just pcb einseitig 4`, `four-layer`, `images-4l`), then taken over unchanged (byte-identical) into `hardware/main-board/`; `placement_zweiseitig.py` (C3 state) removed, `placement_einseitig.py` → `placement.py`.

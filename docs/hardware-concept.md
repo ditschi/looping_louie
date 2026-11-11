@@ -1,7 +1,7 @@
 # Hardware concept: Looping Louie Wi-Fi upgrade
 
-Status: 2026-11-06 · Part selection and main board (4 layers) are fixed, routing with the optional pads is in
-progress. Main board details: [main-board-c6.md](main-board-c6.md). Rejected variants:
+Status: 2026-11-11 · Part selection and main board (4 layers) are fixed and routed completely; rev B with the buck
+converter for 3.3 V is the design to order. Main board details: [main-board-c6.md](main-board-c6.md). Rejected variants:
 [decision-history.md](decision-history.md).
 
 ## 1. Goal
@@ -84,7 +84,7 @@ manufacturers (see `hardware/bom/parts.csv`).
 
 - **The two ends are the H-bridge outputs directly** (OUT1 / OUT2). Therefore the
   mounting direction does not matter; "forward" is calibrated once in software.
-- Contents (part list in 5.5): ESP32-C6-MINI-1, DRV8213, 3.3 V LDO, USB-C with ESD and
+- Contents (part list in 5.5): ESP32-C6-MINI-1, DRV8213, 3.3 V buck converter, USB-C with ESD and
   power path, 2 × 47 µF buffer, lever detection, voltage divider, status LED, LIS2DH12 (optional),
   solder pads for cable, cell, I²C, service, player inputs and LED connection.
 - Layout: H-bridge and buffer at one end, ESP module with antenna at the other, no copper under the antenna
@@ -121,7 +121,7 @@ Worked out in [charger-board.md](charger-board.md) (circuit, layout, holder, **w
   and board. The IPROPI voltage goes through an RC filter (1 k / 100 n) to the ADC (255 mV/A):
   motor current for start-up, stall and lever detection while running.
 - **Autosleep** at IN1 = IN2 = 0 (< 60 nA), outputs then high-impedance; no nSLEEP pin.
-- Supply VM directly from VSYS (3.0–5.5 V: battery or USB).
+- Supply VM directly from VSYS (3.0–6.6 V: battery, AA pack or USB; [main-board-c6.md](main-board-c6.md) 2.7).
 - **PWM about 20 kHz** (LEDC) so nothing whines. The old code used 1 kHz, which is audible.
 - Reverse operation and active braking possible.
 - Ramps in the firmware against voltage dips (lesson from *MADXhh/LoopingLouieAdvanced*:
@@ -147,9 +147,9 @@ GND ──[100k R3]──┬── OUT_A ── Contact 1 ── lever ── mo
 - Also tells: "motor connected?"
 - While the motor runs, SENSE is not meaningful. Then the lever is detected by **current**:
   with the lever open, no current flows despite PWM (IPROPI, see 5.1).
-- SENSE goes to the GPIO through a protection resistor (100k) because OUT_A rises up to the
-  supply voltage (up to 5.5 V) while driving.
-- R4 on OUT_B costs about 0.3 mA while driving, or feeds about 0.2 mA back into 3V3 at 5.5 V; not critical
+- SENSE goes to the GPIO through a protection resistor (R5 470k, F19) because OUT_A rises up to the
+  supply voltage (up to 6.6 V) while driving.
+- R4 on OUT_B costs about 0.3 mA while driving, or feeds about 0.33 mA back into 3V3 at 6.6 V; not critical
   (main-board-c6.md 2.5).
 - The old model has no suppression components and no diode → principle usable without restriction.
   Possible suppression components in the new model do not disturb the DC measurement; a diode in series
@@ -161,7 +161,7 @@ flipping the original lever several times.
 ### 5.3 Power saving and wake-up (no extra main switch)
 
 - After a configurable idle time (e.g. 15 min without game and without client): **deep sleep**.
-  DRV8213 in autosleep, LDO with low quiescent current → a few µA to a few tens of µA.
+  DRV8213 in autosleep, buck converter with 17 µA quiescent current → board approx. 25 µA (main-board-c6.md 2.7).
 - **Wake-up by flipping the Louie lever**: SENSE is on IO3 (LP GPIO) and wakes the ESP32-C6
   from deep sleep with ANY_HIGH. Further wake sources: INT (IO2), VBUS_DET (IO4), S1 (IO5).
 - After wake-up Wi-Fi starts first; the round starts only on the next lever flip or on
@@ -169,12 +169,20 @@ flipping the original lever several times.
 
 ### 5.4 Power supply
 
-- **1S LiPo** 3.0–4.2 V with protection circuit, size depending on space (e.g. 1000–2000 mAh).
-- **Inputs on A (3.0–5.5 V):** USB-C J4 via Schottky D2 to VSYS; battery or charger board (BAT_IN, J1/J5) via
-  P-FET Q1 (blocks when USB is present, reverse polarity protection). IO4 (VBUS_DET) detects USB plugged in.
-- **Measure supply voltage** (divider 470k/470k on IO0). This keeps the motor voltage constant
-  regardless of the state of charge: `duty = U_soll / U_akku`.
-- Undervoltage: stop the game and warn in the web UI before the cell protection cuts off.
+All supply numbers (VSYS range, regulator, dissipation, standby, cut-off thresholds, divider) are in
+[main-board-c6.md](main-board-c6.md) 2.7; this section only gives the overview.
+
+- **Sources, VSYS 3.0–6.6 V:** 1S LiPo 3.0–4.2 V with protection circuit (size depending on space, e.g.
+  1000–2000 mAh), USB, or 3 × / 4 × AA. No 9 V block, no 2S.
+- **Inputs on A:** USB-C J4 via Schottky D2 to VSYS; battery, AA pack or charger board (BAT_IN, J1/J5) via P-FET Q1
+  (blocks when USB is present while the battery is below VBUS, reverse polarity protection; USB + 4 × AA above approx.
+  5.2 V: F28). IO4 (VBUS_DET) detects USB plugged in.
+- **3.3 V:** buck converter **TPS62162** (U3) with 2.2 µH (L1): approx. 50 mW loss at 6.4 V, 100 % mode near the cell
+  voltage.
+- **Measure supply voltage** (divider 680k/470k on IO0). This keeps the motor voltage constant regardless of the
+  state of charge: `duty = U_soll / U_akku`.
+- Undervoltage: stop the game and warn in the web UI before the cell protection cuts off; thresholds on the filtered
+  VSYS (warn 3.6 V, end the round at 3.4–3.5 V) in main-board-c6.md 2.7.
 
 ### 5.5 Microcontroller: ESP32-C6
 
@@ -192,13 +200,13 @@ The **ESP32-C6-MINI-1** (13.2 × 16.6 mm, integrated antenna) offers enough free
 
 | Group | GPIOs |
 |---|---|
-| ADC | IO0 VBAT_ADC (divider 470k/470k), IO1 ISEN_ADC (IPROPI, 255 mV/A), IO4 VBUS_DET |
+| ADC | IO0 VBAT_ADC (divider 680k/470k), IO1 ISEN_ADC (IPROPI, 255 mV/A), IO4 VBUS_DET |
 | Wake (LP GPIO) | IO3 SENSE (lever, ANY_HIGH), IO2 INT (LIS2DH12/J2), IO4 VBUS_DET, IO5 S1 |
 | Motor | IO18 MOT_IN1, IO19 MOT_IN2 (LEDC PWM) |
 | I²C | IO6 SDA, IO7 SCL (LIS2DH12, pads J2, pull-ups R16/R10) |
 | USB, service | IO12/IO13 USB (J4), IO9 BOOT, IO16 TXD, IO17 RXD (pads J3) |
 | Player inputs J6 | S1 IO5, S2 IO20, S3 IO21, S4 IO8 (strapping, 10k pull-up R11) |
-| LED | IO14 status LED, IO23 data J7, IO15 enable load switch U6 (VLED on J7) |
+| LED | IO14 status LED, IO23 data J7, IO15 enable LED LDO U6 (VLED on J7) |
 | free | IO22 (reserve) |
 
 **All GPIOs except IO22 (reserve) are in use**; IO5, IO8, IO15, IO20, IO21 and IO23 go to optional pads and
@@ -210,19 +218,20 @@ Components of board A (source of truth: `hardware/bom/parts.csv`):
 |---|---|---|
 | U1 | ESP32-C6-MINI-1-H8 (fallback -N4) | MCU, Wi-Fi/BLE/802.15.4 |
 | U2 | DRV8213DSGR (WSON-8 2 × 2) | H-bridge with IPROPI current sensing, current limit 2 A (R1 1.24 k), autosleep |
-| U3 | AP2112K-3.3 | LDO 3.3 V |
+| U3 | TPS62162DSGR (WSON-8 2 × 2) | buck converter 3.3 V / 1 A, VIN 3–17 V (main-board-c6.md 2.7) |
+| L1 | Murata DFE201612P-2R2M=P2, 2.2 µH (2016) | buck inductor |
 | U4 + C15 | LIS2DH12 + 100 n | accelerometer, **assembly optional** (DNP possible) |
 | U5 | USBLC6-2SC6 | ESD USB |
 | J4 | HRO TYPE-C-31-M-12 | USB-C on the long edge +y, opening set back 0.7 mm |
 | D2, Q1 | SS34F (SMAF), AO3401A | power path VBUS → VSYS or BAT_IN → VSYS (reverse polarity protection) |
 | R12/R13, R14/R15 | 5.1 k, 100 k/100 k | CC sink, VBUS_DET divider (also gate pull-down Q1) |
 | C1, C2 | 47 µF 1206 | buffer VSYS |
-| C4, C8–C14 | 0402/0603 | decoupling, EN RC, ADC filter |
+| C4, C8–C10, C12–C14 | 0402/0603/0805 | buck input/output (C8 10 µF, C9 22 µF), decoupling, EN RC, ADC filter |
 | R1–R11, R16 | 0402 | IPROPI, EN, lever detection (R3 OUT_A → GND, R4 OUT_B → 3V3, R5), dividers, LED, pull-ups |
 | D1 | LED green 0402 | status |
 | J1, J2, J3, J5 | solder pads bottom | cable to charger board (BAT_IN, –, –, GND), I²C/INT, service (EN, TXD, BOOT, GND, RXD), cell |
 | J6, J7 | solder pads bottom | player inputs (3V3, S1 IO5, S2 IO20, S3 IO21, S4 IO8, GND), LED (VLED, IO23, GND) |
-| U6, F1, C17, R22, JP1 | bottom, **DNP** | load switch TPS22918 (IO15), PTC 0.5 A, 10 µF, pull-down; solder jumper VSYS → VLED (open) |
+| U6, R23, R24, C18, C17, R22 | bottom, **DNP** | LED LDO SPX3819 adjustable at 3.95 V (enable IO15), feedback divider, 2.2 µF output, 10 µF on VLED, pull-down |
 | R19, R20, C16 | bottom, **DNP** | circuit for IO5 (S1): 10 k to 3V3, 1 M and 10 n to GND |
 | TP1, TP2 | test points bottom | VSYS, VBUS (measure ISEN at R1, SENSE at R5 on top) |
 | BT1, BT2 | pads bottom | end contacts OUT_A / OUT_B |
@@ -289,7 +298,7 @@ The turbo limits are estimates and will be set during operation.
 - [ ] New model: check whether a diode is in series (lever detection)
 - [ ] Contacts at the board ends and retention of the board in the AA compartment (half shell?)
 - [ ] Open items of the charger board L1–L6 ([charger-board.md](charger-board.md))
-- [ ] AP2112K with an empty battery: dropout about 250 mV at 600 mA → below about 3.5 V battery 3V3 drops slightly; ESP32-C6 runs from 3.0 V
+- [ ] Buck converter with an empty battery: in 100 % mode 3V3 ≈ VSYS − 0.2 V at 380 mA, so the cut-off sits at 3.4–3.5 V filtered; measure on the prototype (main-board-c6.md 2.7, open-items.md T12)
 - [ ] Checks before ordering the main board ([main-board-c6.md](main-board-c6.md) chapter 7)
 - [ ] Optional: measure motor current (turbo limit, battery size)
 - [ ] Optional: buy a *Salto Sammy Pro* as reference (contact mechanics)
@@ -300,7 +309,7 @@ The turbo limits are estimates and will be set during operation.
    strapping, deep-sleep wake, ADC dividers); no motor driver on the breadboard, stall tests on the prototype
    ([test-hardware.md](test-hardware.md) 4).
 2. Firmware skeleton in Rust on the test setup ([firmware-architecture.md](firmware-architecture.md)).
-3. Finish routing the main board (main-board-c6.md 11.7) and order it; charger board; printed parts.
+3. Main board: routing done (main-board-c6.md 11.4); delta review of the buck block, then order; charger board; printed parts.
 
 ## Appendix A: Market research (status 2026-10)
 

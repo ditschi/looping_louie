@@ -1,6 +1,6 @@
 # Firmware architecture (Rust, std on ESP-IDF)
 
-Status: 2026-11-06 · Draft, revised after critical review; basis for starting the implementation.
+Status: 2026-11-06 (power notes for rev B: 2026-11-11) · Draft, revised after critical review; basis for starting the implementation.
 Language decision: [firmware-language.md](firmware-language.md). Functional basis:
 [software-concept.md](software-concept.md) (network, roles, game, protocol section 7),
 [web-ui-concept.md](web-ui-concept.md), [mode-builder.md](mode-builder.md) (schema 2),
@@ -141,10 +141,10 @@ The traits live in `louie-app::hal` (std, no ESP types). Every method is non-blo
 |---|---|---|---|
 | `Motor` | `set_duty(i16 /*‰ duty cycle, −1000…1000*/)`, `brake()`, `coast()` | LEDC 20 kHz on IN1/IN2 (IO18/IO19), drive/brake: forward IN1 = 1, IN2 = PWM (1 − d) | Model with inertia, speed for the top view |
 | `Lever` | `closed() -> bool`, `edges()` | SENSE IO3, level "closed" ≈ 3.0 V (main-board-c6.md 2.5) | Key / UI button |
-| `Power` | `vsys_mv()`, `vbus_present()`, `usb_powered()` | VBAT_ADC IO0 (divider 470k/470k, factor 2), VBUS_DET IO4 | Slider in the UI |
+| `Power` | `vsys_mv()`, `vbus_present()`, `usb_powered()` | VBAT_ADC IO0 (divider 680k/470k, factor 2.447), VBUS_DET IO4 | Slider in the UI |
 | `MotorCurrent` | `ma()` | ISEN_ADC IO1, 255 mV/A (R_IPROPI 1.24 k × 205 µA/A) | from the motor model |
 | `StatusLed` | `pattern(Pattern)` | IO14 | Display in the sim UI |
-| `LedChain` | `enabled(bool)`, `write(&[Rgb])` | J7: data IO23 (RMT), load switch IO15 | Strip in the sim UI |
+| `LedChain` | `enabled(bool)`, `write(&[Rgb])` | J7: data IO23 (RMT), LED LDO enable IO15 | Strip in the sim UI |
 | `PlayerInputs` | `events() -> Iterator<(seat, Press)>` | J6: S1–S4 on IO5, IO20, IO21, IO8 (pull-up, debouncing) | Keys 1–4 |
 | `Accel` | `motion_since_last()`, `enable_wake()` | LIS2DH12 on I²C IO6/IO7, INT IO2 (optional, detected by I²C probe) | – |
 | `BleButtons` | `start_scan()`, `stop_scan()`, `events()` | NimBLE passive, BTHome parser in `louie-app` | Buttons via keyboard |
@@ -165,7 +165,7 @@ Percent only appears in the UI.
 pub struct BoardDef {
     pub name: &'static str,
     pub pins: Pins,                 // Option<GpioNum> per function
-    pub vsys_divider: f32,          // 2.0 on the board
+    pub vsys_divider: f32,          // 2.447 on the board (680 k / 470 k)
     pub ipropi_mv_per_a: u16,       // 255 (R_IPROPI 1.24 k); DevKit: same value, IO1 reads a pot
     pub vbus_divider: Option<f32>,  // None = VBUS_DET is only a switch (DevKit)
     pub options: Options,           // led_chain, player_inputs, accel_bus, rf_switch, rgb_led …
@@ -567,6 +567,13 @@ free block **≥ 16 KB**, both without a downward trend in the last hour. If thi
   - **Deep sleep is a restart:** After wake-up, bootloader, app start and Wi-Fi setup run again; until the
     hotspot is visible again takes about 2–5 s (unverified, measure); phones must reconnect. Wake-up via SENSE (IO3,
     `ANY_HIGH`), VBUS_DET (IO4) and optionally INT (IO2). After a wake-up, 4.1 item 11 does not count as "unexpected".
+  - **Standby budget (rev B, main-board-c6.md 2.7):** board approx. **25 µA** in deep sleep (buck U3 17 µA, VBAT
+    divider approx. 5 µA, LIS2DH12 approx. 2 µA, leakage), so a 14500 cell lasts about 3 years and 4 × AA about 10 years
+    in standby; the 5 s timer wake in the lever-closed case likely costs more than the standby itself (unverified). A TPS62840 with a STOP
+    pin (60 nA) would need a GPIO (only IO22 is free) and is not planned.
+  - **Low cell:** below VSYS ≈ 3.5 V the buck runs in 100 % mode and 3V3 ≈ VSYS − 0.2 V at a 380 mA radio peak. Cut-off
+    rule from main-board-c6.md 2.7 (review R-B2): evaluate the filtered, low-load VSYS only, warn below 3.6 V, end the
+    round at the next pause below 3.4–3.5 V (placeholder `VSYS_MIN_MV = 3500`); implemented in step 4.
   - On USB `WIFI_PS_NONE` and no deep sleep; power bank keep-alive as test mode (timer wake-up + radio burst).
     Special case lever closed when falling asleep: timer wake-up every 5 s (main-board-c6.md 2.5). Check all sleep paths on the
     test setup.
