@@ -210,7 +210,7 @@ What arrives at DIN (3.3 V from the C6) versus the threshold:
 | VSYS on battery (via Q1) | 3.0–4.2 V | 2.1–2.94 V | 1.9–2.65 V | level **ok**; **below 3.7 V VDD out of spec** (blue/green get weaker, color shifts) |
 | VSYS via USB (J4 → D2 SS34) or charger board | about 4.6 V | **3.22 V** (tight, only 80 mV margin) | 2.90 V (ok) | 0.63 types ok, 0.7 types a matter of luck |
 | VBUS 5 V directly | 5.0 V | **3.5 V** (out of range) | 3.15 V (tight) | not planned; also only with USB |
-| 3V3 from the LDO | 3.3 V | – | – | no: VDD below spec, and Wi-Fi peaks (382 mA) plus LEDs would load the 3.3 V regulator (TPS62162, 1 A) without need |
+| 3V3 from the LDO | 3.3 V | – | – | no: VDD below spec, and Wi-Fi peaks (382 mA) plus LEDs would overload the 3.3 V LDO (TPS7A2633, 500 mA) |
 
 **Conclusion:** On VSYS with **V5 types (0.63 · VDD)** the 3.3 V level is sufficient over the whole range, without a
 level shifter. In practice SK6812 and old WS2812B mostly work too (unverified). Below about 3.6 V battery voltage
@@ -229,7 +229,7 @@ the firmware dims the LEDs or switches them off (VBAT_ADC is measured anyway).
 
 Addressable LEDs draw current even when dark, depending on type a few 100 µA to about 1 mA per LED (old types) or
 ≤ 1 µA (WS2812B-2020 V6) (unverified, type-dependent). Eight LEDs at 0.6 mA = 5 mA; that is about two hundred times the
-deep sleep budget (board approx. 25 µA above 3.8 V, main-board-c6.md 2.7). A 1000 mAh battery would be empty in just over a week.
+deep sleep budget (board approx. 15–18 µA, main-board-c6.md 2.7). A 1000 mAh battery would be empty in just over a week.
 
 **U6 (DNP): LDO SPX3819M5-L, adjustable (SOT-23-5)** between VSYS and VLED (since 2026-11-09, previously load switch
 TPS22918, which allowed only 5.5 V): VIN up to 16 V, 500 mA, internal current limit (approx. 0.8–0.95 A) and thermal

@@ -38,14 +38,17 @@ part page (the PDF there is the manufacturer's document). All files were downloa
 The AP2112K, TPS22918 and BSMD0805-050-6V rows above describe the state at commit `32a3535` and are superseded by
 these parts on the main board.
 
-### Added 2026-11-11 (rev B: buck converter U3 instead of the 3.3 V LDO)
+### Added 2026-11-11 (rev B: buck trial, then the LDO TPS7A2633 for U3)
 
 | Ref | Part | Manufacturer | Document, revision | URL | File |
 |---|---|---|---|---|---|
 | U3 | TPS62162DSGR (C40256); TPS62160DSGR (C324077) as adjustable fallback | Texas Instruments | TPS62160/1/2/3 datasheet SLVSAM2E (Rev. E, May 2017; DSG land pattern 4218900/E 08/2022) | [ti.com](https://www.ti.com/lit/ds/symlink/tps62160.pdf) | `TPS6216x_datasheet_en.pdf` |
 | L1 | DFE201612P-2R2M=P2 (C79317) | Murata | DFE201612P reference specification J(E)TE243A-0033-01, 9 pages (electrical values, recommended land pattern, notice on copper under the coil) | [LCSC](https://datasheet.lcsc.com/datasheet/pdf/3da72e1ea2c544751f1a10542ca0aaa4.pdf) (product page: [murata.com](https://www.murata.com/en-us/products/productdetail?partno=DFE201612P-2R2M%3DP2)) | `Murata_DFE201612P-2R2M_datasheet_LCSC.pdf` |
+| U3 (current) | TPS7A2633DRVR (C2876256); TPS7A2601DRVR (C2859671) as adjustable second source | Texas Instruments | TPS7A26 datasheet SBVS290B (Rev. B, Oct 2019; DRV0006A land pattern 4222173/C 11/2025) | [ti.com](https://www.ti.com/lit/ds/symlink/tps7a26.pdf) | `TPS7A26_datasheet_en.pdf` |
+| – (alternative) | TPS62840DLCR (C2071859) | Texas Instruments | TPS6284x datasheet SLVSEC6D (Rev. D, Mar 2020) | [ti.com](https://www.ti.com/lit/ds/symlink/tps62840.pdf) | `TPS6284x_datasheet_en.pdf` |
 
-Review of both against rev B: [wiring-review.md](wiring-review.md) section 8.
+The TPS6216x and DFE201612P rows describe the buck trial of rev B (review: [wiring-review.md](wiring-review.md)
+section 8); the TPS7A26 is the current U3 (review: section 9). Comparison: [proposal-supply-standby.md](proposal-supply-standby.md).
 
 From rev B on, the SPX3819 row above applies to U6 (LED LDO, DNP) only; on `main` (rev A) it is also U3.
 

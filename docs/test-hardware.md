@@ -1,6 +1,6 @@
 # Test setup (breadboard) and prototype boards
 
-Status: 2026-11-11 (buck converter tests 4.7 for rev B) · Prices retrieved on 2026-11-06, gross incl. 19 % VAT unless stated otherwise.
+Status: 2026-11-11 (LDO tests 4.7 for rev B) · Prices retrieved on 2026-11-06, gross incl. 19 % VAT unless stated otherwise.
 
 Markers: **(verified)** = source read or recalculated from the project files · **(unverified)** = estimate,
 secondary source, or not checked in the datasheet.
@@ -38,8 +38,8 @@ manufacturing costs [cost-estimate.md](cost-estimate.md).
 | 4.5 ADC accuracy VSYS 680 k/470 k + 100 nF and VBUS 100 k/100 k | R6/R7/C13, R14/R15, resistor tolerance (A5) |
 
 - **Only the prototype answers:** footprints and assembly, antenna in the compartment, DRV8213 (ITRIP, IPROPI
-  accuracy, autosleep, heating), the buck converter U3 (ripple, load step, 100 % mode, standby, temperature, ADC noise:
-  4.7, T10–T15), mechanics (section 6).
+  accuracy, autosleep, heating), the LDO U3 (ripple, load step, dropout, standby, temperature, ADC noise: 4.7,
+  T10–T15), mechanics (section 6).
 
 ---
 
@@ -57,7 +57,7 @@ manufacturing costs [cost-estimate.md](cost-estimate.md).
 | Footprints, rotation, polarity, assembly | no | datasheet check, JLC preview (section 6) | – |
 | Antenna in the compartment, RSSI (T4, A7) | no | prototype | – |
 | DRV8213: IPROPI accuracy (A6), autosleep leakage, heating, ITRIP behavior | no | prototype; R1, R8, C14 are swappable 0402 parts | – |
-| Buck converter U3 under real load (T10–T15), power path, USB-C | no | prototype, 4.7 | – |
+| LDO U3 under real load (T10–T15), power path, USB-C | no | prototype, 4.7 | – |
 | Deep-sleep quiescent current of the board | no | prototype; the dev board has its own LDO, USB bridge and LEDs | – |
 
 **Not an order gate:** whether the C6 handles 8 phones + BLE scan and how large the firmware gets are **software
@@ -266,8 +266,8 @@ then delivers roughly d × I_motor on average.
   2 A, 50 µF effective (X5R under DC bias, unverified) → approx. 0.5 V p-p. If the measured stall current is
   > 2 A, plan a third 47 µF footprint.
 - **VSYS droop / A3:** ΔV ≈ I × (R_i + R_path). LiPo R_i estimate 0.1–0.3 Ω (unverified, higher when cold or empty),
-  Q1 + contacts approx. 0.1 Ω. Example 2 A × 0.4 Ω = 0.8 V: a 3.7 V cell drops to 2.9 V, the buck in 100 % mode
-  (approx. 0.2 V at 380 mA) then gives less than 3.0 V → brownout risk. If the calculation is critical: stronger
+  Q1 + contacts approx. 0.1 Ω. Example 2 A × 0.4 Ω = 0.8 V: a 3.7 V cell drops to 2.9 V, the LDO in dropout
+  (approx. 0.27 V at 380 mA) then gives less than 3.0 V → brownout risk. If the calculation is critical: stronger
   firmware ramp and a cut-off on the filtered VSYS (main-board-c6.md 2.7). Final check only on the board (T12).
 
 ### 4.2 Lever detection network on the real Louie
@@ -456,12 +456,13 @@ error, 84 mV at 4.2 V) or a one-point calibration in the firmware.
 
 ---
 
-### 4.7 Buck converter U3 (prototype board)
+### 4.7 LDO U3 (prototype board)
 
-**Goal:** the TPS62162 buck converter (U3 with L1 2.2 µH, C8 10 µF, C9 22 µF; main-board-c6.md 2.7) is stable, quiet
-enough for the ADC and the radio, stays cool, and its 100 % mode sets the real cut-off numbers (A3, A21, F24).
-The block exists only as a WSON on the board, so these tests run **on the prototype board** and do not gate the order.
-They replace the former load-step test of the SPX3819 LDO on an adapter (decision-history.md).
+**Goal:** the TPS7A2633 LDO (U3 with C8 4.7 µF at IN and C9 22 µF at OUT; main-board-c6.md 2.7) is stable and quiet,
+keeps the standby low over the whole battery range, stays cool enough with 4 fresh alkaline cells, and its dropout sets
+the real cut-off numbers (A3, A21, F24). The part exists only as a WSON on the board, so these tests run **on the
+prototype board** and do not gate the order. They replace the former load-step test of the SPX3819 on an adapter and
+the buck tests of the same day (decision-history.md).
 
 **Setup:** lab supply on BAT_IN/GND (J5) instead of a cell, current limit 1 A; scope with AC coupling, 20 MHz bandwidth
 limit and a short ground spring directly at C9; electronic load or switched resistor on 3V3 as in the sketch:
@@ -473,22 +474,17 @@ limit and a short ground spring directly at C9; electronic load or switched resi
 
 | Test | Procedure | Pass |
 |---|---|---|
-| **T10** ripple and spikes | VSYS 3.0 / 3.7 / 5.0 / 6.6 V, each with no load and with 300 mA; scope at C9 | ≤ 30 mV p-p, no sustained ringing |
-| **T11** load step | 0 → 300 mA with the switched 11 Ω (100 Hz–1 kHz, 10–50 % duty), trigger on the gate, at VSYS 3.7 V and 6.6 V | dip ≤ 150 mV, recovery ≤ 100 µs |
-| **T12** 100 % mode entry | sweep VSYS down from 4.0 to 3.0 V at 150 mA and at 380 mA load, read 3V3 with the multimeter | 3V3 ≥ 3.0 V down to VSYS ≈ 3.3 V at 150 mA and ≈ 3.5 V at 380 mA; the measured values set the cut-off thresholds in main-board-c6.md 2.7 |
-| **T13** standby | board in deep sleep, current at BAT_IN at VSYS 3.5 / 3.7 / 4.0 / 6.0 V (multimeter µA range, short it during boot) | ≤ 40 µA above 3.8 V; below 3.8 V the converter stays in PWM (wiring review W21): record the value, it decides F29 |
-| **T14** temperature | Wi-Fi TX continuously at VSYS 6.6 V for 10 min, temperature of U3 and L1 (thermocouple or IR) | < 60 °C in free air |
-| **T15** ADC noise | VBAT_ADC and ISEN_ADC at 10 Hz with the buck in power-save mode vs. 3V3 from a bench LDO | no visible difference |
-| **T4** addition | RSSI test with the buck running and with 3V3 from the bench supply | no RSSI difference > 2 dB |
+| **T10** ripple and noise | VSYS 3.7 / 5.0 / 6.6 V, each with no load and with 300 mA; once more with the motor PWM running (20 kHz on VSYS); scope at C9 | ≤ 30 mV p-p |
+| **T11** load step | 0 → 300 mA with the switched 11 Ω (100 Hz–1 kHz, 10–50 % duty), trigger on the gate, at VSYS 3.7 V and 6.6 V | dip ≤ 150 mV, recovery ≤ 100 µs, no ringing |
+| **T12** dropout | sweep VSYS down from 4.0 to 3.0 V at 150 mA and at 380 mA load, read 3V3 with the multimeter | 3V3 ≥ 3.0 V down to VSYS ≈ 3.3 V at 150 mA and ≈ 3.45 V at 380 mA; the measured values set the cut-off thresholds in main-board-c6.md 2.7 |
+| **T13** standby | board in deep sleep, current at BAT_IN at VSYS 3.5 / 3.7 / 4.0 / 6.0 V (multimeter µA range, short it during boot) | ≤ 40 µA at every voltage |
+| **T14** temperature | Wi-Fi hotspot with clients (about 150 mA average) at VSYS 6.4–6.6 V for 15 min, U3 case temperature (thermocouple or IR); then once in the closed battery compartment | < 80 °C at 25 °C ambient in free air |
+| **T15** ADC noise | VBAT_ADC and ISEN_ADC at 10 Hz with the motor running and stopped | no visible difference beyond the motor's own effect |
 
-T15 and the T4 addition need 3V3 from a bench supply while U3 is not switching. EN is tied to VIN on the board, so U3
-cannot be switched off separately; how to feed 3V3 without back-feeding through U3 (e.g. L1 not fitted on one board)
-is still open.
-
-**On failure:** ringing or ripple too high → second output capacitor or 22 µF in a larger package, check the SW loop
-in the layout; dropout too high → accept a higher cut-off or look at the DCR of L1 (DFE201610E, Sunlord WPN201610U);
-ADC noise → sample in a quiet window or average; hot → check the soldering of the exposed pad. Alternatives and their
-trade-offs: [proposal-supply-buck.md](proposal-supply-buck.md) 3 and 8.
+**On failure:** ripple or ringing → C9 larger or a second 10 µF at OUT, check C8 at IN; dropout too high → cut-off at
+3.5 V or higher; standby high in dropout → measure U3 alone (IQ in dropout is not specified); too hot → more GND copper
+or vias at U3, lower the brightness/client limits on 4 × AA, or the buck TPS62840 from
+[proposal-supply-standby.md](proposal-supply-standby.md) 3 B.
 **Buy:** AO3400, 11 Ω 1 W (or 2 × 22 Ω 0.5 W in parallel); the rest exists (lab supply, scope, multimeter).
 
 ## 5. Software development setup (LED mode)
@@ -567,8 +563,8 @@ Heap too tight: limit clients to 6, send state as a binary/delta message, test a
 
 - **Motor on the DRV8213:** ITRIP with R1, IPROPI accuracy at low currents (A6), heating during stall, autosleep and
   leakage on OUT_A/OUT_B (A4 final, T2), stall detection and its thresholds, jerks and kickback (T9).
-- **Buck converter U3:** tests T10–T15 in 4.7 (ripple, load step, 100 % mode and cut-off, standby, temperature, ADC
-  noise); brownout at Wi-Fi peak + motor start with a low cell (A3).
+- **LDO U3:** tests T10–T15 in 4.7 (ripple, load step, dropout and cut-off, standby, temperature, ADC noise); brownout
+  at Wi-Fi peak + motor start with a low cell (A3).
 - **3V3 at the module during Wi-Fi TX:** scope directly at module pad 3 (3V3) and pad 1/2 (GND), AC coupling, while the
   firmware sends continuously (e.g. iperf or a Wi-Fi TX test). Pass: dips below approx. 150 mV, no brownout reset. If not:
   the next revision needs a capacitor closer to the module (no room in this one, main-board-c6.md 11.10).
@@ -577,7 +573,7 @@ Heap too tight: limit clients to 6, send state as a binary/delta message, test a
   no reset loop). Plus ESD/noise check: touch the board ends and J3 during operation.
 - Power path Q1/D2, USB-C J4, ESD U5, CC resistors; USB + 4 × AA (F28): VSYS, temperature of Q1 at stall.
 - LIS2DH12 vs. motor vibration (T6, A19), INT on IO2 (A18).
-- Antenna in the compartment with metal contact, RSSI in both orientations, with and without the buck running (T4, A7, F1).
+- Antenna in the compartment with metal contact, RSSI in both orientations (T4, A7, F1).
 - Deep-sleep quiescent current of the whole board (T13, target ≤ 40 µA).
 - Mechanics: sleeve, contacts, USB-C opening (F3, F4, A1).
 
@@ -602,8 +598,8 @@ The 5 assembled boards allow losing one (e.g. in a stall or thermal test).
   0.8 mm, single-sided assembly.
 - **Extended parts at JLC:** ESP32-C6-MINI-1, DRV8213DSGR, AP2112K-3.3, TYPE-C-31-M-12, USBLC6-2SC6, SS34F,
   LIS2DH12TR = 7 (verified, JLC parts API, state 2026-11-06 with the AP2112K); AO3401A is Basic. With special values
-  (1.24 k 1 %, 47 µF 1206) **calculated as 8** (unverified). **Rev B:** U3 becomes the TPS62162DSGR (C40256, Extended,
-  4,992 in stock, 0.97 USD at 10+ on 2026-11-10) and the inductor L1 (C79317, 0.09 USD) adds one Extended type → **9**
+  (1.24 k 1 %, 47 µF 1206) **calculated as 8** (unverified). **Rev B:** U3 becomes the TPS7A2633DRVR (C2876256, Extended,
+  809 in stock, 0.76 USD at 10+ on 2026-11-11) in place of the AP2112K, so the count stays at 7 (8 calculated)
   (cost-estimate.md 2.2).
 - **JLC stock (2026-11-06, verified):**
 
@@ -614,7 +610,7 @@ The 5 assembled boards allow losing one (e.g. in a stall or thermal test).
 | DRV8213DSGR | C22407186 | 3,704 | 1.04 / 0.93 / 0.81 |
 | LIS2DH12TR | C110926 | 34,172 | 0.93 / 0.77 / 0.66 |
 | AP2112K-3.3TRG1 (state 2026-11-06) | C51118 | 16,038 | 0.18 / 0.15 / 0.13 |
-| TPS62162DSGR (rev B, 2026-11-10) | C40256 | 4,992 | – / 0.97 / – |
+| TPS7A2633DRVR (rev B, 2026-11-11) | C2876256 | 809 | 0.86 / 0.76 / 0.66 |
 
   The H8 is **available**. Check the stock again before ordering.
 
@@ -642,8 +638,7 @@ The 5 assembled boards allow losing one (e.g. in a stall or thermal test).
 | 4 | 30 / 30 | 59 | 201 | **≈ 296 €** | 9.90 € | 27 % |
 
 - Parts per board approx. 6.90 USD (1–9 pcs), 5.95 (10+), 5.40 (30+); the module is a good 55 % of that. Rev B adds
-  approx. 1.1 USD per board (U3, L1, capacitors) and 3.07 USD per order for one more Extended type, i.e. approx.
-  +9 € for scenario 2 (cost-estimate.md 1).
+  approx. 0.7 USD per board (U3 TPS7A2633, capacitors), i.e. approx. +4 € for scenario 2 (cost-estimate.md 1).
 - Other vendors for 5 assembled (unverified): PCBWay approx. 130–200 €, Aisler approx. 200–260 € (cost-estimate.md).
 
 ### 7.4 Recommendation

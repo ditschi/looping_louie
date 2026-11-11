@@ -69,9 +69,8 @@ power banks switch off below 50–200 mA, measured e.g. 150 mA [0110.be][0110] o
 [ESP32_KeepPowerbankAlive][kpa]. Whether a USB-C port with a 5.1 k resistor attached (Rd: main board R12/R13 on J4, charger board R101/R102)
 stays on longer depends on the manufacturer. You cannot rely on it **(unverified)**.
 
-Consumption of the Louie at 5 V: through the buck converter (U3, main-board-c6.md 2.7) the input current is roughly
-the 3.3 V current × 3.3 V / (5 V × η), about 0.75 × the 3.3 V current at η ≈ 0.9 (unverified). The figures below are
-3.3 V-side currents (with the earlier LDO input and output current were equal), so the power bank sees somewhat less.
+Consumption of the Louie at 5 V: through the LDO (U3 TPS7A2633, main-board-c6.md 2.7) the input current equals the
+3.3 V current.
 
 | State | Current | Power bank stays on? |
 |---|---|---|

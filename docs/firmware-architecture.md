@@ -567,12 +567,11 @@ free block **≥ 16 KB**, both without a downward trend in the last hour. If thi
   - **Deep sleep is a restart:** After wake-up, bootloader, app start and Wi-Fi setup run again; until the
     hotspot is visible again takes about 2–5 s (unverified, measure); phones must reconnect. Wake-up via SENSE (IO3,
     `ANY_HIGH`), VBUS_DET (IO4) and optionally INT (IO2). After a wake-up, 4.1 item 11 does not count as "unexpected".
-  - **Standby budget (rev B, main-board-c6.md 2.7):** board approx. **25 µA** in deep sleep with VSYS above about
-    3.8 V (buck U3 17 µA, VBAT divider approx. 5 µA, LIS2DH12 approx. 2 µA, leakage), 4 × AA about 10 years in standby.
-    Below about 3.8 V the converter stays in PWM without power-save mode (wiring review W21), so with a Li-ion cell the
-    standby is likely several hundred µA to a few mA until the prototype measurement (T13) says otherwise; the 5 s timer wake in the lever-closed case likely costs more than the standby itself (unverified). A TPS62840 with a STOP
-    pin (60 nA) would need a GPIO (only IO22 is free) and is not planned.
-  - **Low cell:** below VSYS ≈ 3.5 V the buck runs in 100 % mode and 3V3 ≈ VSYS − 0.2 V at a 380 mA radio peak. Cut-off
+  - **Standby budget (rev B, main-board-c6.md 2.7):** board approx. **15–18 µA** in deep sleep over the whole battery
+    range (LDO U3 2 µA typ, ESP32-C6 about 7 µA, VBAT divider 3–6 µA, LIS2DH12 about 2 µA, leakage), so a Li-ion cell or
+    4 × AA last years in standby; the 5 s timer wake in the lever-closed case likely costs more than the standby itself
+    (unverified).
+  - **Low cell:** below VSYS ≈ 3.5 V the LDO is in dropout and 3V3 ≈ VSYS − 0.27 V (0.45 V max) at a 380 mA radio peak. Cut-off
     rule from main-board-c6.md 2.7 (review R-B2): evaluate the filtered, low-load VSYS only, warn below 3.6 V, end the
     round at the next pause below 3.4–3.5 V (placeholder `VSYS_MIN_MV = 3500`); implemented in step 4.
   - On USB `WIFI_PS_NONE` and no deep sleep; power bank keep-alive as test mode (timer wake-up + radio burst).

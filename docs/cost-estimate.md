@@ -1,6 +1,6 @@
 # Cost estimate: manufacturing and assembly of the main board
 
-Status: 2026-11-11 (rev B buck converter added) · Research 2026-11-01 to 2026-11-02 (web research, no quotes obtained, no logins/orders).
+Status: 2026-11-11 (rev B with the LDO TPS7A2633) · Research 2026-11-01 to 2026-11-02 (web research, no quotes obtained, no logins/orders).
 Costs for the test setup and prototype batches: [test-hardware.md](test-hardware.md).
 
 **Exchange rate:** 1 EUR ≈ 1.13 USD → **1 USD ≈ 0.885 EUR** (Oct. 2026 between approx. 1.12 and 1.16; ±3 % goes directly
@@ -8,8 +8,8 @@ into all prices). Extra costs in USD net × 0.885 × 1.19 ≈ **USD × 1.05 = �
 
 **Board:** 46 × 13.5 mm (6.2 cm²), **4 layers** (JLC04081H-3313), FR4 0.8 mm, trace/clearance 0.15/0.15 mm, via 0.3/0.5 mm,
 green solder mask, **single-sided assembly** (top, approx. 36 placements; bottom only pads, test points and unassembled
-DNP footprints). Parts: ESP32-C6-MINI-1 (-N4 or -H8), DRV8213DSG, 3.3 V regulator (rev B: buck TPS62162 + L1; the base calculation
-below still assumes an LDO), USB-C J4 with ESD U5, D2, Q1,
+DNP footprints). Parts: ESP32-C6-MINI-1 (-N4 or -H8), DRV8213DSG, 3.3 V regulator (rev B: LDO TPS7A2633; the base calculation
+below still assumes a cheaper LDO), USB-C J4 with ESD U5, D2, Q1,
 LIS2DH12 (optional), passives 0402.
 
 > **Legend:** **[Q]** = backed by a source (section 4 or 5.8) · **[S]** = own estimate/extrapolation.
@@ -37,18 +37,19 @@ LIS2DH12 (optional), passives 0402.
 | 30  | ≈ 185–270 € | ≈ 6.20–9.00 € | ≈ 245–330 € | ≈ 8.20–11.00 € |
 | 100 | ≈ 405 € (outdated, recalculate) | ≈ 4 € | ≈ 600 € (outdated, recalculate) | ≈ 6 € |
 
-**Rev B (buck converter, the design to order) [S]:** per board +0.97 USD (U3 TPS62162DSGR, C40256) + 0.09 USD (L1
-Murata DFE201612P, C79317) + 0.05 USD (C8 10 µF, C9 22 µF 0805 instead of the smaller capacitors) ≈ **+1.11 USD ≈
-+1.17 € gross**, plus **one more extended type** (the inductor) **+3.07 USD ≈ +3.2 € per order** (JLC prices of
-2026-11-10, [proposal-supply-buck.md](proposal-supply-buck.md) 3). This adds ≈ +9 / +15 / +38 / +120 € to every total
-for 5 / 10 / 30 / 100 pcs (N4 columns likewise). **H8 with rev B [S]:**
+**Rev B (LDO TPS7A2633, the design to order) [S]:** per board +0.65 USD (U3 TPS7A2633DRVR, C2876256, 0.76 USD at
+10+ instead of an LDO for about 0.1 USD) + 0.03 USD (C8 4.7 µF, C9 22 µF 0805 instead of the smaller capacitors) ≈
+**+0.7 USD ≈ +0.73 € gross**. The TPS7A2633 is an Extended part; the base calculation counted the earlier LDO as Basic,
+so add **one extended type, +3.07 USD ≈ +3.2 € per order** (JLC prices of 2026-11-11,
+[proposal-supply-standby.md](proposal-supply-standby.md) 3). This adds ≈ +7 / +11 / +25 / +76 € to every total for
+5 / 10 / 30 / 100 pcs (N4 columns likewise). **H8 with rev B [S]:**
 
 | Quantity | C6-H8 rev B total | per board |
 |---:|---:|---:|
-| 5   | ≈ 91–105 €  | ≈ 18–21 € |
-| 10  | ≈ 140–170 € | ≈ 14–17 € |
-| 30  | ≈ 283–368 € | ≈ 9.40–12.30 € |
-| 100 | ≈ 720 € (outdated, recalculate) | ≈ 7.20 € |
+| 5   | ≈ 89–103 €  | ≈ 18–21 € |
+| 10  | ≈ 136–166 € | ≈ 13.60–16.60 € |
+| 30  | ≈ 270–355 € | ≈ 9.00–11.80 € |
+| 100 | ≈ 680 € (outdated, recalculate) | ≈ 6.80 € |
 
 **Calculation:** The basis is the calculation of the earlier version (section 2.5: 5 / 10 / 30 / 100 pcs = 67 / 94 / 160 /
 340 €), plus the 4-layer surcharge (section 5.6: +3 / +6 / +10 / +19 €) and the parts change per
@@ -108,8 +109,8 @@ assembly with a stencil. Extra cost of ENIG approx. 10–15 € per order → no
 - **Solder joints:** approx. 130–150 → approx. 0.22 USD; below the minimum of 0.48 USD → topped up for single
   boards, practically irrelevant in a 2-up/5-up panel.
 - **Extended parts:** ESP32-C6, DRV8213, J4 (USB-C), D2, U5 per [main-board-c6.md](main-board-c6.md) 7 = 5 types
-  → 15.35 USD per order; with LIS2DH12 6 types → 18.42 USD. **Rev B:** the inductor L1 adds one type (+3.07 USD, see
-  section 1); the TPS62162 takes the place of the earlier 3.3 V regulator. Passives Basic/Preferred depending on the LCSC number.
+  → 15.35 USD per order; with LIS2DH12 6 types → 18.42 USD. **Rev B:** the TPS7A2633 is Extended and adds one type
+  (+3.07 USD, see section 1) if the earlier LDO counted as Basic. Passives Basic/Preferred depending on the LCSC number.
   Status not verified (JLC part pages do not show it without JavaScript).
 - **X-ray:** for the module (JLC marks the ESP32-MINI modules as requiring X-ray [Q]). If the DRV8213 (exposed
   pad) counts as well, the tier changes – small overall effect.
@@ -127,8 +128,8 @@ Unit prices at 10 pcs (LCSC/JLC, 2026-11-02) from [main-board-c6.md](main-board-
 | USB-C stage (J4 0.19, U5 0.05, D2 0.04, Q1 0.08, 3 R) | 0.37 | [Q] |
 | LIS2DH12 + C15 (optional) | approx. 0.3 | unverified |
 | 3.3 V regulator (earlier LDO), passives 0402, LED | approx. 0.3 | [S] |
-| Rev B: TPS62162 0.97 + L1 0.09 + larger C8/C9 0.05 | +1.11 | [Q] (JLC 2026-11-10) |
-| **Total per board (10 pcs)** | **approx. 5.5 (N4) / 7.3 (H8); rev B approx. 6.6 / 8.4** | [S] |
+| Rev B: TPS7A2633 0.76 instead of about 0.1 + larger C8/C9 0.03 | +0.7 | [Q] (JLC 2026-11-11) |
+| **Total per board (10 pcs)** | **approx. 5.5 (N4) / 7.3 (H8); rev B approx. 6.2 / 8.0** | [S] |
 
 The calculation of the earlier version assumed only approx. 2.30 USD/board for the BOM (LCSC tier prices, module
 1.09 USD at 10+). The C3/C6 comparison in decision-history.md (cost change) gives 2.70 USD (JLC, 10 pcs) for the same
@@ -174,7 +175,7 @@ Current version: + 4 layers (PCBs ≈ 8–15 instead of 5 USD, section 5.2) ≈ 
 ## 3. Cost drivers and savings
 
 **Largest cost drivers (small quantities):**
-1. **Extended parts** with Economic: 3.07 USD per type → 5–6 types = 15–18 USD (rev B one more), regardless of 5 or 50 boards.
+1. **Extended parts** with Economic: 3.07 USD per type → 5–6 types = 15–18 USD (rev B one more for the TPS7A2633), regardless of 5 or 50 boards.
 2. **X-ray inspection of the module:** 1.64 USD/pc up to 10 pcs, then 0.82 / 0.49 USD.
 3. **Module:** C6-N4 approx. 3.60 USD, H8 approx. 5.4 USD (10 pcs) – the largest item from approx. 30 pcs.
 4. **Shipping/taxes:** fixed shipping costs + 19 % VAT + 3 € customs since July 2026; approx. 25 % of the total price at 5 pcs.
@@ -187,7 +188,7 @@ Current version: + 4 layers (PCBs ≈ 8–15 instead of 5 USD, section 5.2) ≈ 
 - **Create the panel yourself** (mouse-bite tabs, KiKit), with Economic without edge rails; JLC only charges the panel fee
   for several *different* designs. Saves the minimum SMT amount and the small-board surcharge; with 4 layers a
   5-up panel (approx. 46 × 72 mm) falls into the price band up to 100 × 100 mm (5.2).
-- **Choose Basic/Preferred parts:** pick passives and possibly the inductor from the Basic or Preferred Extended list → every
+- **Choose Basic/Preferred parts:** pick passives from the Basic or Preferred Extended list → every
   avoided extended type saves 3.07 USD.
 - **Do not assemble the LIS2DH12** (DNP possible): saves approx. 0.3 USD/board and possibly one extended type.
 - **N4 instead of H8** if 4 MB is enough (open-items.md F14): approx. −1.8 USD/board, and the N4 is available at JLC.
@@ -212,7 +213,7 @@ Retrieved on 2026-11-01. Sources for the C6 and DRV8213 prices: [main-board-c6.m
 
 **Parts**
 - AP2112K-3.3TRG1 (earlier LDO): https://www.lcsc.com/product-image/C51118.html, https://origin-www.findchips.com/search/AP2112K-3.3TRG1
-- Rev B: TPS62162DSGR https://jlcpcb.com/partdetail/C40256, Murata DFE201612P-2R2M=P2 https://jlcpcb.com/partdetail/C79317 (JLC parts API, 2026-11-10)
+- Rev B: TPS7A2633DRVR https://jlcpcb.com/partdetail/C2876256 (JLC parts API, 2026-11-11)
 
 **Other vendors**
 - PCBWay assembly: https://www.pcbway.com/pcb-assembly.html ; online calculator: https://www.pcbway.com/orderonline.aspx

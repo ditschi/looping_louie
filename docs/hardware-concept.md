@@ -1,7 +1,7 @@
 # Hardware concept: Looping Louie Wi-Fi upgrade
 
-Status: 2026-11-11 · Part selection and main board (4 layers) are fixed and routed completely; rev B with the buck
-converter for 3.3 V is the design to order. Main board details: [main-board-c6.md](main-board-c6.md). Rejected variants:
+Status: 2026-11-11 · Part selection and main board (4 layers) are fixed and routed completely; rev B with the low-Iq
+LDO TPS7A2633 for 3.3 V is the design to order. Main board details: [main-board-c6.md](main-board-c6.md). Rejected variants:
 [decision-history.md](decision-history.md).
 
 ## 1. Goal
@@ -84,7 +84,7 @@ manufacturers (see `hardware/bom/parts.csv`).
 
 - **The two ends are the H-bridge outputs directly** (OUT1 / OUT2). Therefore the
   mounting direction does not matter; "forward" is calibrated once in software.
-- Contents (part list in 5.5): ESP32-C6-MINI-1, DRV8213, 3.3 V buck converter, USB-C with ESD and
+- Contents (part list in 5.5): ESP32-C6-MINI-1, DRV8213, 3.3 V LDO, USB-C with ESD and
   power path, 2 × 47 µF buffer, lever detection, voltage divider, status LED, LIS2DH12 (optional),
   solder pads for cable, cell, I²C, service, player inputs and LED connection.
 - Layout: H-bridge and buffer at one end, ESP module with antenna at the other, no copper under the antenna
@@ -161,8 +161,8 @@ flipping the original lever several times.
 ### 5.3 Power saving and wake-up (no extra main switch)
 
 - After a configurable idle time (e.g. 15 min without game and without client): **deep sleep**.
-  DRV8213 in autosleep, buck converter with 17 µA quiescent current → board approx. 25 µA above VSYS 3.8 V; below that the converter
-  stays in PWM and the standby is higher (to be measured, main-board-c6.md 2.7).
+  DRV8213 in autosleep, LDO with 2 µA quiescent current → board approx. 15–18 µA over the whole battery range
+  (main-board-c6.md 2.7).
 - **Wake-up by flipping the Louie lever**: SENSE is on IO3 (LP GPIO) and wakes the ESP32-C6
   from deep sleep with ANY_HIGH. Further wake sources: INT (IO2), VBUS_DET (IO4), S1 (IO5).
 - After wake-up Wi-Fi starts first; the round starts only on the next lever flip or on
@@ -178,8 +178,8 @@ All supply numbers (VSYS range, regulator, dissipation, standby, cut-off thresho
 - **Inputs on A:** USB-C J4 via Schottky D2 to VSYS; battery, AA pack or charger board (BAT_IN, J1/J5) via P-FET Q1
   (blocks when USB is present while the battery is below VBUS, reverse polarity protection; USB + 4 × AA above approx.
   5.2 V: F28). IO4 (VBUS_DET) detects USB plugged in.
-- **3.3 V:** buck converter **TPS62162** (U3) with 2.2 µH (L1): approx. 50 mW loss at 6.4 V, 100 % mode near the cell
-  voltage.
+- **3.3 V:** low-Iq LDO **TPS7A2633** (U3, WSON-6 with exposed pad): 2 µA quiescent current, 0.47 W loss at 6.4 V and
+  150 mA (4 fresh alkaline cells), about the same efficiency as a buck with Li-ion.
 - **Measure supply voltage** (divider 680k/470k on IO0). This keeps the motor voltage constant regardless of the
   state of charge: `duty = U_soll / U_akku`.
 - Undervoltage: stop the game and warn in the web UI before the cell protection cuts off; thresholds on the filtered
@@ -219,15 +219,14 @@ Components of board A (source of truth: `hardware/bom/parts.csv`):
 |---|---|---|
 | U1 | ESP32-C6-MINI-1-H8 (fallback -N4) | MCU, Wi-Fi/BLE/802.15.4 |
 | U2 | DRV8213DSGR (WSON-8 2 × 2) | H-bridge with IPROPI current sensing, current limit 2 A (R1 1.24 k), autosleep |
-| U3 | TPS62162DSGR (WSON-8 2 × 2) | buck converter 3.3 V / 1 A, VIN 3–17 V (main-board-c6.md 2.7) |
-| L1 | Murata DFE201612P-2R2M=P2, 2.2 µH (2016) | buck inductor |
+| U3 | TPS7A2633DRVR (WSON-6 2 × 2) | LDO 3.3 V / 500 mA, VIN 2.4–18 V, IQ 2 µA (main-board-c6.md 2.7) |
 | U4 + C15 | LIS2DH12 + 100 n | accelerometer, **assembly optional** (DNP possible) |
 | U5 | USBLC6-2SC6 | ESD USB |
 | J4 | HRO TYPE-C-31-M-12 | USB-C on the long edge +y, opening set back 0.7 mm |
 | D2, Q1 | SS34F (SMAF), AO3401A | power path VBUS → VSYS or BAT_IN → VSYS (reverse polarity protection) |
 | R12/R13, R14/R15 | 5.1 k, 100 k/100 k | CC sink, VBUS_DET divider (also gate pull-down Q1) |
 | C1, C2 | 47 µF 1206 | buffer VSYS |
-| C4, C8–C10, C12–C14 | 0402/0603/0805 | buck input/output (C8 10 µF, C9 22 µF), decoupling, EN RC, ADC filter |
+| C4, C8–C10, C12–C14 | 0402/0805 | LDO input/output (C8 4.7 µF, C9 22 µF), decoupling, EN RC, ADC filter |
 | R1–R11, R16 | 0402 | IPROPI, EN, lever detection (R3 OUT_A → GND, R4 OUT_B → 3V3, R5), dividers, LED, pull-ups |
 | D1 | LED green 0402 | status |
 | J1, J2, J3, J5 | solder pads bottom | cable to charger board (BAT_IN, –, –, GND), I²C/INT, service (EN, TXD, BOOT, GND, RXD), cell |
@@ -299,7 +298,8 @@ The turbo limits are estimates and will be set during operation.
 - [ ] New model: check whether a diode is in series (lever detection)
 - [ ] Contacts at the board ends and retention of the board in the AA compartment (half shell?)
 - [ ] Open items of the charger board L1–L6 ([charger-board.md](charger-board.md))
-- [ ] Buck converter with an empty battery: in 100 % mode 3V3 ≈ VSYS − 0.2 V at 380 mA, so the cut-off sits at 3.4–3.5 V filtered; measure on the prototype (main-board-c6.md 2.7, open-items.md T12)
+- [ ] LDO with an empty battery: dropout about 0.27 V typ (0.45 V max) at 380 mA, so the cut-off sits at 3.4–3.5 V filtered; measure on the prototype (main-board-c6.md 2.7, open-items.md T12)
+- [ ] LDO temperature with 4 fresh alkaline cells in hotspot mode (about 0.5 W, open-items.md T14)
 - [ ] Checks before ordering the main board ([main-board-c6.md](main-board-c6.md) chapter 7)
 - [ ] Optional: measure motor current (turbo limit, battery size)
 - [ ] Optional: buy a *Salto Sammy Pro* as reference (contact mechanics)
@@ -310,8 +310,8 @@ The turbo limits are estimates and will be set during operation.
    strapping, deep-sleep wake, ADC dividers); no motor driver on the breadboard, stall tests on the prototype
    ([test-hardware.md](test-hardware.md) 4).
 2. Firmware skeleton in Rust on the test setup ([firmware-architecture.md](firmware-architecture.md)).
-3. Main board: routing done (main-board-c6.md 11.4); decide the delta-review findings of the buck block (open-items.md
-   F29), then order; charger board; printed parts.
+3. Main board: routing done (main-board-c6.md 11.4), delta review of the LDO block done (wiring-review.md 9); order
+   preparation; charger board; printed parts.
 
 ## Appendix A: Market research (status 2026-10)
 

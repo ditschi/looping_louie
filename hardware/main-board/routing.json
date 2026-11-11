@@ -1,42 +1,42 @@
 {
   "board": "main-board",
-  "fingerprint": "53263dc0ea531e25eb41bf89df1545a2a3954747648e3888c918323f0910a53d",
-  "board_hash": "a948ac3896ef56223678825e3aa31f3548d254f47cdc7f7e104da29a6c358767",
+  "fingerprint": "be7c6f9fbd1d4a88b41ab89ecf00526031b0a89bae375dc8ad1f34d5a9466bda",
+  "board_hash": "ad0f8e5c6124befadfe06e8caf49c19c91e94aef7d03ff50c751e8c5eb22f9bf",
   "metrics": {
     "drc_violations": 0,
-    "via_count": 162,
-    "track_length_mm": 804.92,
+    "via_count": 149,
+    "track_length_mm": 796.31,
     "drc_errors": 0,
     "unconnected": 0,
     "antenna_intrusions": 0,
     "power_width_violations": 0,
     "drc_warnings": 0,
     "gnd_islands": 0,
-    "signal_vias": 90,
-    "gnd_vias": 72,
-    "signal_length_mm": 746.54,
-    "detour_total": 1.468,
-    "detour_worst5": 2.345,
-    "bends": 373,
-    "acute_angles": 5,
-    "overlapping_segments": 3,
-    "tight_clearance": 395,
+    "signal_vias": 79,
+    "gnd_vias": 70,
+    "signal_length_mm": 738.4,
+    "detour_total": 1.459,
+    "detour_worst5": 2.286,
+    "bends": 337,
+    "acute_angles": 4,
+    "overlapping_segments": 6,
+    "tight_clearance": 380,
     "power_drop_mv": 83.0,
     "sense_coupling_mm": 0.0,
-    "sense_length_mm": 18.3,
-    "return_gap_mm": 0.2,
-    "antenna_proximity_mm": 1.18,
-    "via_in_pad": 5,
-    "stitch_gap_p95_mm": 2.69,
-    "stitch_gap_max_mm": 4.32,
-    "gnd_vias_module": 35,
+    "sense_length_mm": 16.88,
+    "return_gap_mm": 0.0,
+    "antenna_proximity_mm": 8.45,
+    "via_in_pad": 6,
+    "stitch_gap_p95_mm": 2.64,
+    "stitch_gap_max_mm": 4.31,
+    "gnd_vias_module": 32,
     "thermal_vias": 3,
-    "ref_plane_mm2": 441.3,
+    "ref_plane_mm2": 448.1,
     "layer_length_mm": {
-      "F.Cu": 262.7,
+      "F.Cu": 273.1,
       "In1.Cu": 0,
-      "In2.Cu": 285.5,
-      "B.Cu": 256.7
+      "In2.Cu": 255.0,
+      "B.Cu": 268.2
     },
     "usb_len_dp": 30.73,
     "usb_len_dm": 37.88,
@@ -45,28 +45,28 @@
     "usb_stubs": 0
   },
   "score": {
-    "S": 110.284,
+    "S": 111.234,
     "hard": {},
     "hard_total": 0,
     "under_mm": 0,
     "parts": {
       "drc_warnings": 0.0,
       "gnd_islands": 0.0,
-      "signal_vias": 18.0,
-      "signal_length_mm": 14.9308,
-      "detour_worst5": 4.69,
-      "bends": 3.73,
-      "acute_angles": 5.0,
-      "overlapping_segments": 1.5,
-      "via_in_pad": 10.0,
-      "tight_clearance": 39.5,
+      "signal_vias": 15.8,
+      "signal_length_mm": 14.768,
+      "detour_worst5": 4.572,
+      "bends": 3.37,
+      "acute_angles": 4.0,
+      "overlapping_segments": 3.0,
+      "via_in_pad": 12.0,
+      "tight_clearance": 38.0,
       "power_drop_mv": 8.3,
       "sense_coupling_mm": 0.0,
-      "sense_length_mm": 1.83,
-      "return_gap_mm": 0.3,
-      "antenna_proximity_mm": 0.472,
-      "stitch_gap_p95_mm": 2.69,
-      "gnd_vias_module": -4.375,
+      "sense_length_mm": 1.688,
+      "return_gap_mm": 0.0,
+      "antenna_proximity_mm": 3.38,
+      "stitch_gap_p95_mm": 2.64,
+      "gnd_vias_module": -4.0,
       "usb_vias": 3.0,
       "usb_skew_mm": 0.716,
       "usb_stubs": 0.0
@@ -152,24 +152,24 @@
     ],
     "detour_worst": [
       [
-        "/SCL",
-        2.995
-      ],
-      [
         "/VLED",
-        2.835
+        3.088
       ],
       [
         "/IO5",
-        2.134
+        2.684
       ],
       [
-        "/TXD",
-        1.939
+        "/SCL",
+        2.06
       ],
       [
         "/VBUS_J4",
         1.82
+      ],
+      [
+        "/MOT_IN1",
+        1.78
       ]
     ],
     "coupling_per_net": {
@@ -177,17 +177,13 @@
       "/ISEN_ADC": 0.0,
       "/VBAT_ADC": 0.0
     },
-    "return_gap_worst": [
-      [
-        "/SENSE",
-        0.2
-      ]
-    ],
+    "return_gap_worst": [],
     "via_in_pad": [
       "U3:",
-      "U3:9",
+      "U3:7",
       "J5:2",
-      "J6:6",
+      "U3:",
+      "U3:7",
       "J5:2"
     ],
     "antenna_fill_mm2": 0.0,
@@ -199,10 +195,11 @@
   },
   "router": "own",
   "variant": "attempt 4: own router, via cost 30, F 1.6, B 1.3",
-  "note": "created from the official board (route_gate.py init)",
-  "timestamp": "2026-11-11T08:21:11+01:00",
+  "runs": 8,
+  "note": "design changed, baseline reset (before: 0 open, DRC 0, islands 0, 156 Vias, 789.6 mm)",
+  "timestamp": "2026-11-11T23:00:47+01:00",
   "tools": {
     "kicad": "9.0.8",
-    "repo": "v1-legacy-27-g93cbe9c-dirty"
+    "repo": "v1-legacy-31-g111d1f9-dirty"
   }
 }

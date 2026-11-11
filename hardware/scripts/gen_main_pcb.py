@@ -82,7 +82,7 @@ STACKUP = [
 # Power = nets with motor or supply current up to 2 A (main paths pre-routed), plus VLED (LED chain up to 0.5 A).
 # ISEN (IPROPI) and all other signals stay in the default class. The width of the class is only the
 # default value in the GUI; what route_fix.py lays down is defined there in WIDTHS.
-POWER_NETS = ["/VSYS", "/BAT_IN", "/VBUS_J4", "/OUT_A", "/OUT_B", "/VLED", "/VLED_SW", "/SW3V3"]
+POWER_NETS = ["/VSYS", "/BAT_IN", "/VBUS_J4", "/OUT_A", "/OUT_B", "/VLED", "/VLED_SW"]
 SUPPLY_NETS = ["/+3V3", "/GND"]
 POWER_TRACK = 0.4  # approx. 1.5 A at 35 µm copper; at the 0.5 mm pins of the DRV8213 only short 0.3 mm stubs
 STUB_TRACK = 0.3   # stubs at fine-pitch pins
@@ -95,9 +95,9 @@ SIGNAL_TRACK = 0.15  # pre-routed signal stubs
 SUPPLY_TRACK = 0.25  # 3V3, GND (still fits the 0.5 mm pins of LIS2DH12/DRV8213)
 EDGE_TRACK_Y = BOARD_W / 2 - 0.6  # distance of the edge tracks OUT_A/OUT_B from the centre (bottom)
 COL1_X = -1.9  # 0402 row at the right module pins (placement.COL1)
-BUCK_EDGE_Y = 6.5   # rev B: VSYS track along the +y edge from the Q1 vias to C8/U3 (0.3 mm; edge clearance 0.4,
-                    # 0.18 mm to the U3 pads at y 6.22)
-BUCK_VIA_Y = 6.47   # outer VSYS via of preroute_battery_vsys (0.5 mm, stays inside the 0.32 mm edge keepout)
+VSYS_EDGE_Y = 6.5   # rev B: VSYS track along the +y edge from the Q1 vias to C8, U3 (IN, EN) and R6 (0.3 mm; edge
+                    # clearance 0.4, 0.3 mm to the U3 pads ending at y 6.05)
+VSYS_VIA_Y = 6.47   # outer VSYS via of preroute_battery_vsys (0.5 mm, stays inside the 0.32 mm edge keepout)
 
 
 
@@ -594,17 +594,17 @@ def preroute_battery_vsys(board, fps):
     J2 pads 3/4 to the south, two vias right of C2 pin 1, on top into its pad (and via the C1–C2 track on to VM)."""
     net = pad_of(fps["Q1"], "2").GetNet()
     d = pad_of(fps["Q1"], "2").GetPosition()
-    # rev B: the vias sit right of the inductor L1 (x 5.5) instead of x 4.67, the second one towards the edge; from
-    # the outer via the VSYS edge track (0.3 mm, y BUCK_EDGE_Y) runs west to C8/U3 (preroute_buck). On the bottom the path
-    # jogs back to x 4.67 (between J2 pads 3 and 4) and continues south as before.
-    top, top2 = rel(5.5, pcbnew.ToMM(d.y) - ORIGIN[1]), rel(5.5, BUCK_VIA_Y)
+    # rev B: the vias sit at x 5.5 (right of C8) instead of x 4.67, the second one towards the edge; from the outer
+    # via the VSYS edge track (0.3 mm, y VSYS_EDGE_Y) runs west past C8 and U3 (preroute_ldo connects them) into R6
+    # pad 1 (VBAT divider). On the bottom the path jogs back to x 4.67 (between J2 pads 3 and 4) and continues south.
+    top, top2 = rel(5.5, pcbnew.ToMM(d.y) - ORIGIN[1]), rel(5.5, VSYS_VIA_Y)
     low, low2 = rel(5.0, -0.05), rel(5.0, -0.75)  # right of C2 pin 1; the gap C1/C2 stays free for signals
     add_track(board, net, pcbnew.F_Cu, MAIN_TRACK, (d.x, d.y), top, top2)
     add_via(board, net, *top)
     add_via(board, net, *top2)
-    c8 = pad_of(fps["C8"], "1").GetPosition()
-    edge = (top2[0], mm(ORIGIN[1] + BUCK_EDGE_Y))
-    add_track(board, net, pcbnew.F_Cu, 0.3, top2, edge, (c8.x, edge[1]))
+    r6 = pad_of(fps["R6"], "1").GetPosition()
+    edge = (top2[0], mm(ORIGIN[1] + VSYS_EDGE_Y))
+    add_track(board, net, pcbnew.F_Cu, 0.3, top2, edge, (r6.x, edge[1]), (r6.x, r6.y))
     add_track(board, net, pcbnew.B_Cu, MAIN_TRACK, top2, top, rel(4.67, 5.0), rel(4.67, 0.28), low, low2)
     add_via(board, net, *low)
     add_via(board, net, *low2)
@@ -655,7 +655,7 @@ def preroute_bat_in(board, fps):
 def preroute_ties(board, fps):
     """Short connections where Freerouting fails:
     - U4 (LIS2DH12): 3V3 pins 9–10–2–3 (CS, SA0) and GND pins 5–6–7–8
-    - U3 (buck TPS62162): see preroute_buck()
+    - U3 (LDO TPS7A2633): see preroute_ldo()
     - OUT_A to the detection resistors R3/R5: on In2 from the output via upwards, via, then R3.1 – R5.1
     """
     # LIS2DH12: 3V3 (9–10, 2–9 under the package, 2–3 for SA0) and the GND pins 5–8 connected; so only SCL, 3V3, SDA, INT
@@ -665,7 +665,7 @@ def preroute_ties(board, fps):
         pa, pb = pad_of(fps[ref], a), pad_of(fps[ref], b)
         add_track(board, pa.GetNet(), pcbnew.F_Cu, 0.2, (pa.GetPosition().x, pa.GetPosition().y),
                   (pb.GetPosition().x, pb.GetPosition().y))
-    preroute_buck(board, fps)
+    preroute_ldo(board, fps)
     out_a = pad_of(fps["U2"], "2")
     va = (out_a.GetPosition().x + mm(1.15), out_a.GetPosition().y)
     r3, r5 = pad_of(fps["R3"], "1").GetPosition(), pad_of(fps["R5"], "1").GetPosition()
@@ -676,53 +676,64 @@ def preroute_ties(board, fps):
     add_track(board, out_a.GetNet(), pcbnew.F_Cu, 0.25, v, (r3.x, r3.y), (r5.x, r5.y))
 
 
-def buck_thermal_via(board, buck, j2, gnd):
-    """One via in the exposed pad of the buck U3 (rev B). Under it, on the bottom, lie the J2 pads (1.4 mm, pitch
-    2.54 mm, gap 1.14 mm): two vias do not fit between them, one does, centred in the gap between pads 2 and 3."""
-    ep = pad_of(buck, "9").GetPosition()
+def ldo_thermal_vias(board, ldo, j2, gnd):
+    """Two vias in the exposed pad (pad 7) of the LDO U3 (rev B, up to about 0.5 W with 4 x AA). Under the EP, on the
+    bottom, lie the J2 pads (1.4 mm, pitch 2.54 mm, gap 1.14 mm): the vias sit centred in the gap between pads 2 and 3,
+    one above the other (0.55 mm apart = 0.25 mm hole to hole), 0.17-0.18 mm clear of the U3 pin rows."""
+    ep = pad_of(ldo, "7").GetPosition()
     p2, p3 = pad_of(j2, "2").GetPosition(), pad_of(j2, "3").GetPosition()
-    add_via(board, gnd, (p2.x + p3.x) // 2, ep.y)
+    x = (p2.x + p3.x) // 2
+    for dy in (-0.27, 0.28):
+        add_via(board, gnd, x, ep.y + mm(dy))
 
 
-def preroute_buck(board, fps):
-    """3.3 V buck TPS62162 (rev B, docs/proposal-supply-buck.md), U3 with rotation 90 at (2.2, 4.9): pins 1-4
-    (PGND, VIN, EN, AGND) at y 5.85, pins 5-8 (FB, VOS, SW, PG) at y 3.95. Locked tracks for the whole block so the
-    switch-node loop stays tight and the router only has to bring 3V3 onwards:
-    - VIN - EN tie (0.2 mm), VIN up to the VSYS edge track at y 6.42 (0.3 mm) which comes from the Q1 vias
-      (preroute_battery_vsys) and ends in C8 pad 1 (BUCK_EDGE_Y)
-    - SW: pin 7 -> L1 pad 1 (0.3 mm); L1 pad 2 -> C9 pad 1 (0.3 mm); VOS pin 6 -> L1 pad 2 (0.2 mm)
-    - GND stubs PGND (1), AGND (4), FB (5) into the exposed pad (the thermal vias sit in it)"""
+def preroute_ldo(board, fps):
+    """3.3 V LDO TPS7A2633 (rev B, docs/proposal-supply-standby.md), U3 with rotation 270 at (2.4, 4.97): EN (4),
+    GND (5), IN (6) at y 5.86 towards the edge, PG (3), NC (2), OUT (1) at y 4.08 towards the centre. Locked tracks:
+    - EN and IN straight up into the VSYS edge track at y VSYS_EDGE_Y (0.2 mm next to the 0.65 mm pitch pads), C8 pad 1
+      up into the same track (0.3 mm): EN is tied to IN through the track, C8 sits 0.8 mm right of IN
+    - C8 pad 2 (GND) west into the exposed pad, GND (5), NC (2) and PG (3) stubs into the exposed pad
+    - OUT (1) down into C9 pad 1 (0.3 mm), the output capacitor right under the pin
+    - 3V3 trunk west to J2 pad 1 (via, In2, via, B.Cu, 0.3 mm); the rest of 3V3 is left to the router"""
     u3 = fps["U3"]
-    assert round(u3.GetOrientationDegrees()) % 360 == 90, "preroute_buck expects U3 with 90°"
+    assert round(u3.GetOrientationDegrees()) % 360 == 270, "preroute_ldo expects U3 with 270°"
 
     def q(ref, num):
         p = pad_of(fps[ref], num).GetPosition()
         return p.x, p.y
 
-    vin, en, sw, vos = q("U3", "2"), q("U3", "3"), q("U3", "7"), q("U3", "6")
-    vsys = pad_of(fps["U3"], "2").GetNet()
-    add_track(board, vsys, pcbnew.F_Cu, 0.2, vin, en)
-    c8 = q("C8", "1")
-    y_edge = mm(ORIGIN[1] + BUCK_EDGE_Y)
-    # escapes next to the 0.25 mm pads with 0.2 mm (0.5 mm pitch leaves 0.15 mm to the neighbour), then wider
-    add_track(board, vsys, pcbnew.F_Cu, 0.2, vin, (vin[0], y_edge))
-    add_track(board, vsys, pcbnew.F_Cu, 0.3, (c8[0], y_edge), c8)
-    # SW node: pin 7 straight out, then diagonally into L1 pad 1 (clear of PG pin 8 and VOS pin 6)
-    l1, l2, c9 = q("L1", "1"), q("L1", "2"), q("C9", "1")
-    swnet = pad_of(fps["U3"], "7").GetNet()
-    add_track(board, swnet, pcbnew.F_Cu, 0.2, sw, (sw[0], sw[1] - mm(0.45)))
-    add_track(board, swnet, pcbnew.F_Cu, 0.3, (sw[0], sw[1] - mm(0.45)), (l1[0], l1[1] + mm(0.6)), l1)
-    out = pad_of(fps["L1"], "2").GetNet()
-    add_track(board, out, pcbnew.F_Cu, 0.3, l2, (c9[0], l2[1]), c9)
-    add_track(board, out, pcbnew.F_Cu, 0.2, vos, (vos[0], vos[1] - mm(0.45)), (l2[0], l2[1] + mm(0.55)), l2)
-    # GND pins into the exposed pad (pad 9)
-    ep = pad_of(fps["U3"], "9")
-    bb = ep.GetBoundingBox()
-    for num in ("1", "4"):
+    vsys = pad_of(u3, "6").GetNet()
+    y_edge = mm(ORIGIN[1] + VSYS_EDGE_Y)
+    for num in ("4", "6"):
         p = q("U3", num)
-        add_track(board, ep.GetNet(), pcbnew.F_Cu, 0.2, p, (p[0], bb.GetBottom() - mm(0.1)))
+        add_track(board, vsys, pcbnew.F_Cu, 0.2, p, (p[0], y_edge))
+    c8 = q("C8", "1")
+    add_track(board, vsys, pcbnew.F_Cu, 0.3, c8, (c8[0], y_edge))
+    ep = pad_of(u3, "7")
+    bb = ep.GetBoundingBox()
+    gnd = ep.GetNet()
+    g8 = q("C8", "2")
+    add_track(board, gnd, pcbnew.F_Cu, 0.25, g8, (bb.GetRight() - mm(0.1), g8[1]))
     p = q("U3", "5")
-    add_track(board, ep.GetNet(), pcbnew.F_Cu, 0.2, p, (p[0], bb.GetTop() + mm(0.1)))
+    add_track(board, gnd, pcbnew.F_Cu, 0.2, p, (p[0], bb.GetBottom() - mm(0.1)))
+    for num in ("2", "3"):
+        p = q("U3", num)
+        add_track(board, gnd, pcbnew.F_Cu, 0.2, p, (p[0], bb.GetTop() + mm(0.1)))
+    out, c9 = q("U3", "1"), q("C9", "1")
+    net3 = pad_of(u3, "1").GetNet()
+    bend = (out[0], out[1] - mm(0.6))
+    add_track(board, net3, pcbnew.F_Cu, 0.3, out, bend, (c9[0], bend[1] - abs(c9[0] - out[0])), c9)
+    # 3V3 trunk to the module side (otherwise the router connected the module cluster through a 40 mm detour around
+    # the USB end, about 0.36 ohm): via left of the OUT track, 0.3 mm on In2 west under C9, via, B.Cu into J2 pad 1;
+    # from there the router has the short B.Cu path along the +y edge to module pad 3 (as in the buck trial).
+    v1 = rel(2.675, 3.375)
+    v2 = rel(-1.775, 2.525)
+    j2 = q("J2", "1")
+    add_track(board, net3, pcbnew.F_Cu, 0.3, (bend[0], bend[1]), v1)
+    add_via(board, net3, *v1)
+    add_track(board, net3, pcbnew.In2_Cu, 0.3, v1, rel(2.025, 2.725), rel(-1.475, 2.725), v2)
+    add_via(board, net3, *v2)
+    add_track(board, net3, pcbnew.B_Cu, 0.3, v2, (j2[0], v2[1] + (j2[0] - v2[0])), j2)
 
 
 def preroute_usb(board, fps):
@@ -909,7 +920,7 @@ def main():
     edge_keepout(board)
     plane_keepout(board)
     thermal_vias(board, footprints["U2"], netinfo["/GND"])
-    buck_thermal_via(board, footprints["U3"], footprints["J2"], netinfo["/GND"])  # buck EP (rev B)
+    ldo_thermal_vias(board, footprints["U3"], footprints["J2"], netinfo["/GND"])  # LDO EP (rev B)
     preroute_outputs(board, footprints["U2"], footprints["BT1"], footprints["BT2"])
     preroute_supply(board, footprints)
     preroute_usb(board, footprints)

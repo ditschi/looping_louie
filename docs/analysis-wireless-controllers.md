@@ -199,8 +199,8 @@ partition table after that ([firmware-architecture.md](firmware-architecture.md)
 | Light sleep | 180 µA (35 µA with peripherals powered down) | (verified) |
 | Deep sleep | 7 µA | (verified) |
 
-In deep sleep the quiescent current of the 3.3 V regulator dominates (buck TPS62162 17 µA, board approx. 25 µA
-above VSYS 3.8 V, higher below, main-board-c6.md 2.7). TX peak 382 mA: regulator and buffer are enough (TPS62162 1 A). **Wi-Fi 6 / TWT** only works in **STA mode** (verified, IDF example `itwt`). In hotspot mode with
+In deep sleep the board draws approx. 15–18 µA (LDO TPS7A2633 2 µA, ESP 7 µA, divider, sensor; main-board-c6.md 2.7).
+TX peak 382 mA: regulator and buffer are enough (TPS7A2633 500 mA). **Wi-Fi 6 / TWT** only works in **STA mode** (verified, IDF example `itwt`). In hotspot mode with
 8 phones it brings nothing. Whether the C6 SoftAP speaks 802.11ax does not matter for phones anyway (unverified).
 
 ### 3b.6 Free heap (ESP-IDF examples)

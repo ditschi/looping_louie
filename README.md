@@ -19,13 +19,13 @@ envelope check `just hull` confirms it stays inside the AA diameter.*
 
 ## Status
 
-> 2026-11-11 · second version, nothing ordered yet. Rev B of the main board (buck converter for 3.3 V, branch
-> `revb-buck`) is the design to order; rev A with the 3.3 V LDO stays on `main` as a fallback.
+> 2026-11-11 · second version, nothing ordered yet. Rev B of the main board (low-Iq LDO TPS7A2633 for 3.3 V,
+> branch `revb-buck`) is the design to order; rev A with the SPX3819 LDO stays on `main` as a fallback.
 
 | Part | State |
 |---|---|
 | Concept | done ([hardware](docs/hardware-concept.md), [software](docs/software-concept.md), [web UI](docs/web-ui-concept.md)) |
-| Main board | schematic done, routed (own router), ERC/DRC 0, 0 unconnected; rev B with the buck converter TPS62162 (VSYS 3.0–6.6 V), delta review of the buck block before ordering ([main-board-c6.md](docs/main-board-c6.md)) |
+| Main board | schematic done, routed (own router), ERC/DRC 0, 0 unconnected; rev B with the LDO TPS7A2633 (VSYS 3.0–6.6 V, standby approx. 15–18 µA), datasheet delta review done ([main-board-c6.md](docs/main-board-c6.md)) |
 | Charger board | schematic and layout done, ERC/DRC clean ([charger-board.md](docs/charger-board.md)) |
 | 3D-printed parts | AA sleeve, C-cell adapter and charger holder modelled; checked against the current layout (`just hull`) |
 | Firmware | Rust, step 0 written (bring-up and test probes), not built yet ([firmware/louie-fw](firmware/louie-fw/README.md)) |
@@ -37,7 +37,7 @@ The old MicroPython/ESP8266 version is in the tag `v1-legacy`.
 
 | Assembly | Description |
 |---|---|
-| **Main board** | AA cell format, 4 layers, components on one side: ESP32-C6-MINI-1 (Wi-Fi, BLE), DRV8213 H-bridge with current sensing, USB-C for flashing and 5 V operation, buck converter for 1S Li-ion up to 4 × AA, lever detection; solder pads on the bottom for player inputs, LEDs, I²C |
+| **Main board** | AA cell format, 4 layers, components on one side: ESP32-C6-MINI-1 (Wi-Fi, BLE), DRV8213 H-bridge with current sensing, USB-C for flashing and 5 V operation, supply for 1S Li-ion up to 4 × AA, lever detection; solder pads on the bottom for player inputs, LEDs, I²C |
 | **Charger board** | also AA format: USB-C (charging), charge controller, LiPo connection. Sits upright in the second compartment (replaces the bridge there) or is glued into the base |
 | **Bridge** | copper AA dummy for the second compartment when the charger board sits in the base |
 | **AA sleeve / C-cell adapter** | 3D-printed shell with end caps that holds the main board in the AA compartment; an extra sleeve makes it fit the C-cell compartment of the old Louie ([hardware/mechanics](hardware/mechanics/README.md)) |

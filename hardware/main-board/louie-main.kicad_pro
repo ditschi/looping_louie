@@ -546,10 +546,6 @@
         "pattern": "/VLED_SW"
       },
       {
-        "netclass": "Power",
-        "pattern": "/SW3V3"
-      },
-      {
         "netclass": "Supply",
         "pattern": "/+3V3"
       },

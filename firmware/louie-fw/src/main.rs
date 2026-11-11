@@ -13,8 +13,8 @@ const TICK_MS: u32 = 10;
 const RAMP_MV_PER_S: i32 = 4000;
 const SETPOINT_STEP_MV: i32 = 250;
 const SETPOINT_MAX_MV: i32 = 5000;
-/// Below this VSYS no start (placeholder, A5). Rev B (buck TPS62162, docs/proposal-supply-buck.md): in 100 % mode the
-/// converter passes VSYS minus about 0.2 V at a 380 mA peak, so 3V3 stays above 3.0 V down to about VSYS 3.5 V.
+/// Below this VSYS no start (placeholder, A5). Rev B (LDO TPS7A2633, docs/main-board-c6.md 2.7): dropout about 0.27 V
+/// typ (0.45 V max) at a 380 mA radio peak, so 3V3 stays above 3.0 V down to about VSYS 3.3-3.45 V.
 /// Final value from the prototype test (review R-B2: filtered reading, hysteresis).
 const VSYS_MIN_MV: u32 = 3500;
 /// Stall: current above the limit for this long → brake (placeholders until the prototype, test-hardware.md 6)

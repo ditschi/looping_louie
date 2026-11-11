@@ -1,9 +1,11 @@
 # Proposal: low standby current with a Li-ion cell (finding W21)
 
-Status: 2026-11-11 · Decision proposal for open item F29 / finding W21 ([wiring-review.md](wiring-review.md) 8.2).
+Status: **decided 2026-11-11: option A (LDO TPS7A2633) is implemented in rev B** (branch `revb-buck`); the sections
+below are kept as the record of the comparison. Decision proposal for open item F29 / finding W21
+([wiring-review.md](wiring-review.md) 8.2).
 Requirement from the project owner: **a 1S Li-ion cell must be usable**, including a low standby current, on the same
-board that also runs from 3–4 × AA (VSYS 3.0–6.6 V). Nothing in the generators, BOM or firmware has been changed;
-this document compares the options. Current design: rev B with the buck TPS62162 ([main-board-c6.md](main-board-c6.md) 2.7).
+board that also runs from 3–4 × AA (VSYS 3.0–6.6 V). At the time of writing rev B used the buck TPS62162;
+the current design is in [main-board-c6.md](main-board-c6.md) 2.7.
 
 Markers: **(verified)** = read in the datasheet PDF named in section 7, or queried live from the JLCPCB parts API on
 2026-11-11 · **(unverified)** = estimate; a prototype measurement decides.

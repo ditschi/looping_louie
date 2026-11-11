@@ -23,7 +23,8 @@ can be found in Git.
 | 2026-11-06 | Mode preview | in the browser via WebAssembly | on the server or JS interpreter |
 | 2026-11-06 | License | PolyForm Noncommercial (software), CC BY-NC-SA 4.0 (hardware/docs) | – (previously open) |
 | 2026-11-09 | Supply range | VSYS 3.0–6.6 V (1S Li-ion up to 4 × AA) | 3.0–5.5 V with LDO AP2112K |
-| 2026-11-11 | 3.3 V regulator | buck converter TPS62162 + 2.2 µH (rev B, the design to order) | LDO SPX3819 (rev A, stays on `main` as fallback); better LDO, buck-boost, limit to 6.0 V |
+| 2026-11-11 | 3.3 V regulator | buck converter TPS62162 + 2.2 µH (rev B trial) | LDO SPX3819 (rev A, stays on `main` as fallback); better LDO, buck-boost, limit to 6.0 V |
+| 2026-11-11 | 3.3 V regulator | low-Iq LDO TPS7A2633 in WSON-6 (rev B, the design to order) | buck TPS62162 (no power-save mode below 3.8 V), buck TPS62840 (6.5 V limit), hybrid buck + LDO |
 
 
 ## 1. Controller
@@ -114,6 +115,26 @@ can be found in Git.
   and the firmware cut-off of 3.6 V (now 3.4–3.5 V filtered, placeholder `VSYS_MIN_MV = 3500`).
 - Source: proposal-supply-buck.md (sections 3, 4, 8, 10), review-2026-11-10.md R-B1/R-B2/R-B4, main-board-c6.md 2.7
   of rev A (SPX3819 table)
+
+### Buck converter → low-Iq LDO TPS7A2633 (2026-11-11, same day)
+- Decision (project owner): U3 = **TPS7A2633DRVR** (LDO 2.4–18 V, 500 mA, IQ 2 µA, WSON-6 2 × 2 with exposed pad), C8
+  4.7 µF 16 V at IN, C9 22 µF at OUT; L1 and the switch node removed. Rev B stays the design to order (branch
+  `revb-buck`), rev A with the SPX3819 stays on `main`. Requirement: a 1S Li-ion cell must work with a low standby
+  current. Current numbers: main-board-c6.md 2.7.
+- Reason: the datasheet delta review found that the TPS6216x does not enter power-save mode below about 3.8 V input
+  (wiring-review.md W21): with a Li-ion cell between 3.8 and 3.4 V the board would draw mA in deep sleep. The same rule
+  is in TPS629210, TPS62902 and TPS6213x. The LDO gives about 15–18 µA over the whole range, needs no inductor (W18–W20
+  and the switch node next to USB D− disappear) and costs less than buck + inductor.
+- Why the "better LDO" (O1) rejected in the morning is acceptable now: the heat argument came from the SPX3819 in
+  SOT-23-5 (θJA 191 K/W, about +90 K at 0.47 W). The TPS7A26 in WSON-6 has 73.3 K/W, about +34 K at 6.4 V / 150 mA.
+  With Li-ion the LDO is as efficient as a buck; with 4 × AA the play time drops by perhaps 10 % (unverified). The
+  TPS7A2633 had also been rejected on 2026-11-09 for footprint, stock and price; at JLC it now has 809 in stock at
+  0.76 USD.
+- Rejected: **TPS62840** buck (PFM down to 100 % mode, 60 nA) – VIN 6.5 V recommended and EN 6.5 V absolute, 4 fresh
+  alkaline cells sit at up to 6.6 V, 3.7 USD in the small package; **hybrid** TPS62162 + TPS7A26 with the buck enabled by
+  IO22 – two regulators, ESP at 3.1 V, most parts; TPS62160 at 3.1 V out, TPS62125 (300 mA), TPS62177 (VIN from 4.75 V),
+  TPS7A25 (300 mA), LT8607/LTC3621 (stock, price), L6981 (VIN from 3.5 V).
+- Source: proposal-supply-standby.md, wiring-review.md 8 (W21) and 9
 
 ### Introduction of the 4-layer trial in the generator (2026-11-03)
 - Process: first a separate project `hardware/main-board-4l/` with selectable layer count (`just pcb einseitig 4`, `four-layer`, `images-4l`), then taken over unchanged (byte-identical) into `hardware/main-board/`; `placement_zweiseitig.py` (C3 state) removed, `placement_einseitig.py` → `placement.py`.

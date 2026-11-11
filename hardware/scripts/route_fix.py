@@ -57,8 +57,7 @@ SKIP_NETS = {"/GND"}  # GND through the In1 zone and stitch.py
 # (Schottky/Q1 → buffer → VM, OUT_A/OUT_B, VBUS, BAT_IN) are pre-routed in gen_main_pcb.py with 0.4–0.5 mm on the
 # outer layers; here only the LDO input (up to about 0.4 A), LED LDO U6 and VLED (up to 0.5 A, PTC F1).
 # Per IPC-2221 (20 K) 0.3 mm carries about 0.7 A outside, about 0.37 A inside (In2, 15 µm); so VLED at least 0.4 mm.
-WIDTHS = {"/VSYS": (0.4, 0.3), "/BAT_IN": (0.4,), "/+3V3": (0.25, 0.15), "/VLED": (0.4,), "/VLED_SW": (0.4,),
-          "/SW3V3": (0.3,)}
+WIDTHS = {"/VSYS": (0.4, 0.3), "/BAT_IN": (0.4,), "/+3V3": (0.25, 0.15), "/VLED": (0.4,), "/VLED_SW": (0.4,)}
 # pads with µA current in power nets (voltage divider VSYS, test point): the minimum track suffices there.
 # The strings match the DRC/_describe() item description (German KiCad locale: "von" = "of").
 LOW_CURRENT_PADS = {"Pad 1 [/VSYS] von R6", "Pad 1 [/VSYS] von TP1"}

@@ -73,7 +73,7 @@ def FLAG(n, net, at):
 BLOCKS = [
     ("USB-C (flashing + 5 V operation), ESD protection, VBUS detection", (25.4, 25.4)),
     ("Power path: VBUS via D2, battery/charger board (BAT_IN) via Q1 -> VSYS", (25.4, 116.84)),
-    ("3.3 V buck converter and battery voltage (VSYS)", (25.4, 200.66)),
+    ("3.3 V regulator (LDO) and battery voltage (VSYS)", (25.4, 200.66)),
     ("ESP32-C6", (139.7, 25.4)),
     ("Output stage (DRV8213, current sensing IPROPI, current limit approx. 2 A)", (254, 25.4)),
     ("Lever detection (lever closed = SENSE HIGH) and contacts at the board ends", (254, 175.26)),
@@ -126,17 +126,14 @@ PARTS = [
     FLAG(2, "GND", (114.3, 129.54)),
     FLAG(4, "BAT_IN", (101.6, 162.56)),
 
-    # --- 3.3 V buck (rev B, docs/proposal-supply-buck.md): TPS62162 fixed 3.3 V, 3-17 V in, 1 A, 17 uA, WSON-8 2x2
-    # (same DSG package as the DRV8213). EN tied to VIN, FB to AGND (fixed version), PG open, VOS at the output
-    # capacitor. L1 2.2 uH (Murata DFE201612P, 2016), CIN 10 uF, COUT 22 uF. Replaces the LDO SPX3819 (rev A).
-    dict(ref="U3", lib="louie:TPS62162DSG", value="TPS62162DSGR", lcsc="C40256",
-         fp="Package_SON:WSON-8-1EP_2x2mm_P0.5mm_EP0.9x1.6mm", at=(63.5, 228.6), ref_at=(-10.16, -8.89),
+    # --- 3.3 V LDO (rev B, docs/proposal-supply-standby.md): TPS7A2633 fixed 3.3 V, 2.4-18 V in, 500 mA, IQ 2 uA,
+    # WSON-6 2x2 with thermal pad. Low standby over the whole VSYS range 3.0-6.6 V (the TPS62162 buck stayed in PWM
+    # below about 3.8 V). EN tied to IN, NC and PG to GND (TI: better thermal performance), C8 at IN, C9 at OUT.
+    dict(ref="U3", lib="louie:TPS7A26DRV", value="TPS7A2633DRVR", lcsc="C2876256",
+         fp="Package_SON:WSON-6-1EP_2x2mm_P0.65mm_EP1x1.6mm", at=(63.5, 228.6), ref_at=(-7.62, -7.62),
          val_at=(2.54, 10.16),
-         pins={"2": "VSYS", "3": "VSYS", "1": "GND", "4": "GND", "9": "GND", "5": "GND", "6": "+3V3", "7": "SW3V3"}),
-    dict(ref="L1", lib="Device:L", value="2.2uH", lcsc="C79317", fp="Inductor_SMD:L_Murata_DFE201610P",
-         at=(91.44, 220.98), pins={"1": "SW3V3", "2": "+3V3"}),
-    C("C8", "10u 10V", "VSYS", "GND", (38.1, 228.6)),
-    FLAG(5, "+3V3", (114.3, 220.98)),  # the buck output (inductor) drives +3V3; the ERC needs a power flag
+         pins={"6": "VSYS", "4": "VSYS", "1": "+3V3", "3": "GND", "5": "GND", "2": "GND", "7": "GND"}),
+    C("C8", "4.7u 16V", "VSYS", "GND", (38.1, 228.6)),
 
     # --- Battery voltage: 680k/470k, VSYS up to 6.6 V (4 x AA fresh) -> 2.7 V (C6 ADC up to 3.3 V) --------
     R("R6", "680k", "VSYS", "VBAT_ADC", (38.1, 264.16)),
@@ -152,7 +149,7 @@ PARTS = [
                # expansions on the bottom (all optional): IO15 LED supply on, IO20/IO21 player inputs,
                # IO23 LED data, RXD console (J3-5); IO22 free (spare)
                "20": "IO15", "26": "IO20", "27": "IO21", "29": "IO23", "30": "RXD"}),
-    C("C9", "22u 10V", "+3V3", "GND", (152.4, 139.7), fp=C0805),  # buck output capacitor (rev B)
+    C("C9", "22u 10V", "+3V3", "GND", (152.4, 139.7), fp=C0805),  # LDO output / 3V3 buffer (TPS7A26: 1-100 uF)
     C("C10", "100n", "+3V3", "GND", (165.1, 139.7)),
     R("R2", "10k", "+3V3", "EN", (177.8, 139.7)),
     C("C12", "1u", "EN", "GND", (190.5, 139.7)),

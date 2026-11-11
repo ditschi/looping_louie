@@ -1,10 +1,11 @@
 # Main board with ESP32-C6: module, pinout, motor driver, layer stack, routing
 
 Status: 2026-11-11 · Describes the current state of the main board (board A, `hardware/main-board/`): **rev B**
-(buck converter U3, branch `revb-buck`), the design to order; rev A with the 3.3 V LDO stays on `main` as a fallback.
+(low-Iq LDO TPS7A2633 for 3.3 V, branch `revb-buck`), the design to order; rev A with the SPX3819 LDO stays on `main`
+as a fallback.
 Current decisions: **ESP32-C6-MINI-1**, motor driver **DRV8213DSG**, **USB-C J4** on the board (flashing
-only via J4), **buck converter TPS62162** for 3.3 V, **4 layers**, machine-assembled on one side only (bottom side only pads, test points and DNP footprints).
-Rejected variants (C3, DRV8833, 2 layers, earlier USB variants, 3.3 V LDO): [decision-history.md](decision-history.md).
+only via J4), **LDO TPS7A2633** for 3.3 V, **4 layers**, machine-assembled on one side only (bottom side only pads, test points and DNP footprints).
+Rejected variants (C3, DRV8833, 2 layers, earlier USB variants, SPX3819, buck TPS62162): [decision-history.md](decision-history.md).
 Background: [analysis-wireless-controllers.md](analysis-wireless-controllers.md) 3b, [hardware-concept.md](hardware-concept.md),
 [idea-usb-c-main-board.md](idea-usb-c-main-board.md). Firmware: [firmware-architecture.md](firmware-architecture.md).
 
@@ -22,15 +23,14 @@ estimate, or not checked in the datasheet.
   No shunt, no nSLEEP/nFAULT, only 2 GPIOs.
 - **Lever:** "lever closed" = HIGH (R3 to GND, R4 to 3V3); the lever wakes the chip with ANY_HIGH on IO3.
 - **USB-C J4** with ESD (flow-through), CC resistors and power path (D2 for VBUS, Q1 for BAT_IN).
-- **Supply:** VSYS 3.0–6.6 V: 1S Li-ion, USB, 3 × or 4 × AA; buck converter **TPS62162** (U3) with 2.2 µH (L1):
-  approx. 50 mW loss at 6.4 V, board standby approx. 25 µA above VSYS 3.8 V (below that higher, W21), cut-off at
-  3.4–3.5 V filtered. No 9 V block. All supply
-  numbers: 2.7.
+- **Supply:** VSYS 3.0–6.6 V: 1S Li-ion, USB, 3 × or 4 × AA; LDO **TPS7A2633** (U3, WSON-6): board standby approx.
+  15–18 µA over the whole range, 0.47 W loss at 6.4 V / 150 mA (4 fresh alkaline cells), cut-off at 3.4–3.5 V filtered.
+  No 9 V block. All supply numbers: 2.7.
 - **Zigbee:** the hardware needs **nothing extra**. A coordinator alongside the device's own hotspot or alongside
   a BLE scan is **not supported (X)** by Espressif; Zigbee is only realistic on the home Wi-Fi.
 - **Layers:** 4 layers (JLC04081H-3313), In1 solid GND, rules 0.15/0.15 mm, via 0.3/0.5 mm (chapter 11).
 - **Routing:** complete with the own router: ERC 0, DRC 0 errors and 0 warnings, 0 unconnected, 0 GND islands,
-  162 vias (rev B, 11.4).
+  149 vias (rev B, 11.4).
 - **Optional pads on the bottom:** player inputs J6, LED connector J7, test points, DNP footprints (11.7).
 
 ---
@@ -160,32 +160,33 @@ runs on the bottom in the edge strip. The edge strip is at the **−y** edge (OU
 
 **This section is the single reference for the supply numbers** (VSYS range, 3.3 V regulator, dissipation, standby,
 cut-off thresholds, divider); other documents link here instead of repeating them. Decisions: VSYS 3.0–6.6 V
-(2026-11-09, F18) and **buck converter U3 instead of the 3.3 V LDO (2026-11-11, rev B = the design to order)**.
-Rev A with the LDO SPX3819 stays on branch `main` as a fallback; reasons and rejected options:
-[decision-history.md](decision-history.md), worked-out proposal and sources: [proposal-supply-buck.md](proposal-supply-buck.md).
+(2026-11-09, F18) and **low-Iq LDO TPS7A2633 for 3.3 V (2026-11-11, rev B = the design to order)**, so that a 1S Li-ion
+cell keeps a low standby current over its whole range. The buck TPS62162 tried earlier the same day did not enter
+power-save mode below about 3.8 V input (finding W21). Rev A with the LDO SPX3819 in SOT-23-5 stays on branch `main` as a
+fallback. Reasons and rejected options: [decision-history.md](decision-history.md); comparison and sources:
+[proposal-supply-standby.md](proposal-supply-standby.md).
 
 Sources on VSYS: protected 1S Li-ion cell on J5/J1 (3.0–4.2 V), USB via D2 (approx. 4.6 V), **3 × or 4 × AA**
 (alkaline up to 6.4–6.6 V fresh, NiMH up to approx. 5.6 V) on BAT_IN. The motor voltage follows the profile of the game
 (`duty = U_target / U_battery`, hardware-concept.md 4); for games with 4 × AA the motor reaches its usual voltage only
 with 4 cells on BAT_IN.
 
-Markers in this section: **(verified)** = TI SLVSAM2E, the Murata specification or the JLC parts API, see the proposal
-and the delta review [wiring-review.md](wiring-review.md) 8 · **(unverified)** = estimate, the prototype decides (tests
-in [test-hardware.md](test-hardware.md) 4.7). **Open findings of the delta review: W18–W21** (below and wiring-review.md 8.2); W21 (standby with Li-ion) is not
-accepted, alternatives for U3: [proposal-supply-standby.md](proposal-supply-standby.md).
+Markers in this section: **(verified)** = TI SBVS290B (TPS7A26) or the JLC parts API (2026-11-11), datasheet delta
+review in [wiring-review.md](wiring-review.md) 9 · **(unverified)** = estimate, the prototype decides (tests in
+[test-hardware.md](test-hardware.md) 4.7).
 
 | Item | Value | Note |
 |---|---|---|
 | VSYS range | **3.0–6.6 V** continuous, 7 V transient (4 fresh alkaline cells, unloaded) | 9 V block and 2S Li-ion are not supported (below) |
-| 3.3 V regulator U3 | **TPS62162DSGR** (TI), synchronous buck, 3.3 V fixed, 1 A, VIN 3–17 V recommended (20 V abs. max), 2.25 MHz with power-save mode at light load, WSON-8 2 × 2 mm (DSG, same package as U2), LCSC C40256 | (verified) |
-| Inductor L1 | **2.2 µH Murata DFE201612P-2R2M=P2**, 2016 (2.0 × 1.6 × 1.2 mm), 144 mΩ max, 1.5 A (40 K rise) / 2.1 A (30 % L drop), LCSC C79317; KiCad footprint `Inductor_SMD:L_Murata_DFE201610P` | (verified, Murata). Ripple approx. 0.33 A p-p at 6.6 V. **W18:** the stock footprint is smaller than Murata's land pattern (0.8 × 1.8 mm pads, 2.4 mm over all) and its 3D model is 1.0 instead of 1.2 mm high |
-| C8 / C9 / C10 | C8 **10 µF 10 V 0402** at VIN · C9 **22 µF 10 V 0805** at the output, VOS senses here · C10 100 nF 0402 at the module side; **C11 dropped** | **W19:** C8 sits about 1.6 mm from VIN and keeps only a fraction of 10 µF at 6.6 V (unverified, no part number yet) |
-| U3 pin wiring | EN tied to VIN, FB to AGND (fixed version), PG open, VOS at L1 pad 2 (output node), PGND/AGND/EP to GND, one tented thermal via in the EP | (verified against SLVSAM2E, wiring-review.md 8.1; VOS position: W20) |
-| Dissipation of U3 | **approx. 50 mW** at 6.4 V / 150 mA (η ≈ 90 %), approx. 40 mW at 4.0 V / 150 mA; θJA 61.8 K/W | (unverified estimate; LDO rev A: 0.47 W) |
-| Standby, board total in deep sleep | **approx. 25 µA with VSYS above about 3.8 V**: U3 17 µA typ (30 µA max) + VBAT divider approx. 5 µA + LIS2DH12 approx. 2 µA + leakage; 4 × AA approx. 10 years. **Below about 3.8 V** (most of a Li-ion cell, low 3 × AA) the converter does not enter power-save mode and switches in PWM until 100 % mode at about 3.4 V: standby likely several hundred µA to a few mA (W21) | (unverified; test T13 at 3.5 / 3.7 / 4.0 / 6.0 V) |
-| Low end (100 % mode) | below approx. VSYS 3.5 V the buck passes VSYS minus I × (RDS(on) + DCR): **approx. 0.2 V at 380 mA** (high side 430 mΩ typ at 3 V + L1 144 mΩ), about 0.26 V when hot; 3V3 ≥ 3.0 V down to approx. VSYS 3.3 V at 150 mA and 3.5 V at 380 mA | (unverified at low VIN; test T12) |
-| UVLO of U3 | 2.7 V falling typ (2.6–2.82 V), 180 mV hysteresis: stops at about 2.7 V, starts at about 2.9 V typ, 3.0 V worst case; recommended VIN minimum 3.0 V | (verified) |
-| Cut-off thresholds (review R-B2) | evaluate **filtered, low-load** VSYS only (e.g. median over 2 s while duty ≤ 20 %), never during the first 300 ms of a ramp or during a stall. **Warn below 3.6 V; end the round at the next pause below 3.4–3.5 V.** Firmware placeholder `VSYS_MIN_MV = 3500` (`firmware/louie-fw/src/main.rs`). Hard floor: UVLO 2.7 V; brownout reset of the C6 as the last resort | final numbers from the sag measurement (test-hardware.md 4.1) and T12 |
+| 3.3 V regulator U3 | **TPS7A2633DRVR** (TI), LDO, 3.3 V fixed (±1 %), 500 mA, VIN 2.4–18 V (20 V abs. max), current limit 525–970 mA, thermal shutdown 165 °C, WSON-6 2 × 2 mm with exposed pad (DRV), LCSC C2876256 | (verified). Second source: TPS7A2601 (adjustable) C2859671 with a divider |
+| C8 / C9 / C10 | C8 **4.7 µF 16 V 0402** at IN (TI: ≥ 1 µF) · C9 **22 µF 10 V 0805** at OUT (TI: 1–100 µF) · C10 100 nF 0402 at the module side; L1 and C11 not fitted | (unverified: effective C8 at 6.6 V under DC bias, no part number yet) |
+| U3 pin wiring | EN (4) tied to IN (6) through the VSYS edge track, OUT (1) to C9, NC (2) and PG (3) to GND (TI: better thermal performance), GND (5) and the exposed pad (7) to GND with two tented thermal vias | (verified against SBVS290B, wiring-review.md 9) |
+| Dissipation of U3, 150 mA average (hotspot mode) | (VSYS − 3.3 V) × I: **0.47 W at 6.4 V** (4 fresh alkaline cells), 0.30 W at 5.3 V (4 × AA mid-life, NiMH), 0.06–0.14 W with Li-ion | θJA 73.3 K/W (JEDEC board): about +34 / +22 / +4…+10 K; on this small board possibly more (unverified; test T14) |
+| Standby, board total in deep sleep | **approx. 15–18 µA over the whole range**: U3 2 µA typ / 4.5 µA max at no load (11–15 µA at 1 mA load, so a few µA at the deep-sleep load) + ESP32-C6 about 7 µA + VBAT divider 3–6 µA + LIS2DH12 about 2 µA + leakage; 1000 mAh Li-ion: years, limited by self-discharge | (unverified; test T13 at 3.5 / 3.7 / 4.0 / 6.0 V). IQ in dropout is not specified |
+| Low end (dropout) | dropout 173 / 280 mV (typ / max) at 250 mA, 355 / 590 mV at 500 mA → **about 0.27 V typ, 0.45 V max at the 380 mA radio peak**; 3V3 ≥ 3.0 V down to about VSYS 3.3–3.45 V; below that 3V3 follows VSYS | (verified table, interpolated; test T12) |
+| Efficiency | 3.3 V / VSYS: about 89 % with Li-ion (as a buck), about 62 % at 5.3 V; with 4 × AA the play time drops by perhaps 10 %, because the motor draws most of the battery current | (unverified; motor current not measured, A2) |
+| UVLO of U3 | 2.09 V falling / 2.15 V rising typ: below VSYS ≈ 3.3 V the output simply follows the input; the C6 brownout reset is the floor | (verified) |
+| Cut-off thresholds (review R-B2) | evaluate **filtered, low-load** VSYS only (e.g. median over 2 s while duty ≤ 20 %), never during the first 300 ms of a ramp or during a stall. **Warn below 3.6 V; end the round at the next pause below 3.5 V** (3.4 V if T12 shows the typical dropout). Firmware placeholder `VSYS_MIN_MV = 3500` (`firmware/louie-fw/src/main.rs`). Brownout reset of the C6 as the last resort | final numbers from the sag measurement (test-hardware.md 4.1) and T12 |
 | VBAT divider R6/R7, C13 | **680 k / 470 k** (ratio 2.447), 100 nF; 6.6 V → 2.7 V at the ADC, 3.0 V → 1.23 V; 3–6 µA | ADC check test-hardware.md 4.5 |
 
 | Part on VSYS | Choice | Why |
@@ -196,30 +197,28 @@ accepted, alternatives for U3: [proposal-supply-standby.md](proposal-supply-stan
 | JP1 | **dropped** | a bypass would put up to 6.6 V on the LEDs |
 | U2 DRV8213, Q1 AO3401A, D2 SS34F | unchanged | VM up to 11 V; 30 V / VGS ±12 V; 40 V. **USB + 4 × AA:** Q1 only blocks while the battery is below VBUS. Above approx. 5.2 V the cells feed through its body diode even with USB plugged in; at a 2 A stall Q1 would dissipate up to approx. 1.6 W. Decision: no hardware change; use USB without AA cells, and the firmware lowers the stall limit to 0.8 A when VBUS is present and VSYS > 5.2 V (approx. 0.6 W for at most 300 ms). A real power mux is open item F28 |
 
-**Switch-node layout (rev B, generated by `gen_main_pcb.preroute_buck()`, nothing in the GUI):**
-- Block at the +y edge on top: U3 (2.4, 4.97, 90°) with pins 1–4 (PGND, VIN, EN, AGND) towards the edge and pins 5–8
-  (FB, VOS, SW, PG) towards the board centre; L1 (2.4, 2.2) with pad 1 (SW) under pin 7; C9 (5.45, 2.1) below Q1;
-  C8 (0.58, 5.6, 90°) with pad 1 (VSYS) at the edge side. Q1 moved 0.1 mm towards the edge to (7.6, 4.95); R6/R7 at
-  x −0.46; J2 unchanged (3.4, 4.3).
-- Net `SW3V3` in net class Power, **0.3 mm, F.Cu only, pre-routed and locked** (pin 7 → L1 pad 1, 0.2 mm next to the
-  pads, about 2.0 mm long); L1 pad 2 → C9 pad 1 (0.3 mm) and VOS → L1 pad 2 (0.2 mm) form the tight output loop.
-- VIN–EN tie and VIN escape pre-routed; VSYS reaches C8 over a **0.3 mm edge track at y 6.5** from the outer VSYS via.
-  The two vias of `preroute_battery_vsys()` moved right of L1 to (5.5, 5.9) and (5.5, 6.47); the bottom path jogs back
-  to x 4.67.
-- GND of C8, C9 and the PGND/AGND/FB stubs meet at the exposed pad (single-point ground as in the datasheet layout);
-  **one** thermal via at (2.13, 4.97), centred in the gap between J2 pads 2 and 3 on the bottom (two do not fit).
-- 3V3 leaves the block on In2 (one take-off via on the VOS trace, one at C9); `PWR_FLAG` on +3V3 in the schematic.
-  The pre-routes are part of the routing baseline (11.4).
-- No via and no foreign copper under L1 on F.Cu (Murata notice). L1 pad 1 (SW) is 0.18 mm from the USB D− track (N23).
-- **Open from the delta review (wiring-review.md 8.2):** W18 own L1 footprint (L1 then about 0.1 mm towards U3),
-  W19 C8 at the pins with a higher voltage rating, W20 VOS from C9 (optional). Each of them needs a new routing run
-  and baseline.
+**Layout of the LDO block (rev B, generated by `gen_main_pcb.preroute_ldo()`, nothing in the GUI):**
+- Block at the +y edge on top: U3 (2.4, 4.97, 270°) with EN (x 1.75), GND (2.4) and IN (3.05) towards the edge at
+  y 5.86 and PG, NC and OUT (x 1.75 / 2.4 / 3.05) towards the board centre at y 4.08. C8 (4.22, 5.6, 90°) right of IN,
+  C9 (2.6, 2.45, 180°) right under OUT, 0.55 mm above the USB pair in the channel (y 1.13). Q1 (7.6, 4.95), R6/R7 at
+  x −0.46, J2 unchanged (3.4, 4.3).
+- VSYS comes from the vias of `preroute_battery_vsys()` at (5.5, 5.9) and (5.5, 6.47) over a **0.3 mm edge track at
+  y 6.5** that runs west past C8 pad 1, IN and EN (0.2 mm stubs) into R6 pad 1 (VBAT divider). EN is tied to IN through
+  this track. The bottom path of the battery current jogs back to x 4.67 between J2 pads 3 and 4.
+- OUT goes 0.3 mm straight into C9 pad 1; C8 pad 2 runs on F.Cu into the exposed pad, GND/NC/PG stubs into the
+  exposed pad. **Two** thermal vias at (2.13, 4.70) and (2.13, 5.25), centred in the gap between J2 pads 2 and 3 on the
+  bottom; the board tents vias on both sides.
+- 3V3 trunk to the module side, locked: via at (2.675, 3.375) next to the OUT track, 0.3 mm on In2 west under C9 to a
+  via at (−1.775, 2.525), 0.3 mm on B.Cu into J2 pad 1; from there the router runs along the +y edge to module pad 3.
+  Without it the router took a 40 mm detour (0.36 Ω); with it 48 mΩ (11.4). The rest of 3V3 (C10, pull-ups) is left to
+  the router. The pre-routes are part of the routing baseline (11.4).
 
-**Not supported:** 9 V block or 2S Li-ion. The TPS62162 would accept 17 V, but the VBAT divider, the DRV8213
-(11 V max), the R4 back-feed and a 2S charger would need a review, and the snap terminals do not fit next to the board
-in a 9 V shell. The charger board is for 1S Li-ion only and must not be connected to AA packs. Values marked "to
-check" in hardware/bom/parts.csv (U3, the L1 land pattern, LCSC number of the adjustable SPX3819 for U6, availability
-of 47 µF 16 V) are listed in the delta review of the buck block ([wiring-review.md](wiring-review.md) 8).
+**Not supported:** 9 V block or 2S Li-ion. The TPS7A26 would accept 18 V, but at 9 V it would dissipate 0.85 W at
+150 mA; the VBAT divider, the DRV8213 (11 V max), the R4 back-feed and a 2S charger would need a review, and the snap
+terminals do not fit next to the board in a 9 V shell. The charger board is for 1S Li-ion only and must not be
+connected to AA packs. Values marked "to check" in hardware/bom/parts.csv (U3 land pattern, C8 part number, LCSC number
+of the adjustable SPX3819 for U6, availability of 47 µF 16 V) are listed in the delta review
+([wiring-review.md](wiring-review.md) 9).
 
 ## 3. Motor control
 
@@ -299,7 +298,7 @@ Requirement: **A works fully on its own** (second compartment = copper bridge or
 |---|---|---|
 | ESP32-C6-MINI-1 + C10, R2, C12 | **Must** | – |
 | Motor driver DRV8213 + R1, C4, R8, C14 | **Must** | current sensing via IPROPI (chapter 3) |
-| Buck converter TPS62162 (U3) + L1, C8, C9 | **Must** | 3.3 V from VSYS 3.0–6.6 V (2.7); fallback TPS62160 (adjustable) with an FB divider |
+| LDO TPS7A2633 (U3) + C8, C9 | **Must** | 3.3 V from VSYS 3.0–6.6 V, IQ 2 µA (2.7); second source TPS7A2601 (adjustable) with a divider |
 | SENSE (R3, R4, R5) | **Must** | levels 2.5 |
 | VBAT divider (R6, R7, C13) | **Must** (undervoltage, duty = U_target/U_battery) | – |
 | USB-C J4, ESD U5, CC R12/R13, D2, Q1, R14/R15 | **Must** | ESD second source UMW; R14/R15 = VBUS_DET divider and gate pull-down of Q1 |
@@ -339,7 +338,7 @@ and disables "wobble" functions if no sensor responds. INT gets a pull-down in s
 
 ### 5.4 Recommendation
 
-**A** = C6 + DRV8213 + buck converter + SENSE + VBAT + IPROPI + USB-C stage + LED, everything else as pads. **Manufacture only A
+**A** = C6 + DRV8213 + LDO + SENSE + VBAT + IPROPI + USB-C stage + LED, everything else as pads. **Manufacture only A
 first**, with the copper bridge or the charger board in the second compartment. Sensor on top assembly optional, otherwise breakout
 or spring switch on J2. The **charger board v0.1** remains usable on J1 (BAT_IN). A board B only later, and
 then only as v0.2 "charger + sensor".
@@ -372,8 +371,8 @@ Remedy: shorter and deeper window, or a support ledge between J1 and J5 (test on
    ANY_HIGH on IO3, strapping, levels of IO18/IO19 (F17), ADC divider.
 2. DRV8213 on the Louie motor: current, heating when stalled, lever detection in autosleep (outputs Hi-Z).
 3. Check H8 stock at JLC at the time of ordering (2026-11-06: 620 pcs), otherwise N4.
-4. ~~Finish routing~~ done: rev B routed completely, ERC 0, DRC 0, 0 unconnected (11.4). Before ordering: decide the
-   delta-review findings W18–W21 of the buck block ([wiring-review.md](wiring-review.md) 8, open-items.md F29).
+4. ~~Finish routing~~ done: rev B routed completely, ERC 0, DRC 0, 0 unconnected (11.4). Delta review of the LDO block:
+   [wiring-review.md](wiring-review.md) 9.
 5. Load the Gerbers (`just fab`) into the JLC calculator (website and JLCONE), select stack-up JLC04081H-3313, read off price and
    manufacturing time for 0.8 mm (cost-estimate.md 5.7).
 6. Look at the layout in the KiCad GUI (router detours, via count), smooth individual tracks if needed – after that the GUI state is authoritative.
@@ -464,8 +463,8 @@ twice the JLC minimum (0.05 mm at 0.15/0.25). The vias of the pre-routes are als
 | `justfile` | `pcb`, `plot` without parameters; `main-board` = create + route + ERC + DRC; `images` also generates the inner layers |
 
 **Footprints:** U1 `lcsc:WIFIM-SMD_ESP32-C6-MINI-1` (2.1); U2 `Package_SON:WSON-8-1EP_2x2mm_P0.5mm_EP0.9x1.6mm`
-(pad-identical to Texas DSG0008A, with 3D model), the same footprint for U3 TPS62162 (rev B); L1
-`Inductor_SMD:L_Murata_DFE201610P`; J4 `louie:USB_C_Receptacle_HRO_TYPE-C-31-M-12` (from `fetch_parts.py`,
+(pad-identical to Texas DSG0008A, with 3D model); U3 TPS7A2633 `Package_SON:WSON-6-1EP_2x2mm_P0.65mm_EP1x1.6mm`
+(DRV0006A, pads slightly different from TI's example, wiring-review.md 9); J4 `louie:USB_C_Receptacle_HRO_TYPE-C-31-M-12` (from `fetch_parts.py`,
 3D model of the LCSC part, no silkscreen over the edge); D2 EasyEDA SMAF with corrected courtyard.
 GND pads are fully connected to the fills (no thermal reliefs; otherwise small pads only got one spoke).
 
@@ -477,23 +476,29 @@ Commands: `just pcb && just route && just erc && just drc` or simply `just main-
 
 ### 11.4 Routing result
 
-**Current state: rev B (buck converter, 2026-11-11), routed completely with the own router.** `just route main-board
-runs=8` (4 attempts in parallel, about 75 min): five of eight attempts complete (0 open, 0 DRC errors), the gate took
-attempt 4 (via cost 30, F 1.6, B 1.3). Afterwards one dangling 3V3 spur of the router (two segments, 1.05 mm) was
-removed and the baseline re-recorded: `hardware/main-board/routing.json`, fingerprint **53263dc0ea**. Attempt table:
-[proposal-supply-buck.md](proposal-supply-buck.md) 10. No router change was needed for the buck block.
+**Current state: rev B (LDO TPS7A2633, 2026-11-11), routed completely with the own router.** `just route main-board
+runs=8` (4 attempts in parallel, about 11 min): **seven of eight attempts complete** (0 open, 0 DRC errors), the gate
+took attempt 4 (via cost 30, F 1.6, B 1.3). Baseline: `hardware/main-board/routing.json`, fingerprint **be7c6f9fbd**.
+No router change and no manual clean-up were needed.
 
-| Check | **Rev B** (buck, design to order) | Rev A (LDO, `main`, fallback) |
-|---|---|---|
-| ERC (`just erc`) | 0 errors, 0 warnings | 0 |
-| DRC (`just drc`) | **0 errors, 0 warnings, 0 unconnected**, schematic parity 0 | 0 errors, 0 warnings, 0 unconnected |
-| GND islands | 0 | 0 |
-| Vias | **162** (90 signal, 72 GND) | 157 (75 signal, 82 GND) |
-| Track length | **805 mm** (F.Cu 263, In2.Cu 286, B.Cu 257; **In1.Cu 0**, GND layer free of tracks) | 808 mm (F.Cu 287, In2.Cu 270, B.Cu 251) |
-| Routing score S (lower is better) | 110.3 (best of 8 attempts) | 98.0 (best of a 120-attempt long run) |
-| Antenna keepout, power widths | 0 intrusions, 0 width violations | 0 / 0 |
-| Switch node `SW3V3` | stays on F.Cu as pre-routed (about 2.0 mm); 3V3 leaves the block on In2 | – |
-| Envelope | largest radius 6.94 mm (J4) < 7.25 mm, chapter 6; L1 (1.2 mm) and U3 (0.8 mm) are lower than the module | – |
+The first run on the LDO block (without the 3V3 trunk) was also complete in six of eight attempts, but the router had
+connected the module side of +3V3 through a detour of about 40 mm around the USB end: about 0.36 Ω from U3 OUT to module
+pad 3, 137 mV at the 380 mA radio peak. Since then `preroute_ldo()` lays a locked 3V3 trunk (via, 0.3 mm on In2, via,
+B.Cu into J2 pad 1, 2.7). Result: **48 mΩ, about 18 mV at 380 mA** (graph calculation over the copper, pcbnew; the buck
+trial had 52 mΩ). The +3V3 path is not part of the routing score; it was checked separately.
+
+| Check | **Rev B** (LDO, design to order) | Buck trial (same day, superseded) | Rev A (SPX3819, `main`, fallback) |
+|---|---|---|---|
+| ERC (`just erc`) | 0 errors, 0 warnings | 0 | 0 |
+| DRC (`just drc`) | **0 errors, 0 warnings, 0 unconnected**, schematic parity 0 | 0 / 0 / 0 | 0 / 0 / 0 |
+| GND islands | 0 | 0 | 0 |
+| Vias | **149** (79 signal, 70 GND) | 162 | 157 |
+| Track length | **796 mm** (F.Cu 273, In2.Cu 255, B.Cu 268; **In1.Cu 0**, GND layer free of tracks) | 805 mm | 808 mm |
+| Routing score S (lower is better) | 111.2 (best of 8 attempts) | 110.3 (best of 8) | 98.0 (best of a 120-attempt long run) |
+| Complete attempts | 7 of 8 | 5 of 8 | 19 of 120 |
+| 3V3 from the regulator to module pad 3 | 48 mΩ | 52 mΩ | not checked |
+| Antenna keepout, power widths | 0 intrusions, 0 width violations | 0 / 0 | 0 / 0 |
+| Envelope | largest radius 6.94 mm (J4) < 7.25 mm, chapter 6; U3 (0.8 mm) and C9 (0805) are lower than the module | – | – |
 
 Under the antenna there is no copper on any of the four layers except the permitted OUT_A track to BT1 on B.Cu in the
 edge strip (keepout areas "Antenna", "Antenna edge", "Antenna end", 11.1).
@@ -724,7 +729,8 @@ Proposals (decision by the project owner):
 |---|---|---|
 | N | fanout first, THT/slot clearance, fresh `just pcb` | own router, 4 attempts |
 | Long run (2026-11-10) | 120 attempts with pre-router variants (none, krt, krt-novip) | rev A complete: 19 attempts without hard violations; the gate took attempt 39 (own router, via cost 30, seed 2, pre-router krt-novip); after removing a 0.07 mm 3V3 stub DRC 0 / 0 warnings / 0 unconnected, 157 vias, 808 mm |
-| Rev B (2026-11-11) | buck block U3/L1/C8/C9 with locked pre-routes (2.7) | 8 attempts, 5 complete; current baseline, 11.4 |
+| Rev B buck trial (2026-11-11) | buck block U3/L1/C8/C9 with locked pre-routes | 8 attempts, 5 complete; superseded the same day |
+| Rev B LDO (2026-11-11) | LDO block U3/C8/C9 with locked pre-routes and 3V3 trunk (2.7) | 8 attempts, 7 complete; current baseline, 11.4 |
 
 ### 11.8 Board width 14.1 mm (status 2026-11-06)
 

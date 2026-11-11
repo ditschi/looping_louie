@@ -1,7 +1,8 @@
 # Proposal: buck converter instead of the 3.3 V LDO (supply range 3.0–6.6 V)
 
-Status: **decided 2026-11-11: rev B is the design to order** (branch `revb-buck`, section 10); rev A with the LDO stays
-on `main` as a fallback. Decision proposal for review finding R-B1 ([review-2026-11-10.md](review-2026-11-10.md)).
+Status: **superseded 2026-11-11:** the buck was built and routed in rev B (section 10), then replaced the same day by
+the low-Iq LDO TPS7A2633 because of finding W21 ([proposal-supply-standby.md](proposal-supply-standby.md)). Rev B (branch
+`revb-buck`) is the design to order; rev A with the SPX3819 stays on `main` as a fallback. Decision proposal for review finding R-B1 ([review-2026-11-10.md](review-2026-11-10.md)).
 Requirement from the project owner: **one main board for 1S Li-ion up to 4 × AA (VSYS 3.0–6.6 V)**, so the
 hardware can also be used for other devices. Sections 1–9 are kept unchanged as the record of the proposal (written
 before the implementation, so they speak of what "would" change); section 10 is the implemented state. Answers to

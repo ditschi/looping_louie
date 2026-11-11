@@ -1,6 +1,6 @@
 # Wiring review: datasheets vs. design (main board and charger board)
 
-Status: 2026-11-11 (section 8: buck block of rev B) · Review only; no schematic, layout or generator was changed. Design state: schematics and
+Status: 2026-11-11 (section 8: buck trial, section 9: LDO block of rev B) · Review only; no schematic, layout or generator was changed. Design state: schematics and
 PCBs as of commit `32a3535` (main board routing unfinished, see F15). Facts: [datasheet-facts.md](datasheet-facts.md),
 documents: [datasheets.md](datasheets.md). Open decisions from this review: [open-items.md](open-items.md) F19–F27.
 
@@ -9,8 +9,9 @@ SPX3819, see [main-board-c6.md](main-board-c6.md) 2.7). Sections 1–6 describe 
 delta review of the new state (uncommitted in the main checkout at review time) and supersedes the U3, U6 and F1 rows
 and the 5.5 V table.
 
-**Update 2026-11-11:** rev B replaces U3 by the buck converter TPS62162 with L1, C8 and C9 ([main-board-c6.md](main-board-c6.md) 2.7);
-section 8 is the delta review of this block against the implemented rev B and supersedes the U3 rows of section 7.
+**Update 2026-11-11:** rev B first replaced U3 by the buck converter TPS62162 (section 8, findings W18–W21) and the
+same day by the low-Iq LDO TPS7A2633 ([main-board-c6.md](main-board-c6.md) 2.7). Section 9 is the delta review of the LDO
+block and supersedes the U3 rows of sections 7 and 8.
 
 ## 1. Method
 
@@ -213,6 +214,9 @@ Still open: W6 (EN RC, F22) and the SPX3819 load-step test (W14, F27, test-hardw
 
 ## 8. Delta review: buck block U3/L1/C8/C9, rev B (2026-11-11)
 
+**Superseded the same day:** because of W21 the buck was replaced by the LDO TPS7A2633 (section 9). This section is
+kept as the record of the buck trial.
+
 Subject: rev B as implemented on branch `revb-buck` (schematic generator, routed board `louie-main.kicad_pcb`,
 routing baseline 53263dc0ea; values in [main-board-c6.md](main-board-c6.md) 2.7). Documents: TI SLVSAM2E (TPS6216x,
 Rev. E, May 2017; DSG land pattern 4218900/E 08/2022) and Murata reference specification J(E)TE243A-0033-01
@@ -258,7 +262,7 @@ section 5 against the rev A board; it was redone here against rev B, and 8.4 lis
 | W18 | warning | **L1 footprint does not match the Murata land pattern.** Rev B uses `Inductor_SMD:L_Murata_DFE201610P`: pads 0.55 × 1.6 mm at ±0.725 mm (2.0 mm over all). Murata p.5 recommends 0.8 × 1.8 mm pads with 0.8 mm gap, **2.4 mm** over all. With a 2.0 ± 0.2 mm body and 0.5 ± 0.3 mm electrodes the stock pads leave no toe, and on a long part the electrodes overhang them. The 3D model is 1.0 mm high instead of 1.2 mm max, so `just hull` under-reads L1. | Own footprint (pads 0.8 × 1.8 at ±0.8 mm, 3D model 1.2 mm). In rev B the taller pads would reach y 1.3 and come within about 0.1 mm of the USB D− track (y 1.13), so L1 has to move about 0.1 mm towards U3 (0.67 mm free) and the block needs a new routing run and baseline. |
 | W19 | warning | **Input capacitor C8 is not at the pins, and small under DC bias.** TI p.16/26: CIN "between VIN and PGND as close as possible to those pins". In rev B VIN is fed from the 0.3 mm VSYS edge track at y 6.5; C8 pad 1 sits 1.6 mm from VIN in a straight line and about 2.6 mm along the copper (pin 2 → y 6.5 → west to x 0.58 → C8), its GND returns through a via at (1.22, 5.28) and In1 to the EP. C8 is 10 µF **10 V 0402** X5R: at 6.6 V typically only a fraction of 10 µF remains (unverified, no part number), against TI's recommended 10 µF. The pulsed input current then flows partly on the VSYS edge track, which also feeds R6 (VBAT divider). | C8 directly across VIN/PGND (≤ 1 mm, GND pad to PGND/EP), 16–25 V and 0603/0805 if the space allows, or a second capacitor at the pins; fix a part number with a DC-bias curve in parts.csv. Prototype check: ripple on VSYS at R6 (T10, T15). |
 | W20 | note | **VOS and output loop differ from TI's layout.** VOS is taken at L1 pad 2, not at C9 (1.4 mm further), and the via that feeds the west part of the +3V3 rail on In2 sits on the 0.2 mm VOS trace at (2.67, 3.38), so load current flows in the sense trace (a few mV at 380 mA, estimate). VOS runs 0.5 mm beside SW for about 0.5 mm. The GND pad of C9 is 4.9 mm from the EP and returns through In1. Electrically small effects, but not "VOS … in the shortest way to VOUT at the output capacitor". | If the block is rerouted for W18/W19: VOS from C9 pad 1 as its own trace, +3V3 take-off via on the L1 → C9 trace or at C9, C9 GND closer to PGND. Otherwise accept and check ripple and load regulation (T10, T11). |
-| W21 | **important** *(verify)* | **No power-save mode below about 3.8 V input → standby with a Li-ion cell much higher than 25 µA.** SLVSAM2E p.11: "When VIN decreases to typically 15 % above VOUT, the TPS6216x does not enter power save mode, regardless of the load current." For 3.3 V out that is VIN < about 3.8 V; the converter then switches in PWM at 2.25 MHz even in deep sleep, until it reaches 100 % mode at about VSYS 3.4 V. The 17 µA IQ is specified "device not switching". The no-load input current in PWM is not in the datasheet; for a 1 A converter at 2.25 MHz it is likely several hundred µA to a few mA (estimate). A 1S Li-ion cell spends a large part of its capacity between 3.8 and 3.4 V, 3 × AA alkaline also. The 25 µA figure (main-board-c6.md 2.7) therefore holds only for VSYS above about 3.8 V (4 × AA, fresh 3 × AA, USB, a full Li-ion cell); below that the buck may be worse than the rev A LDO (about 100 µA). | The owner requires low standby with Li-ion, so W21 is not accepted. Options (LDO TPS7A2633, buck TPS62840, hybrid) and recommendation: [proposal-supply-standby.md](proposal-supply-standby.md). If rev B is built anyway: measure T13 at VSYS 3.5 / 3.7 / 4.0 / 6.0 V. |
+| W21 | **important** *(verify)* | **No power-save mode below about 3.8 V input → standby with a Li-ion cell much higher than 25 µA.** SLVSAM2E p.11: "When VIN decreases to typically 15 % above VOUT, the TPS6216x does not enter power save mode, regardless of the load current." For 3.3 V out that is VIN < about 3.8 V; the converter then switches in PWM at 2.25 MHz even in deep sleep, until it reaches 100 % mode at about VSYS 3.4 V. The 17 µA IQ is specified "device not switching". The no-load input current in PWM is not in the datasheet; for a 1 A converter at 2.25 MHz it is likely several hundred µA to a few mA (estimate). A 1S Li-ion cell spends a large part of its capacity between 3.8 and 3.4 V, 3 × AA alkaline also. The 25 µA figure (main-board-c6.md 2.7) therefore holds only for VSYS above about 3.8 V (4 × AA, fresh 3 × AA, USB, a full Li-ion cell); below that the buck may be worse than the rev A LDO (about 100 µA). | Not accepted (low standby with Li-ion required). **Resolved 2026-11-11:** U3 replaced by the LDO TPS7A2633 ([proposal-supply-standby.md](proposal-supply-standby.md), section 9). |
 | N20 | note | **Start threshold:** UVLO 2.7 V is the falling threshold; the converter starts at about 2.88 V typ (+180 mV hysteresis), up to about 3.0 V worst case; recommended VIN minimum 3.0 V. No practical effect with a 3.4–3.5 V cut-off. | Wording fixed in main-board-c6.md 2.7. |
 | N21 | note | **Saturation in overload:** the static current limit goes up to 2.45 A, above the 2.1 A (30 % drop) of L1. In a 3V3 short the metal-alloy core runs into soft saturation; normal operation is far below it. | Accept, or DFE201610E (2.4 A, 1.0 mm high). |
 | N22 | note | **C9 22 µF 10 V 0805** keeps roughly half its value at 3.3 V (unverified); still inside table 2. C8 and C9 have no LCSC numbers yet. | Choose parts with DC-bias data when parts.csv is completed (F25). |
@@ -280,3 +284,53 @@ pins (in rev B one via sits correctly in the EP, 8.1); VSYS vias under the coil 
 (in rev B the vias sit at (5.5, 5.9)/(5.5, 6.47), 8.1); an inconsistent L1 orientation in the sketch; and the
 proposal's remark "routing is open anyway" (rev B is routed, main-board-c6.md 11.4). These are text errors of the
 proposal's sections 4–5, which are kept unchanged as the record; section 10 there describes what was built.
+
+## 9. Delta review: LDO block U3/C8/C9, rev B (2026-11-11)
+
+Subject: rev B after the change from the buck to the LDO **TPS7A2633DRVR** (decision 2026-11-11,
+[proposal-supply-standby.md](proposal-supply-standby.md); values in [main-board-c6.md](main-board-c6.md) 2.7). Document:
+TI SBVS290B (TPS7A26, Rev. B, Oct 2019; DRV0006A land pattern 4222173/C 11/2025). Pad nets, positions and clearances
+read from the board with pcbnew; coordinates relative to the board centre. This section supersedes section 8 for U3.
+
+### 9.1 Checked and correct
+
+- **Pinout U3** (SBVS290B pin table, fixed version; pad nets on the board): 1 OUT = +3V3, 2 NC = GND, 3 PG = GND,
+  4 EN = VSYS, 5 GND = GND, 6 IN = VSYS, 7 exposed pad = GND. TI: NC "can be floated but the device has better thermal
+  performance with this pin tied to GND"; PG (open drain) likewise; EN "do not float … if not used, connect EN to IN";
+  thermal pad "connect … to ground or leave floating", best to a large ground plane. ERC 0 with own symbol (PG and NC
+  passive, OUT power out).
+- **Voltages at VSYS 6.6 V / 7 V transient:** VIN 20 V abs, 2.4–18 V recommended; EN 20 V abs (tie to IN legal); OUT
+  ≤ VIN + 0.3 V; PG 20 V abs.
+- **Capacitors:** CIN ≥ 1 µF (C8 4.7 µF 16 V); COUT 1–100 µF (C9 22 µF plus C10 100 nF and the module decoupling).
+- **Current and heat:** current limit 525–970 mA above the 380 mA TX peak; thermal shutdown 165 °C. θJA 73.3 K/W:
+  0.47 W at 6.4 V / 150 mA gives about +34 K, the limit (TJ 125 °C at 40 °C ambient) is about 1.16 W.
+- **Low end:** dropout 280 mV max at 250 mA and 590 mV max at 500 mA; about 0.27 V typ / 0.45 V max at 380 mA
+  (interpolated). UVLO 2.09 V falling, so below VSYS ≈ 3.3 V the output follows the input.
+- **Standby:** IQ 2 µA typ / 4.5 µA max at no load; ground current 11–15 µA at 1 mA (figure 9), so a few µA at the
+  deep-sleep load of about 10 µA.
+- **Placement and layout** (TI 10.1: capacitors close to the pins, copper planes, thermal vias under the pad):
+  C8 pad 1 is 0.66 mm (edge to edge) from IN, its GND pad runs 1.1 mm on F.Cu into the exposed pad; OUT runs 0.3 mm
+  straight into C9 pad 1 (1.7 mm centre to centre). EN and IN go straight up into the 0.3 mm VSYS edge track (0.30 mm
+  clear of the GND pin). Two Ø 0.3/0.5 vias in the exposed pad at (2.13, 4.70) and (2.13, 5.25), at least 0.195 mm from
+  the pins and 0.38 mm from the J2 pads on the bottom, tented on both sides (TI note 6: vias optional; filled, plugged
+  or tented under paste). In1 is a solid GND plane under the block; after routing, C9 pad 2 sits in the F.Cu GND fill
+  with GND vias next to it.
+- **3V3 distribution:** locked trunk from the OUT track (via, 0.3 mm on In2, via, B.Cu into J2 pad 1), then the router
+  to module pad 3: 48 mΩ in total, about 18 mV at the 380 mA peak (main-board-c6.md 11.4).
+
+### 9.2 Findings
+
+| # | Severity | Finding | Recommended fix |
+|---|---|---|---|
+| N26 | note | **Land pattern:** the stock `Package_SON:WSON-6-1EP_2x2mm_P0.65mm_EP1x1.6mm` has pads 0.375 × 0.4 mm at ±0.8875 mm; TI's DRV0006A example has 0.45 × 0.3 mm at ±0.975 mm (EP 1 × 1.6 mm in both). The KiCad pads are 0.1 mm wider (0.25 instead of 0.35 mm between pins) and end 0.125 mm further inside, so the toe is 0.075 instead of 0.2 mm. | Acceptable for a no-lead package (no visible fillet anyway). If the footprint is touched again: own footprint with TI's pads; the pre-routes keep their positions. |
+| N27 | note | **Reverse current** (TI 8.1.4: OUT must stay ≤ VIN + 0.3 V): during a deep VSYS sag (motor start or stall with a weak cell, VSYS below about 3.0 V) C9 can discharge backwards through the pass transistor for a few ms. The charge is only that of C9 (22 µF × a few 100 mV); the same applied to the SPX3819 of rev A. On a slow battery removal VSYS (94 µF, about 8 µA) falls more slowly than 3V3 (22 µF, about 10 µA), so no reverse current. | Accept; the firmware cut-off on the filtered VSYS (2.7) and the motor ramps keep the sag small. |
+| N28 | note *(verify)* | **Temperature with 4 fresh alkaline cells:** θJA 73.3 K/W is a JEDEC value; the 0.8 mm board is small and the part sits at the edge with two vias, so the real rise may be +40–50 K at 0.47 W in hotspot mode. | Measure T14; if too warm, more GND copper on F.Cu around U3 or lower the client limit on 4 × AA. |
+| N29 | note | **C8 has no part number:** 4.7 µF 16 V 0402 X5R keeps roughly 1.5–2.5 µF at 6.6 V (unverified), above TI's 1 µF. | Choose a part with a DC-bias curve when parts.csv is completed (F25). |
+| N30 | note | **PSRR:** 75 / 62 / 52 dB at 10 Hz / 100 Hz / 1 kHz; at the 20 kHz motor PWM it is lower (not specified). The VSYS ripple of up to about 0.5 V p-p (test-hardware.md 4.1) may show as a few mV on 3V3. | Check with T10 and T15. |
+| N16 | note (update) | **Back-feed through R4** (0.33 mA at 6.6 V): the TPS7A26 has an active overshoot pulldown (100 µA sink when OUT is more than 60 mV high), more than the SPX3819 offered; while the motor drives, the C6 is awake and draws mA anyway. | Firmware invariant from N16 unchanged. |
+
+### 9.3 Not verified
+
+- Effective C8/C9 under DC bias (no part numbers).
+- IQ of the TPS7A26 in dropout (VSYS 3.3–3.5 V): not specified (T13).
+- Temperature on the real board (T14) and PSRR at 20 kHz (T10).
