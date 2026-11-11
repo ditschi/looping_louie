@@ -171,7 +171,8 @@ with 4 cells on BAT_IN.
 
 Markers in this section: **(verified)** = TI SLVSAM2E, the Murata specification or the JLC parts API, see the proposal
 and the delta review [wiring-review.md](wiring-review.md) 8 · **(unverified)** = estimate, the prototype decides (tests
-in [test-hardware.md](test-hardware.md) 4.7). **Open findings of the delta review: W18–W21** (below and wiring-review.md 8.2).
+in [test-hardware.md](test-hardware.md) 4.7). **Open findings of the delta review: W18–W21** (below and wiring-review.md 8.2); W21 (standby with Li-ion) is not
+accepted, alternatives for U3: [proposal-supply-standby.md](proposal-supply-standby.md).
 
 | Item | Value | Note |
 |---|---|---|

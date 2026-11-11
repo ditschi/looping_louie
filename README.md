@@ -55,6 +55,7 @@ The old MicroPython/ESP8266 version is in the tag `v1-legacy`.
   [routing score](docs/routing-score.md)
 - Open items and decisions: [open items](docs/open-items.md), [decision history](docs/decision-history.md),
   [concept review 2026-11-10](docs/review-2026-11-10.md), [supply proposal: buck converter](docs/proposal-supply-buck.md),
+  [supply proposal: standby with Li-ion](docs/proposal-supply-standby.md),
   [wiring review](docs/wiring-review.md)
 - Costs: [cost estimate](docs/cost-estimate.md)
 - Ideas and studies: [ideas](docs/ideas.md), [optional hardware](docs/idea-optional-hardware.md),
