@@ -29,6 +29,7 @@ SCH = HARDWARE / "charger-board" / "louie-charger.kicad_sch"
 PCB = HARDWARE / "charger-board" / "louie-charger.kicad_pcb"
 ORIGIN = board_outline.ORIGIN_MM
 BOARD_L, BOARD_W, THICKNESS = 46.0, 12.5, 1.6
+CORNER = 0.5            # outer corner radius of the outline
 EDGE_Y = -BOARD_W / 2   # mating side of the USB-C receptacle
 BRIDGE_TRACK = 1.0      # motor current up to 2 A: approx. 20 mOhm over 43 mm, main board uses 0.4 mm
 BRIDGE_Y = 5.45         # close to the edge so that GND vias still fit above it
@@ -170,7 +171,8 @@ def main():
     base.clear_board(board)
     for d in list(board.GetDrawings()):   # outline and texts are placed anew
         board.Delete(d)
-    board_outline.draw_outline(board, BOARD_L, BOARD_W)
+    # plain rounded rectangle (no tongues: as wide as the tongue), no recess (that is for J4 of the main board)
+    board_outline.draw_outline(board, BOARD_L, BOARD_W, recess=None, corner=CORNER)
     setup_rules(board)
 
     netinfo = {}

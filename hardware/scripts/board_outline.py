@@ -65,15 +65,23 @@ def _fillet(prev, v, nxt, r):
 
 
 def outline_path(length=LENGTH_MM, width=WIDTH_MM, tongue_w=TONGUE_W, tongue_l=TONGUE_L, recess=RECESS_X,
-                 depth=RECESS_DEPTH):
+                 depth=RECESS_DEPTH, corner=CORNER_MM):
     """Outline as a list of ("seg", a, b) and ("arc", start, mid, end), coordinates relative to the board centre
-    (x along the length, +y = side of the USB-C opening)."""
+    (x along the length, +y = side of the USB-C opening). A board not wider than the tongue (charger board) gets
+    a plain rounded rectangle: the tongue step would have zero or negative height."""
     import math
-    xe, xl, w2, t2 = length / 2, length / 2 - tongue_l, width / 2, tongue_w / 2
-    rc, rm = CORNER_MM, MILL_R
-    # corner points in order (radius): body with tongues at both ends
-    verts = [((-xl, -w2), rc), ((xl, -w2), rc), ((xl, -t2), rm), ((xe, -t2), rc), ((xe, t2), rc), ((xl, t2), rm),
-             ((xl, w2), rc), ((-xl, w2), rc), ((-xl, t2), rm), ((-xe, t2), rc), ((-xe, -t2), rc), ((-xl, -t2), rm)]
+    rc, rm = corner, MILL_R
+    if width <= tongue_w:
+        xl, w2 = length / 2, width / 2
+        verts = [((-xl, -w2), rc), ((xl, -w2), rc), ((xl, w2), rc), ((-xl, w2), rc)]
+        recess_edge = 2
+    else:
+        xe, xl, w2, t2 = length / 2, length / 2 - tongue_l, width / 2, tongue_w / 2
+        # corner points in order (radius): body with tongues at both ends
+        verts = [((-xl, -w2), rc), ((xl, -w2), rc), ((xl, -t2), rm), ((xe, -t2), rc), ((xe, t2), rc),
+                 ((xl, t2), rm), ((xl, w2), rc), ((-xl, w2), rc), ((-xl, t2), rm), ((-xe, t2), rc),
+                 ((-xe, -t2), rc), ((-xl, -t2), rm)]
+        recess_edge = 6
     n = len(verts)
     corners = [_fillet(verts[k - 1][0], verts[k][0], verts[(k + 1) % n][0], verts[k][1]) for k in range(n)]
     out = []
@@ -81,7 +89,7 @@ def outline_path(length=LENGTH_MM, width=WIDTH_MM, tongue_w=TONGUE_W, tongue_l=T
         t1, mid, t2_ = corners[k]
         out.append(("arc", t1, mid, t2_))
         a, b = t2_, corners[(k + 1) % n][0]
-        if k == 6 and recess:  # edge +y from (xl, w2) to (−xl, w2): recess in front of J4
+        if k == recess_edge and recess:  # edge +y from (xl, w2) to (−xl, w2): recess in front of J4
             xa, xb = sorted(recess)
             y0 = w2 - depth            # bottom of the recess
             cy = y0 + rm                 # cutter centre (outside the board)
@@ -103,11 +111,11 @@ def outline_path(length=LENGTH_MM, width=WIDTH_MM, tongue_w=TONGUE_W, tongue_l=T
     return [o for o in out if not (o[0] == "seg" and o[1] == o[2])]
 
 
-def draw_outline(board, length=LENGTH_MM, width=WIDTH_MM):
+def draw_outline(board, length=LENGTH_MM, width=WIDTH_MM, recess=RECESS_X, corner=CORNER_MM):
     for item in list(board.GetDrawings()):
         if item.GetLayer() == pcbnew.Edge_Cuts:
             board.Remove(item)
-    for kind, *pts in outline_path(length, width):
+    for kind, *pts in outline_path(length, width, recess=recess, corner=corner):
         if kind == "seg":
             add_shape(board, pcbnew.SHAPE_T_SEGMENT, Start=point(*pts[0]), End=point(*pts[1]))
         else:
