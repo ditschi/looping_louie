@@ -11,6 +11,7 @@ SOLDER_PADS), because KiCad only has pin headers with drill holes for that.
 Usage (via just):  just symbols
 """
 
+from dataclasses import dataclass
 from pathlib import Path
 
 LIB = Path(__file__).resolve().parent.parent / "lib" / "louie.kicad_sym"
@@ -84,7 +85,66 @@ ESP_C6 = dict(
 )
 
 
-def pin(ptype, x, y, rot, name, number, hidden=False):
+@dataclass(frozen=True)
+class Box:
+    """Body rectangle of a symbol (mm); side pins start one grid step below the top edge."""
+
+    half_w: float
+    top: float
+    bottom: float
+
+
+@dataclass(frozen=True)
+class Part:
+    name: str
+    value: str
+    footprint: str
+    datasheet: str
+    description: str
+    lcsc: str
+    value_on_top: bool = False  # Value label above the body (else below)
+
+
+# Parts with a symbol of their own (pinouts in the generator functions below)
+DRV8213 = Part(
+    "DRV8213DSG",
+    "DRV8213DSG",
+    "Package_SON:Texas_DSG0008A_WSON-8-1EP_2x2mm_P0.5mm_EP0.9x1.6mm",
+    "https://www.ti.com/lit/gpn/drv8213",
+    "H-bridge 4 A, current sensing IPROPI, current limit, autosleep",
+    "C22407186",
+)
+TPS7A26 = Part(
+    "TPS7A26DRV",
+    "TPS7A2633DRV",
+    "Package_SON:WSON-6-1EP_2x2mm_P0.65mm_EP1x1.6mm",
+    "https://www.ti.com/lit/ds/symlink/tps7a26.pdf",
+    "LDO 2.4-18 V in, 3.3 V fixed, 500 mA, IQ 2 uA",
+    "C2876256",
+)
+DRV8833 = Part(
+    "DRV8833PWP_parallel",
+    "DRV8833PWP",
+    "Package_SO:HTSSOP-16-1EP_4.4x5mm_P0.65mm_EP3.4x5mm_Mask2.46x2.31mm",
+    "https://www.ti.com/lit/ds/symlink/drv8833.pdf",
+    "Dual H-bridge, here in parallel mode (up to approx. 3 A)",
+    "C50506",
+)
+LIS2DH12 = Part(
+    "LIS2DH12",
+    "LIS2DH12",
+    "Package_LGA:LGA-12_2x2mm_P0.5mm",
+    "https://www.st.com/resource/en/datasheet/lis2dh12.pdf",
+    "3-axis accelerometer, I2C/SPI, 2 µA",
+    "C110926",
+    value_on_top=True,
+)
+
+
+def pin(at, spec, hidden=False):
+    """One pin at (x, y, rotation); spec is (name, number, electrical type)."""
+    x, y, rot = at
+    name, number, ptype = spec
     hide = " (hide yes)" if hidden else ""
     return (
         f"\t\t\t(pin {ptype} line (at {x} {y} {rot}) (length 2.54){hide}\n"
@@ -92,76 +152,66 @@ def pin(ptype, x, y, rot, name, number, hidden=False):
     )
 
 
-def esp32_mini_1(name, d):
-    rows = max(len(d["left"]), len(d["right"]))
-    top = (rows - 1) * 2.54 / 2 + 2.54
-    top = round(top / 2.54) * 2.54
-    half_w = 12.7
-    bottom = top - (rows + 1) * 2.54
+def stacked(at, name, numbers, ptype):
+    """Pins on top of each other (paralleled or extra GND pads): only the first is visible and keeps its type."""
+    numbers = [numbers] if isinstance(numbers, str) else numbers
+    return [pin(at, (name, num, ptype if i == 0 else "passive"), hidden=i > 0) for i, num in enumerate(numbers)]
+
+
+def side_pins(box, left, right):
+    """Pins down the left and right edge; entries are (name, number or numbers, type)."""
     pins = []
-    for i, (pname, num, ptype) in enumerate(d["left"]):
-        pins.append(pin(ptype, -half_w - 2.54, round(top - 2.54 * (i + 1), 2), 0, pname, num))
-    for i, (pname, num, ptype) in enumerate(d["right"]):
-        pins.append(pin(ptype, half_w + 2.54, round(top - 2.54 * (i + 1), 2), 180, pname, num))
-    gnd_y = round(bottom - 2.54, 2)
-    for i, num in enumerate(d["gnd"]):
-        pins.append(pin("power_in" if i == 0 else "passive", 0, gnd_y, 90, "GND", num, hidden=i > 0))
-    for num in d["nc"]:
-        pins.append(pin("no_connect", half_w, round(bottom + 2.54, 2), 180, "NC", num, hidden=True))
+    for side, x, rot in ((left, -box.half_w - 2.54, 0), (right, box.half_w + 2.54, 180)):
+        for i, (name, numbers, ptype) in enumerate(side):
+            pins += stacked((x, round(box.top - 2.54 * (i + 1), 2), rot), name, numbers, ptype)
+    return pins
+
+
+def symbol(part, box, pins):
+    value_y = box.top + 1.27 if part.value_on_top else box.bottom - 1.27
+    label = "(effects (font (size 1.27 1.27)) (justify {}))"
     return (
-        f'\t(symbol "{name}"\n'
+        f'\t(symbol "{part.name}"\n'
         "\t\t(pin_names (offset 1.016))\n"
         "\t\t(exclude_from_sim no) (in_bom yes) (on_board yes)\n"
-        f'\t\t(property "Reference" "U" (at {-half_w} {top + 1.27} 0) (effects (font (size 1.27 1.27)) (justify left)))\n'
-        f'\t\t(property "Value" "{name}" (at {half_w} {top + 1.27} 0) (effects (font (size 1.27 1.27)) (justify right)))\n'
-        f'\t\t(property "Footprint" "{d["footprint"]}" (at 0 0 0) {HIDDEN})\n'
-        f'\t\t(property "Datasheet" "{d["datasheet"]}" (at 0 0 0) {HIDDEN})\n'
-        f'\t\t(property "Description" "{d["description"]}" (at 0 0 0) {HIDDEN})\n'
-        f'\t\t(property "LCSC Part" "{d["lcsc"]}" (at 0 0 0) {HIDDEN})\n'
-        f'\t\t(symbol "{name}_0_1"\n'
-        f"\t\t\t(rectangle (start {-half_w} {top}) (end {half_w} {round(bottom, 2)})\n"
+        f'\t\t(property "Reference" "U" (at {-box.half_w} {box.top + 1.27} 0) {label.format("left")})\n'
+        f'\t\t(property "Value" "{part.value}" (at {box.half_w} {value_y} 0) {label.format("right")})\n'
+        f'\t\t(property "Footprint" "{part.footprint}" (at 0 0 0) {HIDDEN})\n'
+        f'\t\t(property "Datasheet" "{part.datasheet}" (at 0 0 0) {HIDDEN})\n'
+        f'\t\t(property "Description" "{part.description}" (at 0 0 0) {HIDDEN})\n'
+        f'\t\t(property "LCSC Part" "{part.lcsc}" (at 0 0 0) {HIDDEN})\n'
+        f'\t\t(symbol "{part.name}_0_1"\n'
+        f"\t\t\t(rectangle (start {-box.half_w} {box.top}) (end {box.half_w} {round(box.bottom, 2)})\n"
         "\t\t\t\t(stroke (width 0.254) (type default)) (fill (type background)))\n"
         "\t\t)\n"
-        f'\t\t(symbol "{name}_1_1"\n' + "".join(pins) + "\t\t)\n"
+        f'\t\t(symbol "{part.name}_1_1"\n' + "".join(pins) + "\t\t)\n"
         "\t\t(embedded_fonts no)\n"
         "\t)\n"
     )
+
+
+def esp32_mini_1(name, d):
+    rows = max(len(d["left"]), len(d["right"]))
+    top = round(((rows - 1) * 2.54 / 2 + 2.54) / 2.54) * 2.54
+    box = Box(12.7, top, top - (rows + 1) * 2.54)
+    pins = side_pins(box, d["left"], d["right"])
+    pins += stacked((0, round(box.bottom - 2.54, 2), 90), "GND", d["gnd"], "power_in")
+    pins += [pin((box.half_w, round(box.bottom + 2.54, 2), 180), ("NC", num, "no_connect"), True) for num in d["nc"]]
+    part = Part(name, name, d["footprint"], d["datasheet"], d["description"], d["lcsc"], value_on_top=True)
+    return symbol(part, box, pins)
 
 
 def drv8213dsg():
     """TI DRV8213DSG (WSON-8 2 × 2 mm): H-bridge with current sensing (IPROPI), autosleep, without nSLEEP/nFAULT.
     Pinout per datasheet SLVSGV9 or LCSC C22407186: 1 VM, 2 OUT1, 3 OUT2, 4 GND, 5 IN2, 6 IN1,
     7 GAINSEL, 8 IPROPI, 9 thermal pad (GND)."""
-    half_w, top, bottom = 10.16, 5.08, -7.62
-    pins = []
+    box = Box(10.16, 5.08, -7.62)
     left = [("IN1", "6", "input"), ("IN2", "5", "input"), ("GAINSEL", "7", "input")]
     right = [("OUT1", "2", "power_out"), ("OUT2", "3", "power_out"), ("IPROPI", "8", "output")]
-    for i, (name, num, ptype) in enumerate(left):
-        pins.append(pin(ptype, -half_w - 2.54, round(top - 2.54 * (i + 1), 2), 0, name, num))
-    for i, (name, num, ptype) in enumerate(right):
-        pins.append(pin(ptype, half_w + 2.54, round(top - 2.54 * (i + 1), 2), 180, name, num))
-    pins.append(pin("power_in", 0, top + 2.54, 270, "VM", "1"))
-    pins.append(pin("power_in", 0, bottom - 2.54, 90, "GND", "4"))
-    pins.append(pin("passive", 0, bottom - 2.54, 90, "GND", "9", hidden=True))
-    return (
-        '\t(symbol "DRV8213DSG"\n'
-        "\t\t(pin_names (offset 1.016))\n"
-        "\t\t(exclude_from_sim no) (in_bom yes) (on_board yes)\n"
-        f'\t\t(property "Reference" "U" (at {-half_w} {top + 1.27} 0) (effects (font (size 1.27 1.27)) (justify left)))\n'
-        f'\t\t(property "Value" "DRV8213DSG" (at {half_w} {bottom - 1.27} 0) (effects (font (size 1.27 1.27)) (justify right)))\n'
-        '\t\t(property "Footprint" "Package_SON:Texas_DSG0008A_WSON-8-1EP_2x2mm_P0.5mm_EP0.9x1.6mm"'
-        f" (at 0 0 0) {HIDDEN})\n"
-        f'\t\t(property "Datasheet" "https://www.ti.com/lit/gpn/drv8213" (at 0 0 0) {HIDDEN})\n'
-        f'\t\t(property "Description" "H-bridge 4 A, current sensing IPROPI, current limit, autosleep" (at 0 0 0) {HIDDEN})\n'
-        f'\t\t(property "LCSC Part" "C22407186" (at 0 0 0) {HIDDEN})\n'
-        '\t\t(symbol "DRV8213DSG_0_1"\n'
-        f"\t\t\t(rectangle (start {-half_w} {top}) (end {half_w} {bottom})\n"
-        "\t\t\t\t(stroke (width 0.254) (type default)) (fill (type background)))\n"
-        "\t\t)\n"
-        '\t\t(symbol "DRV8213DSG_1_1"\n' + "".join(pins) + "\t\t)\n"
-        "\t\t(embedded_fonts no)\n"
-        "\t)\n"
-    )
+    pins = side_pins(box, left, right)
+    pins.append(pin((0, box.top + 2.54, 270), ("VM", "1", "power_in")))
+    pins += stacked((0, box.bottom - 2.54, 90), "GND", ["4", "9"], "power_in")
+    return symbol(DRV8213, box, pins)
 
 
 def tps7a26drv():
@@ -169,36 +219,13 @@ def tps7a26drv():
     (docs/proposal-supply-standby.md). Pinout per datasheet SBVS290B (fixed version): 1 OUT, 2 NC, 3 PG (open drain),
     4 EN, 5 GND, 6 IN, 7 thermal pad. NC and PG are tied to GND on the board (better thermal performance per TI),
     so both are passive here; EN is tied to IN."""
-    half_w, top, bottom = 7.62, 5.08, -5.08
-    pins = []
+    box = Box(7.62, 5.08, -5.08)
     left = [("IN", "6", "power_in"), ("EN", "4", "input")]
     right = [("OUT", "1", "power_out"), ("PG", "3", "passive")]
-    for i, (name, num, ptype) in enumerate(left):
-        pins.append(pin(ptype, -half_w - 2.54, round(top - 2.54 * (i + 1), 2), 0, name, num))
-    for i, (name, num, ptype) in enumerate(right):
-        pins.append(pin(ptype, half_w + 2.54, round(top - 2.54 * (i + 1), 2), 180, name, num))
-    pins.append(pin("power_in", -2.54, bottom - 2.54, 90, "GND", "5"))
-    pins.append(pin("passive", 0, bottom - 2.54, 90, "NC", "2"))
-    pins.append(pin("passive", 2.54, bottom - 2.54, 90, "EP", "7"))
-    return (
-        '\t(symbol "TPS7A26DRV"\n'
-        "\t\t(pin_names (offset 1.016))\n"
-        "\t\t(exclude_from_sim no) (in_bom yes) (on_board yes)\n"
-        f'\t\t(property "Reference" "U" (at {-half_w} {top + 1.27} 0) (effects (font (size 1.27 1.27)) (justify left)))\n'
-        f'\t\t(property "Value" "TPS7A2633DRV" (at {half_w} {bottom - 1.27} 0) (effects (font (size 1.27 1.27)) (justify right)))\n'
-        '\t\t(property "Footprint" "Package_SON:WSON-6-1EP_2x2mm_P0.65mm_EP1x1.6mm"'
-        f" (at 0 0 0) {HIDDEN})\n"
-        f'\t\t(property "Datasheet" "https://www.ti.com/lit/ds/symlink/tps7a26.pdf" (at 0 0 0) {HIDDEN})\n'
-        f'\t\t(property "Description" "LDO 2.4-18 V in, 3.3 V fixed, 500 mA, IQ 2 uA" (at 0 0 0) {HIDDEN})\n'
-        f'\t\t(property "LCSC Part" "C2876256" (at 0 0 0) {HIDDEN})\n'
-        '\t\t(symbol "TPS7A26DRV_0_1"\n'
-        f"\t\t\t(rectangle (start {-half_w} {top}) (end {half_w} {bottom})\n"
-        "\t\t\t\t(stroke (width 0.254) (type default)) (fill (type background)))\n"
-        "\t\t)\n"
-        '\t\t(symbol "TPS7A26DRV_1_1"\n' + "".join(pins) + "\t\t)\n"
-        "\t\t(embedded_fonts no)\n"
-        "\t)\n"
-    )
+    pins = side_pins(box, left, right)
+    bottom_pins = [(-2.54, ("GND", "5", "power_in")), (0, ("NC", "2", "passive")), (2.54, ("EP", "7", "passive"))]
+    pins += [pin((x, box.bottom - 2.54, 90), spec) for x, spec in bottom_pins]
+    return symbol(TPS7A26, box, pins)
 
 
 def drv8833_parallel():
@@ -217,82 +244,33 @@ def drv8833_parallel():
         ("OUT1", ["2", "7"], "power_out"),
         ("OUT2", ["4", "5"], "power_out"),
     ]
-    half_w, top, bottom = 10.16, 7.62, -7.62
-    pins = []
-
-    def stacked(x, y, rot, name, numbers, ptype):
-        for i, num in enumerate(numbers):
-            pins.append(pin(ptype if i == 0 else "passive", x, y, rot, name, num, hidden=i > 0))
-
-    for i, (name, nums, ptype) in enumerate(left):
-        stacked(-half_w - 2.54, round(top - 2.54 * (i + 1), 2), 0, name, nums, ptype)
-    for i, (name, nums, ptype) in enumerate(right):
-        stacked(half_w + 2.54, round(top - 2.54 * (i + 1), 2), 180, name, nums, ptype)
-    stacked(-2.54, top + 2.54, 270, "VM", ["12"], "power_in")
-    stacked(2.54, top + 2.54, 270, "VINT", ["14"], "passive")
-    stacked(0, bottom - 2.54, 90, "GND", ["13", "17"], "power_in")
-    return (
-        '\t(symbol "DRV8833PWP_parallel"\n'
-        "\t\t(pin_names (offset 1.016))\n"
-        "\t\t(exclude_from_sim no) (in_bom yes) (on_board yes)\n"
-        f'\t\t(property "Reference" "U" (at {-half_w} {top + 1.27} 0) (effects (font (size 1.27 1.27)) (justify left)))\n'
-        f'\t\t(property "Value" "DRV8833PWP" (at {half_w} {bottom - 1.27} 0) (effects (font (size 1.27 1.27)) (justify right)))\n'
-        '\t\t(property "Footprint" "Package_SO:HTSSOP-16-1EP_4.4x5mm_P0.65mm_EP3.4x5mm_Mask2.46x2.31mm"'
-        f" (at 0 0 0) {HIDDEN})\n"
-        f'\t\t(property "Datasheet" "https://www.ti.com/lit/ds/symlink/drv8833.pdf" (at 0 0 0) {HIDDEN})\n'
-        f'\t\t(property "Description" "Dual H-bridge, here in parallel mode (up to approx. 3 A)" (at 0 0 0) {HIDDEN})\n'
-        f'\t\t(property "LCSC Part" "C50506" (at 0 0 0) {HIDDEN})\n'
-        '\t\t(symbol "DRV8833PWP_parallel_0_1"\n'
-        f"\t\t\t(rectangle (start {-half_w} {top}) (end {half_w} {bottom})\n"
-        "\t\t\t\t(stroke (width 0.254) (type default)) (fill (type background)))\n"
-        "\t\t)\n"
-        '\t\t(symbol "DRV8833PWP_parallel_1_1"\n' + "".join(pins) + "\t\t)\n"
-        "\t\t(embedded_fonts no)\n"
-        "\t)\n"
-    )
+    box = Box(10.16, 7.62, -7.62)
+    pins = side_pins(box, left, right)
+    pins += stacked((-2.54, box.top + 2.54, 270), "VM", ["12"], "power_in")
+    pins += stacked((2.54, box.top + 2.54, 270), "VINT", ["14"], "passive")
+    pins += stacked((0, box.bottom - 2.54, 90), "GND", ["13", "17"], "power_in")
+    return symbol(DRV8833, box, pins)
 
 
 def lis2dh12():
     """ST LIS2DH12 accelerometer, LGA-12 2×2 mm (pinout per datasheet/LCSC C110926)."""
-    half_w, top, bottom = 7.62, 7.62, -7.62
+    box = Box(7.62, 7.62, -7.62)
     left = [
-        ("VDD", ["9"], "power_in"),
-        ("VDD_IO", ["10"], "power_in"),
-        ("CS", ["2"], "input"),
-        ("SDO/SA0", ["3"], "input"),
-        ("RES", ["5"], "passive"),
+        ("VDD", "9", "power_in"),
+        ("VDD_IO", "10", "power_in"),
+        ("CS", "2", "input"),
+        ("SDO/SA0", "3", "input"),
+        ("RES", "5", "passive"),
     ]
     right = [
-        ("SCL/SPC", ["1"], "input"),
-        ("SDA/SDI", ["4"], "bidirectional"),
-        ("INT1", ["12"], "output"),
-        ("INT2", ["11"], "output"),
+        ("SCL/SPC", "1", "input"),
+        ("SDA/SDI", "4", "bidirectional"),
+        ("INT1", "12", "output"),
+        ("INT2", "11", "output"),
     ]
-    pins = []
-    for i, (name, nums, ptype) in enumerate(left):
-        pins.append(pin(ptype, -half_w - 2.54, round(top - 2.54 * (i + 1), 2), 0, name, nums[0]))
-    for i, (name, nums, ptype) in enumerate(right):
-        pins.append(pin(ptype, half_w + 2.54, round(top - 2.54 * (i + 1), 2), 180, name, nums[0]))
-    for i, num in enumerate(["6", "7", "8"]):
-        pins.append(pin("power_in" if i == 0 else "passive", 0, bottom - 2.54, 90, "GND", num, hidden=i > 0))
-    return (
-        '\t(symbol "LIS2DH12"\n'
-        "\t\t(pin_names (offset 1.016))\n"
-        "\t\t(exclude_from_sim no) (in_bom yes) (on_board yes)\n"
-        f'\t\t(property "Reference" "U" (at {-half_w} {top + 1.27} 0) (effects (font (size 1.27 1.27)) (justify left)))\n'
-        f'\t\t(property "Value" "LIS2DH12" (at {half_w} {top + 1.27} 0) (effects (font (size 1.27 1.27)) (justify right)))\n'
-        f'\t\t(property "Footprint" "Package_LGA:LGA-12_2x2mm_P0.5mm" (at 0 0 0) {HIDDEN})\n'
-        f'\t\t(property "Datasheet" "https://www.st.com/resource/en/datasheet/lis2dh12.pdf" (at 0 0 0) {HIDDEN})\n'
-        f'\t\t(property "Description" "3-axis accelerometer, I2C/SPI, 2 µA" (at 0 0 0) {HIDDEN})\n'
-        f'\t\t(property "LCSC Part" "C110926" (at 0 0 0) {HIDDEN})\n'
-        '\t\t(symbol "LIS2DH12_0_1"\n'
-        f"\t\t\t(rectangle (start {-half_w} {top}) (end {half_w} {bottom})\n"
-        "\t\t\t\t(stroke (width 0.254) (type default)) (fill (type background)))\n"
-        "\t\t)\n"
-        '\t\t(symbol "LIS2DH12_1_1"\n' + "".join(pins) + "\t\t)\n"
-        "\t\t(embedded_fonts no)\n"
-        "\t)\n"
-    )
+    pins = side_pins(box, left, right)
+    pins += stacked((0, box.bottom - 2.54, 90), "GND", ["6", "7", "8"], "power_in")
+    return symbol(LIS2DH12, box, pins)
 
 
 def solder_pads(n, pitch=2.54, size=1.4):
