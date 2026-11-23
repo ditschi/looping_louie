@@ -22,7 +22,7 @@ import pcbnew
 
 import board_outline
 import gen_main_pcb as base
-from gen_main_pcb import add_track, add_via, ground_via_at_pad, mm, pad_of
+from gen_main_pcb import add_track, mm, pad_of
 
 HARDWARE = Path(__file__).resolve().parent.parent
 SCH = HARDWARE / "charger-board" / "louie-charger.kicad_sch"
@@ -33,6 +33,9 @@ CORNER = 0.5            # outer corner radius of the outline
 EDGE_Y = -BOARD_W / 2   # mating side of the USB-C receptacle
 BRIDGE_TRACK = 1.0      # motor current up to 2 A: approx. 20 mOhm over 43 mm, main board uses 0.4 mm
 BRIDGE_Y = 5.45         # close to the edge so that GND vias still fit above it
+# Own design rules, independent of the main board (its 0.5 mm vias are for the dense 4-layer board); 2 layers,
+# 1.6 mm, enough room: 0.6 mm vias as in the routed board
+RULES = dict(clearance=0.15, track_min=0.15, via_d=0.6, via_drill=0.3, edge=0.3)
 
 USB_X = -15.0
 # reference -> (x, y, rotation, side); mm relative to the board centre
@@ -85,15 +88,15 @@ def pos(x, y):
 
 
 def setup_rules(board):
-    """As the main board; net classes come from louie-charger.kicad_pro (Power 0.8 mm)."""
+    """Charger RULES; net classes come from louie-charger.kicad_pro (Power 0.8 mm)."""
     ds = board.GetDesignSettings()
     ds.SetCopperLayerCount(2)
     ds.SetBoardThickness(mm(THICKNESS))
-    ds.m_TrackMinWidth = mm(base.RULES["track_min"])
-    ds.m_MinClearance = mm(base.RULES["clearance"])
-    ds.m_ViasMinSize = mm(base.RULES["via_d"])
-    ds.m_MinThroughDrill = mm(base.RULES["via_drill"])
-    ds.m_CopperEdgeClearance = mm(base.RULES["edge"])
+    ds.m_TrackMinWidth = mm(RULES["track_min"])
+    ds.m_MinClearance = mm(RULES["clearance"])
+    ds.m_ViasMinSize = mm(RULES["via_d"])
+    ds.m_MinThroughDrill = mm(RULES["via_drill"])
+    ds.m_CopperEdgeClearance = mm(RULES["edge"])
 
 
 def add_text(board, text, x, y, size, side, angle=0):
@@ -107,6 +110,25 @@ def add_text(board, text, x, y, size, side, angle=0):
     if side == "B":
         t.SetMirrored(True)
     board.Add(t)
+
+
+def add_via(board, net, x, y):
+    via = pcbnew.PCB_VIA(board)
+    via.SetPosition(pcbnew.VECTOR2I(x, y))
+    via.SetWidth(mm(RULES["via_d"]))
+    via.SetDrill(mm(RULES["via_drill"]))
+    via.SetNet(net)
+    via.SetLocked(True)
+    board.Add(via)
+
+
+def ground_via_at_pad(board, footprint, number, dx, dy, width=0.4):
+    """Fixed GND via next to a pad (dx/dy in mm relative to the pad centre) with a stub track."""
+    pad = pad_of(footprint, number)
+    q = pad.GetPosition()
+    v = (q.x + mm(dx), q.y + mm(dy))
+    add_track(board, pad.GetNet(), pcbnew.F_Cu, width, (q.x, q.y), v)
+    add_via(board, pad.GetNet(), *v)
 
 
 def preroute_bridge(board, fps):
