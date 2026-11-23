@@ -20,8 +20,8 @@ C0603 = "Capacitor_SMD:C_0603_1608Metric"
 C0805 = "Capacitor_SMD:C_0805_2012Metric"
 
 
-def R6(*args):
-    return R(*args, fp=R0603)
+def R6(*args, **extra):
+    return R(*args, fp=R0603, **extra)
 
 
 BLOCKS = [
@@ -62,8 +62,8 @@ PARTS = [
         },
     ),
     # 5.1 k at CC1/CC2: device (sink), every USB-C power supply then delivers 5 V
-    R6("R101", "5.1k", "CC1", "GND", (88.9, 50.8)),
-    R6("R102", "5.1k", "CC2", "GND", (101.6, 50.8)),
+    R6("R101", "5.1k", ("CC1", "GND"), at=(88.9, 50.8)),
+    R6("R102", "5.1k", ("CC2", "GND"), at=(101.6, 50.8)),
     dict(
         ref="U102",
         lib="Power_Protection:USBLC6-2SC6",
@@ -89,11 +89,11 @@ PARTS = [
         val_at=(2.54, 10.16),
         pins={"4": "VBUS", "2": "GND", "3": "BAT", "5": "PROG", "1": "STAT"},
     ),
-    C("C101", "4.7u 10V", "VBUS", "GND", (160.02, 66.04), fp=C0603),
-    C("C102", "4.7u 10V", "BAT", "GND", (233.68, 66.04), fp=C0603),
-    R6("R103", "2k", "PROG", "GND", (215.9, 88.9)),
+    C("C101", "4.7u 10V", ("VBUS", "GND"), at=(160.02, 66.04), fp=C0603),
+    C("C102", "4.7u 10V", ("BAT", "GND"), at=(233.68, 66.04), fp=C0603),
+    R6("R103", "2k", ("PROG", "GND"), at=(215.9, 88.9)),
     # charge indicator: STAT pulls to GND while charging -> LED on; full or without USB -> off
-    R6("R104", "1k", "VBUS", "LED_A", (160.02, 88.9)),
+    R6("R104", "1k", ("VBUS", "LED_A"), at=(160.02, 88.9)),
     dict(
         ref="D101",
         lib="Device:LED",
@@ -124,8 +124,8 @@ PARTS = [
         at=(165.1, 132.08),
         pins={"2": "VBUS", "1": "VSYS"},
     ),
-    R6("R105", "100k", "VBUS", "GND", (160.02, 152.4)),  # pulls the gate to GND without USB -> Q101 conducts
-    C("C103", "10u 10V", "VSYS", "GND", (231.14, 142.24), fp=C0805),
+    R6("R105", "100k", ("VBUS", "GND"), at=(160.02, 152.4)),  # pulls the gate to GND without USB -> Q101 conducts
+    C("C103", "10u 10V", ("VSYS", "GND"), at=(231.14, 142.24), fp=C0805),
     # --- Battery and cable ---------------------------------------------------------------------
     dict(
         ref="J102",
@@ -136,8 +136,8 @@ PARTS = [
         at=(50.8, 200.66),
         pins={"1": "BAT", "2": "GND"},
     ),
-    TP("TP101", "Battery +", "BAT", (76.2, 198.12), fp=TP_CONTACT),  # solder pads instead of connector
-    TP("TP102", "Battery -", "GND", (88.9, 198.12), fp=TP_CONTACT),
+    TP("TP101", "Battery +", "BAT", at=(76.2, 198.12), fp=TP_CONTACT),  # solder pads instead of connector
+    TP("TP102", "Battery -", "GND", at=(88.9, 198.12), fp=TP_CONTACT),
     dict(
         ref="J103",
         lib="Connector_Generic:Conn_01x04",
@@ -148,18 +148,20 @@ PARTS = [
         pins={"1": "VSYS", "2": "USB_D+", "3": "USB_D-", "4": "GND"},
     ),
     # --- Bridge --------------------------------------------------------------------------------
-    TP("BT101", "Contact", "BRIDGE", (165.1, 198.12), fp=TP_CONTACT),
-    TP("BT102", "Contact", "BRIDGE", (180.34, 198.12), fp=TP_CONTACT),
+    TP("BT101", "Contact", "BRIDGE", at=(165.1, 198.12), fp=TP_CONTACT),
+    TP("BT102", "Contact", "BRIDGE", at=(180.34, 198.12), fp=TP_CONTACT),
 ]
 
 
 if __name__ == "__main__":
     base.main(
-        sch=SCH,
-        parts=PARTS,
-        blocks=BLOCKS,
-        title="Looping Louie Wi-Fi upgrade – charger board",
-        comment="AA format (compartment 2 instead of the bridge) or glued into the base, see docs/charger-board.md",
-        project="louie-charger",
-        generator="gen_charger_schematic.py",
+        base.Sheet(
+            path=SCH,
+            parts=PARTS,
+            blocks=BLOCKS,
+            title="Looping Louie Wi-Fi upgrade – charger board",
+            comment="AA format (compartment 2 instead of the bridge) or glued into the base, see docs/charger-board.md",
+            project="louie-charger",
+            generator="gen_charger_schematic.py",
+        )
     )
