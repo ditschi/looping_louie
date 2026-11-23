@@ -34,20 +34,21 @@ Main board, 4 layers (main-board, docs/main-board-c6.md chapter 11):
   (ROUTE_PLANE=0, GND only through stitching vias).
 Must run with the system Python that contains the KiCad module pcbnew.
 """
+
 import json
 import os
 import re
 import shutil
-import tempfile
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import pcbnew
 
 sys.path.insert(0, str(Path(__file__).parent))
-from stitch import stitch, stitch_grid  # noqa: E402
 import route_gate  # noqa: E402
+from stitch import stitch, stitch_grid  # noqa: E402
 
 
 def parse_args(argv):
@@ -91,8 +92,17 @@ PARALLEL = int(env("ROUTE_PARALLEL", "FREEROUTING_PARALLEL", "4"))
 # therefore changes little. Different track widths (default / Supply), on the other hand, give clearly
 # different results. Minimum width and clearances stay unchanged.
 PASS_VARIANTS = [40, 25, 60, 15, 100, 30]
-WIDTH_VARIANTS = [(0.17, 0.2), (0.2, 0.25), (0.15, 0.2), (0.18, 0.2), (0.2, 0.2), (0.16, 0.25),
-                  (0.17, 0.25), (0.18, 0.25), (0.19, 0.2)]
+WIDTH_VARIANTS = [
+    (0.17, 0.2),
+    (0.2, 0.25),
+    (0.15, 0.2),
+    (0.18, 0.2),
+    (0.2, 0.2),
+    (0.16, 0.25),
+    (0.17, 0.25),
+    (0.18, 0.25),
+    (0.19, 0.2),
+]
 
 
 # Nets that run entirely through copper zones and should not be routed by Freerouting.
@@ -127,13 +137,14 @@ def drop_nets(dsn, nets):
     """Remove nets from the network section of the DSN file (Freerouting then ignores them)."""
     sys.path.insert(0, str(Path(__file__).parent))
     from sexpr import block_end
+
     text = dsn.read_text()
     for net in nets:
         start = text.find(f"(net {net}\n")
         if start < 0:
             start = text.find(f"(net {net} ")
         if start >= 0:
-            text = text[:start] + text[block_end(text, start):]
+            text = text[:start] + text[block_end(text, start) :]
         text = text.replace(f" {net}\n", "\n").replace(f" {net} ", " ").replace(f" {net})", ")")
     dsn.write_text(text)
 
@@ -146,10 +157,11 @@ def plane_layer_off(dsn):
     2026-11-07)."""
     sys.path.insert(0, str(Path(__file__).parent))
     from sexpr import block_end
+
     text = dsn.read_text()
     while (start := text.find("(wire_keepout")) >= 0:
         line = text.rfind("\n", 0, start) + 1
-        text = text[:line] + text[block_end(text, start):].lstrip(" ").lstrip("\n")
+        text = text[:line] + text[block_end(text, start) :].lstrip(" ").lstrip("\n")
     dsn.write_text(text)
 
 
@@ -174,12 +186,29 @@ def freerouting_round(dsn, ses, keep_tracks, passes=None, pcb=None, work=None):
     drop_nets(dsn, PLANE_NETS)
     if FOUR_LAYER:
         if not PLANE_EXPORT:
-            sys.exit("ROUTE_PLANE=0 no longer works with Freerouting 2.5: without a GND plane in the DSN "
-                     "Freerouting would put signals on In1 (disabling it via layer_rule empties the board)")
+            sys.exit(
+                "ROUTE_PLANE=0 no longer works with Freerouting 2.5: without a GND plane in the DSN "
+                "Freerouting would put signals on In1 (disabling it via layer_rule empties the board)"
+            )
         plane_layer_off(dsn)
 
-    result = subprocess.run(["java", "-jar", str(JAR), "-de", str(dsn), "-do", str(ses), "-mp", str(passes or PASSES),
-                             "--gui.enabled=false", "--router.automatic_neckdown=false"], capture_output=True, text=True)
+    result = subprocess.run(
+        [
+            "java",
+            "-jar",
+            str(JAR),
+            "-de",
+            str(dsn),
+            "-do",
+            str(ses),
+            "-mp",
+            str(passes or PASSES),
+            "--gui.enabled=false",
+            "--router.automatic_neckdown=false",
+        ],
+        capture_output=True,
+        text=True,
+    )
     log = result.stdout + result.stderr
     (WORK / "freerouting.log").write_text(log)
     m = re.findall(r"final score: [\d.]+ \((\d+) unrouted", log)
@@ -187,8 +216,9 @@ def freerouting_round(dsn, ses, keep_tracks, passes=None, pcb=None, work=None):
     # empty board read (DSN unreadable): "baseline … for 0 unrouted items" and no track in the SES
     start_open = re.findall(r"baseline score [\d.]+ for (\d+) unrouted", log)
     if start_open and int(start_open[0]) == 0 and ses.exists() and "(wire" not in ses.read_text():
-        raise RuntimeError(f"Freerouting read no open connections and routed nothing – check the DSN "
-                           f"({WORK / 'freerouting.log'})")
+        raise RuntimeError(
+            f"Freerouting read no open connections and routed nothing – check the DSN ({WORK / 'freerouting.log'})"
+        )
 
     board = pcbnew.LoadBoard(str(PCB))
     if not pcbnew.ImportSpecctraSES(board, str(ses)):
@@ -210,8 +240,9 @@ def remove_dangling_vias(PCB=PCB):
     for _ in range(4):
         with tempfile.TemporaryDirectory() as tmp:
             report = Path(tmp) / "drc.json"
-            subprocess.run(["kicad-cli", "pcb", "drc", "--format", "json", "-o", str(report), str(PCB)],
-                           capture_output=True)
+            subprocess.run(
+                ["kicad-cli", "pcb", "drc", "--format", "json", "-o", str(report), str(PCB)], capture_output=True
+            )
             data = json.loads(report.read_text())
         spots = {v["type"]: [] for v in data.get("violations", [])}
         for v in data.get("violations", []):
@@ -224,8 +255,11 @@ def remove_dangling_vias(PCB=PCB):
         for t in [t for t in board.GetTracks() if not t.IsLocked()]:
             kind = "via_dangling" if t.GetClass() == "PCB_VIA" else "track_dangling"
             ends = [t.GetPosition()] if kind == "via_dangling" else [t.GetStart(), t.GetEnd()]
-            if any(abs(pcbnew.ToMM(e.x) - sx) < 0.01 and abs(pcbnew.ToMM(e.y) - sy) < 0.01
-                   for e in ends for sx, sy in spots.get(kind, [])):
+            if any(
+                abs(pcbnew.ToMM(e.x) - sx) < 0.01 and abs(pcbnew.ToMM(e.y) - sy) < 0.01
+                for e in ends
+                for sx, sy in spots.get(kind, [])
+            ):
                 board.Delete(t)
                 n += 1
         if not n:
@@ -240,6 +274,7 @@ def krt_preroute(start, project, name):
     """Pre-router KiCadRoutingTools on the unrouted board; returns the routed board (WORK/pre_<name>).
     The KRT tracks stay unlocked, so route_fix.py may rip them up."""
     import time
+
     if not (KRT_DIR / "py_router" / "route.py").exists() or not KRT_PYTHON.exists():
         sys.exit(f"KiCadRoutingTools not found ({KRT_DIR}, {KRT_PYTHON})\n→ run ./setup.sh")
     work = WORK / f"pre_{name}"
@@ -256,12 +291,27 @@ def krt_preroute(start, project, name):
             board.Delete(track)
     pcbnew.SaveBoard(str(src), board)
     import route_fix
+
     if route_fix.GND_FANOUT_FIRST:  # GND vias before KRT, else KRT takes the space (test: 31 pads without via)
         done, failed = route_fix.gnd_fanout(src, log=lambda m: None)
         print(f"Pre-router {name}: GND fanout beforehand {done} vias, no space {len(failed)}", flush=True)
-    cmd = [str(KRT_PYTHON), str(KRT_DIR / "py_router" / "route.py"), src.name, out.name, "--nets", "*",
-           *[f"!{n}" for n in STITCH_NETS], "--layers", "F.Cu", "In2.Cu", "B.Cu", "--no-fix-drc-settings",
-           "--escalation", "board", *PREROUTERS[name]]
+    cmd = [
+        str(KRT_PYTHON),
+        str(KRT_DIR / "py_router" / "route.py"),
+        src.name,
+        out.name,
+        "--nets",
+        "*",
+        *[f"!{n}" for n in STITCH_NETS],
+        "--layers",
+        "F.Cu",
+        "In2.Cu",
+        "B.Cu",
+        "--no-fix-drc-settings",
+        "--escalation",
+        "board",
+        *PREROUTERS[name],
+    ]
     t0 = time.time()
     with open(work / "krt.log", "w") as log:
         result = subprocess.run(cmd, cwd=work, stdout=log, stderr=subprocess.STDOUT, timeout=1800)
@@ -305,6 +355,7 @@ def attempt(n, start, project):
     unrouted = freerouting_round(dsn, ses, keep_tracks=False, passes=passes, pcb=pcb, work=work)
     if FOUR_LAYER:  # remaining connections with the own router
         import route_fix
+
         with open(work / "route_fix.log", "w") as log:
             route_fix.fix(pcb, log=lambda m: print(m, file=log, flush=True))
     for _ in range(2 if STITCH_NETS else 0):  # connect GND pads without zone contact with a via
@@ -320,6 +371,7 @@ def attempt(n, start, project):
 def attempt_own(n, pcb):
     """4 layers: all signals with the own router (route_fix.py), then GND stitching."""
     import route_fix
+
     pre, variant, seed = plan(n)
     via_cost, f_cost, b_cost = ROUTER_VARIANTS[variant]
     route_fix.SEED = seed
@@ -344,8 +396,11 @@ def attempt_own(n, pcb):
         out(f"GND islands connected: {route_fix.gnd_islands(pcb, log=out)}")
         grid += stitch_grid(pcb)
     removed = remove_dangling_vias(pcb)
-    label = (f"own router, via cost {via_cost}, F {f_cost}, B {b_cost}" + (f", seed {seed}" if seed else "")
-             + (f", pre-router {pre}" if pre != "none" else ""))
+    label = (
+        f"own router, via cost {via_cost}, F {f_cost}, B {b_cost}"
+        + (f", seed {seed}" if seed else "")
+        + (f", pre-router {pre}" if pre != "none" else "")
+    )
     return n, label, still_open, route_gate.measure(pcb, board=BOARD), grid, removed, pcb
 
 
@@ -362,13 +417,18 @@ def main():
     print(f"Design fingerprint {fingerprint[:12]} ({why})", flush=True)
 
     from concurrent.futures import ProcessPoolExecutor
+
     import route_score
+
     cfg = route_score.load_config(BOARD)
     best, results = None, []
     with ProcessPoolExecutor(max_workers=PARALLEL) as pool:
         # ROUTE_VARIANTS="3,4": only these attempts (repetition/scatter), otherwise 1..runs
-        numbers = [int(x) for x in os.environ["ROUTE_VARIANTS"].split(",")] if os.environ.get("ROUTE_VARIANTS") \
+        numbers = (
+            [int(x) for x in os.environ["ROUTE_VARIANTS"].split(",")]
+            if os.environ.get("ROUTE_VARIANTS")
             else list(range(1, ATTEMPTS + 1))
+        )
         # pre-routers: once beforehand per start type used (deterministic), attempts start from its result
         starts = {"none": start}
         if ROUTER == "own":
@@ -377,20 +437,27 @@ def main():
         elif PRE != ["none"]:
             sys.exit("pre=… is only available with the own router (ROUTER=own)")
         for n, label, unrouted, meas, grid, removed, pcb in pool.map(
-                attempt, numbers, [starts[plan(n)[0]] if ROUTER == "own" else start for n in numbers],
-                [project] * len(numbers)):
+            attempt,
+            numbers,
+            [starts[plan(n)[0]] if ROUTER == "own" else start for n in numbers],
+            [project] * len(numbers),
+        ):
             first = "Router" if ROUTER == "own" else "Freerouting"
             extra = f", {removed} dangling vias/track pieces removed" if removed else ""
-            print(f"Attempt {n} ({label}): {first} {unrouted} open → after stitching "
-                  f"{route_gate.short(meas['metrics'], cfg, meas['details'])}, {grid} stitching vias{extra}", flush=True)
+            print(
+                f"Attempt {n} ({label}): {first} {unrouted} open → after stitching "
+                f"{route_gate.short(meas['metrics'], cfg, meas['details'])}, {grid} stitching vias{extra}",
+                flush=True,
+            )
             # best attempt: first feasible, then smallest violation, then smallest score S (route_score.rank_key)
             key = route_score.rank_key(cfg, meas["metrics"], meas["details"])
             results.append((f"attempt {n}", meas))
             if best is None or key < best[0]:
                 best = (key, n, label, meas)
                 shutil.copy(pcb, best_file)
-    for line in route_score.table(cfg, sorted(results, key=lambda r: route_score.rank_key(cfg, r[1]["metrics"],
-                                                                                         r[1]["details"]))):
+    for line in route_score.table(
+        cfg, sorted(results, key=lambda r: route_score.rank_key(cfg, r[1]["metrics"], r[1]["details"]))
+    ):
         print(line)
     for line in route_score.pareto(cfg, results):
         print(line)

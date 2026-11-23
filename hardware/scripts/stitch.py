@@ -7,6 +7,7 @@ opposite layer) lies inside a zone of the same net.
 4 layers: the opposite layer is always the continuous GND layer In1; vias are checked for clearance on
 all four layers.
 """
+
 import json
 import math
 import subprocess
@@ -66,7 +67,7 @@ def _near_hole(board, pos):
             continue
         c = pad.GetPosition()
         r = max(drill.x, drill.y) / 2 + mm(VIA_D / 2 + HOLE_CLEARANCE)
-        if (c.x - pos.x) ** 2 + (c.y - pos.y) ** 2 < r ** 2:
+        if (c.x - pos.x) ** 2 + (c.y - pos.y) ** 2 < r**2:
             return True
     return False
 
@@ -81,14 +82,20 @@ def _in_rule_area(board, pos):
     """Does the via (with radius and clearance) lie fully or partly inside a via keepout area?"""
     r = mm(VIA_D / 2)
     probes = [pos] + [pcbnew.VECTOR2I(pos.x + dx, pos.y + dy) for dx, dy in ((r, 0), (-r, 0), (0, r), (0, -r))]
-    return any(z.GetIsRuleArea() and z.GetDoNotAllowVias() and z.Outline().Contains(q)
-               for z in board.Zones() for q in probes)
+    return any(
+        z.GetIsRuleArea() and z.GetDoNotAllowVias() and z.Outline().Contains(q) for z in board.Zones() for q in probes
+    )
 
 
 def _in_zone(board, pos, layer, net):
     """Does pos (with via radius) lie inside the filled zone of the net on this layer?"""
-    return any(not z.GetIsRuleArea() and z.GetNetCode() == net.GetNetCode() and z.IsOnLayer(layer)
-               and z.HitTestFilledArea(layer, pos, mm(VIA_D / 2)) for z in board.Zones())
+    return any(
+        not z.GetIsRuleArea()
+        and z.GetNetCode() == net.GetNetCode()
+        and z.IsOnLayer(layer)
+        and z.HitTestFilledArea(layer, pos, mm(VIA_D / 2))
+        for z in board.Zones()
+    )
 
 
 def stitch_pad(board, pad, items):
@@ -134,8 +141,9 @@ def unconnected_pads(board_file, nets):
     """Pads of the given nets that DRC reports as unconnected: list of (reference, pad number)."""
     with tempfile.TemporaryDirectory() as tmp:
         report = Path(tmp) / "drc.json"
-        subprocess.run(["kicad-cli", "pcb", "drc", "--format", "json", "-o", str(report), str(board_file)],
-                       capture_output=True)
+        subprocess.run(
+            ["kicad-cli", "pcb", "drc", "--format", "json", "-o", str(report), str(board_file)], capture_output=True
+        )
         data = json.loads(report.read_text())
     result = set()
     for v in data.get("unconnected_items", []):
@@ -153,8 +161,11 @@ def stitch(board_file, nets, all_pads=False):
     board = pcbnew.LoadBoard(str(board_file))
     pcbnew.ZONE_FILLER(board).Fill(board.Zones())
     if all_pads:
-        targets = [(p.GetParentFootprint().GetReference(), p.GetNumber()) for p in board.GetPads()
-                   if p.GetNetname() in nets and p.IsOnLayer(pcbnew.F_Cu) and not p.IsOnLayer(pcbnew.B_Cu)]
+        targets = [
+            (p.GetParentFootprint().GetReference(), p.GetNumber())
+            for p in board.GetPads()
+            if p.GetNetname() in nets and p.IsOnLayer(pcbnew.F_Cu) and not p.IsOnLayer(pcbnew.B_Cu)
+        ]
     else:
         pcbnew.SaveBoard(str(board_file), board)
         targets = unconnected_pads(board_file, nets)
@@ -194,8 +205,9 @@ def stitch_grid(board_file, net_name="/GND", pitch=1.6):
         while x < box.GetRight() - mm(0.9):
             pos = pcbnew.VECTOR2I(int(x), int(y))
             need = (pcbnew.F_Cu, pcbnew.B_Cu) + ((pcbnew.In1_Cu,) if len(cu_layers(board)) == 4 else ())
-            on_both = all(any(z.IsOnLayer(L) and z.HitTestFilledArea(L, pos, mm(VIA_D / 2 + 0.05)) for z in zones)
-                          for L in need)
+            on_both = all(
+                any(z.IsOnLayer(L) and z.HitTestFilledArea(L, pos, mm(VIA_D / 2 + 0.05)) for z in zones) for L in need
+            )
             if on_both and _inside_board(board, pos) and not _in_rule_area(board, pos) and not _near_hole(board, pos):
                 via = pcbnew.PCB_VIA(board)
                 via.SetPosition(pos)
@@ -232,25 +244,36 @@ def _stitch_islands(board, zones, net, items):
                     continue
                 box = outline.BBox()
                 placed = False
-                island_pads = [p for p in board.GetPads() if p.GetNetCode() == net.GetNetCode()
-                               and p.IsOnLayer(layer) and outline.PointInside(p.GetPosition())]
+                island_pads = [
+                    p
+                    for p in board.GetPads()
+                    if p.GetNetCode() == net.GetNetCode()
+                    and p.IsOnLayer(layer)
+                    and outline.PointInside(p.GetPosition())
+                ]
                 y = box.GetTop()
                 while y < box.GetBottom() and not placed:
                     x = box.GetLeft()
                     while x < box.GetRight() and not placed:
                         pos = pcbnew.VECTOR2I(int(x), int(y))
-                        if (outline.PointInside(pos) and _inside_board(board, pos) and not _in_rule_area(board, pos)
-                                and not _near_hole(board, pos)
-                                and zone.HitTestFilledArea(layer, pos, mm(VIA_D / 2))
-                                and any(z.IsOnLayer(other) and z.HitTestFilledArea(other, pos, mm(VIA_D / 2))
-                                        for z in zones)):
+                        if (
+                            outline.PointInside(pos)
+                            and _inside_board(board, pos)
+                            and not _in_rule_area(board, pos)
+                            and not _near_hole(board, pos)
+                            and zone.HitTestFilledArea(layer, pos, mm(VIA_D / 2))
+                            and any(
+                                z.IsOnLayer(other) and z.HitTestFilledArea(other, pos, mm(VIA_D / 2)) for z in zones
+                            )
+                        ):
                             via = pcbnew.PCB_VIA(board)
                             via.SetPosition(pos)
                             via.SetWidth(mm(VIA_D))
                             via.SetDrill(mm(VIA_DRILL))
                             via.SetNet(net)
-                            if not any(_collides(board, items, via.GetEffectiveShape(L), L, net)
-                                       for L in cu_layers(board)):
+                            if not any(
+                                _collides(board, items, via.GetEffectiveShape(L), L, net) for L in cu_layers(board)
+                            ):
                                 via.SetLocked(True)
                                 board.Add(via)
                                 items.append(via)

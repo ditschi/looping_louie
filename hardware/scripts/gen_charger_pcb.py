@@ -16,12 +16,12 @@ Usage (via just):  just charger-pcb      afterwards: just route charger-board
 
 Warning: removes all footprints, tracks and zones of the board and places them anew.
 """
-from pathlib import Path
 
-import pcbnew
+from pathlib import Path
 
 import board_outline
 import gen_main_pcb as base
+import pcbnew
 from gen_main_pcb import add_track, add_via, ground_via_at_pad, mm, pad_of
 
 HARDWARE = Path(__file__).resolve().parent.parent
@@ -29,18 +29,18 @@ SCH = HARDWARE / "charger-board" / "louie-charger.kicad_sch"
 PCB = HARDWARE / "charger-board" / "louie-charger.kicad_pcb"
 ORIGIN = board_outline.ORIGIN_MM
 BOARD_L, BOARD_W, THICKNESS = 46.0, 12.5, 1.6
-EDGE_Y = -BOARD_W / 2   # mating side of the USB-C receptacle
-BRIDGE_TRACK = 1.0      # motor current up to 2 A: approx. 20 mOhm over 43 mm, main board uses 0.4 mm
-BRIDGE_Y = 5.45         # close to the edge so that GND vias still fit above it
+EDGE_Y = -BOARD_W / 2  # mating side of the USB-C receptacle
+BRIDGE_TRACK = 1.0  # motor current up to 2 A: approx. 20 mOhm over 43 mm, main board uses 0.4 mm
+BRIDGE_Y = 5.45  # close to the edge so that GND vias still fit above it
 
 USB_X = -15.0
 # reference -> (x, y, rotation, side); mm relative to the board centre
 PLACEMENT = {
     # USB-C: opening flush with the -y edge (front edge in the footprint at +3.65 mm)
     "J101": (USB_X, EDGE_Y + 3.65, 180, "F"),
-    "U102": (USB_X, 4.5, 0, "F"),          # ESD directly behind the data pins
-    "R101": (USB_X + 3.5, 4.5, 90, "F"),   # CC1
-    "R102": (USB_X - 3.3, 4.5, 90, "F"),   # CC2
+    "U102": (USB_X, 4.5, 0, "F"),  # ESD directly behind the data pins
+    "R101": (USB_X + 3.5, 4.5, 90, "F"),  # CC1
+    "R102": (USB_X - 3.3, 4.5, 90, "F"),  # CC2
     # row at the mating edge: charge indicator (visible from above) and gate pull-down
     "D101": (-7.0, -5.2, 0, "F"),
     "R104": (-4.0, -5.2, 180, "F"),
@@ -51,13 +51,13 @@ PLACEMENT = {
     "C102": (-0.2, -1.2, 90, "F"),
     "R103": (1.8, -1.2, 90, "F"),
     # load sharing
-    "D102": (-5.4, 4.3, 180, "F"),         # cathode (VSYS) on the right
+    "D102": (-5.4, 4.3, 180, "F"),  # cathode (VSYS) on the right
     "Q101": (0.8, 4.3, 0, "F"),
     "C103": (4.0, 4.3, 90, "F"),
     # battery: JST-PH, opening also towards the -y edge; next to it solder pads as alternative
     "J102": (10.5, EDGE_Y + 5.1, 180, "F"),
-    "TP101": (17.0, -3.4, 0, "F"),         # battery +
-    "TP102": (17.0, 3.4, 0, "F"),          # battery -
+    "TP101": (17.0, -3.4, 0, "F"),  # battery +
+    "TP102": (17.0, 3.4, 0, "F"),  # battery -
     # cable to the main board (pinout as J1 there)
     "J103": (20.4, 0.5, 0, "F"),
     # bottom side: end contacts of the bridge
@@ -66,11 +66,11 @@ PLACEMENT = {
 }
 
 SILK = [  # (text, x, y, size, side[, rotation])
-    ("+", 12.6, 4.4, 0.8, "F"),            # pin 1 of the JST = battery +
-    ("+", 15.2, -3.4, 0.8, "F"),           # solder pads TP101 / TP102
+    ("+", 12.6, 4.4, 0.8, "F"),  # pin 1 of the JST = battery +
+    ("+", 15.2, -3.4, 0.8, "F"),  # solder pads TP101 / TP102
     ("-", 15.2, 3.4, 0.8, "F"),
-    ("V", 22.2, -2.5, 0.8, "F"),           # cable solder pads J103: VSYS, D+, D-, GND
-    ("D+", 22.2, -0.5, 0.8, "F", 90),      # vertical, otherwise too wide for the edge
+    ("V", 22.2, -2.5, 0.8, "F"),  # cable solder pads J103: VSYS, D+, D-, GND
+    ("D+", 22.2, -0.5, 0.8, "F", 90),  # vertical, otherwise too wide for the edge
     ("D-", 22.2, 1.5, 0.8, "F", 90),
     ("G", 22.2, 3.5, 0.8, "F"),
     ("CHARGE", -7.0, -3.6, 0.8, "F"),
@@ -112,8 +112,9 @@ def preroute_bridge(board, fps):
     """Wide track on the bottom between the end contacts, past the THT tabs of the USB receptacle."""
     a, b = (pad_of(fps[r], "1").GetPosition() for r in ("BT101", "BT102"))
     y = mm(ORIGIN[1] + BRIDGE_Y)
-    add_track(board, pad_of(fps["BT101"], "1").GetNet(), pcbnew.B_Cu, BRIDGE_TRACK,
-              (a.x, a.y), (a.x, y), (b.x, y), (b.x, b.y))
+    add_track(
+        board, pad_of(fps["BT101"], "1").GetNet(), pcbnew.B_Cu, BRIDGE_TRACK, (a.x, a.y), (a.x, y), (b.x, y), (b.x, b.y)
+    )
 
 
 def preroute_vbus(board, fps):
@@ -168,7 +169,7 @@ def main():
 
     board = pcbnew.LoadBoard(str(PCB)) if PCB.exists() else pcbnew.NewBoard(str(PCB))
     base.clear_board(board)
-    for d in list(board.GetDrawings()):   # outline and texts are placed anew
+    for d in list(board.GetDrawings()):  # outline and texts are placed anew
         board.Delete(d)
     board_outline.draw_outline(board, BOARD_L, BOARD_W)
     setup_rules(board)

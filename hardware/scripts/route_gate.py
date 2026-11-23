@@ -36,6 +36,7 @@ Usage:
   route_gate.py explain [board] <candidate>              decision with contributions, tipping factors, robustness
 For measure/init/check/score/explain it must run with the system Python that contains pcbnew.
 """
+
 import datetime
 import hashlib
 import json
@@ -56,8 +57,16 @@ BOARDS = {"main-board": "louie-main", "charger-board": "louie-charger"}
 UUID_RE = re.compile(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
 TOKEN_RE = re.compile(r'\(|\)|"(?:[^"\\]|\\.)*"|[^\s()"]+')
 # nodes that are not part of the design (generated, random or output settings)
-DROP = {"uuid", "tstamp", "filled_polygon", "fill_segments", "generator", "generator_version", "version",
-        "pcbplotparams"}
+DROP = {
+    "uuid",
+    "tstamp",
+    "filled_polygon",
+    "fill_segments",
+    "generator",
+    "generator_version",
+    "version",
+    "pcbplotparams",
+}
 TRACK_KINDS = {"segment", "arc", "via"}
 # lists whose children KiCad writes sorted by UUID: sort the children for the hash
 SORTED = {"kicad_pcb", "footprint", "group"}
@@ -72,6 +81,7 @@ def record_path(board):
 
 
 # --- Fingerprint ----------------------------------------------------------------------------------------------------
+
 
 def parse(text):
     stack, cur = [], []
@@ -117,8 +127,9 @@ def project_rules(pcb, project=None):
     if pro.exists():
         data = json.loads(pro.read_text())
         net = {k: v for k, v in data.get("net_settings", {}).items() if k not in ("net_colors", "meta")}
-        out += json.dumps({"design_settings": data.get("board", {}).get("design_settings"), "net_settings": net},
-                          sort_keys=True)
+        out += json.dumps(
+            {"design_settings": data.get("board", {}).get("design_settings"), "net_settings": net}, sort_keys=True
+        )
     if dru.exists():
         out += "\n" + dru.read_text()
     return out
@@ -148,6 +159,7 @@ def run_fingerprint(start, record, project):
 
 # --- Metrics --------------------------------------------------------------------------------------------------------
 
+
 def measure(pcb, project=None, board="main-board"):
     """Metrics of a board (route_score.measure_all) → dict(metrics=…, details=…). project: .kicad_pro whose rules
     (including .kicad_dru) should apply; if the board is not next to it, it is copied into a temporary directory
@@ -158,8 +170,10 @@ def measure(pcb, project=None, board="main-board"):
 
 def short(m, cfg=None, details=None):
     """Short line; with cfg additionally hard violation and score S."""
-    text = (f"{m['unconnected']} open, DRC {m['drc_violations']}, islands {m['gnd_islands']}, "
-            f"{m['via_count']} Vias, {m['track_length_mm']:.1f} mm")
+    text = (
+        f"{m['unconnected']} open, DRC {m['drc_violations']}, islands {m['gnd_islands']}, "
+        f"{m['via_count']} Vias, {m['track_length_mm']:.1f} mm"
+    )
     if cfg is not None and "drc_errors" in m:
         e = route_score.evaluate(cfg, m, details)
         text += f", hard {e['hard_total']}" + (f" ({', '.join(e['hard'])})" if e["hard"] else "") + f", S {e['S']:.2f}"
@@ -167,8 +181,10 @@ def short(m, cfg=None, details=None):
 
 
 def slug(m, cfg=None, details=None):
-    text = (f"drc{m['drc_violations']}-open{m['unconnected']}-isl{m['gnd_islands']}-via{m['via_count']}"
-            f"-len{m['track_length_mm']:.0f}")
+    text = (
+        f"drc{m['drc_violations']}-open{m['unconnected']}-isl{m['gnd_islands']}-via{m['via_count']}"
+        f"-len{m['track_length_mm']:.0f}"
+    )
     if cfg is not None and "drc_errors" in m:
         e = route_score.evaluate(cfg, m, details)
         text += f"-hard{e['hard_total']}-S{e['S']:.1f}"
@@ -176,6 +192,7 @@ def slug(m, cfg=None, details=None):
 
 
 # --- Tools, result file ---------------------------------------------------------------------------------------------
+
 
 def tool_versions(router):
     out = {}
@@ -212,17 +229,32 @@ def write_record(board, fingerprint, board_hash, meas, info):
     cfg = route_score.load_config(board)
     m, d = meas["metrics"], meas.get("details", {})
     e = route_score.evaluate(cfg, m, d)
-    record = {"board": board, "fingerprint": fingerprint, "board_hash": board_hash, "metrics": m,
-              "score": {"S": e["S"], "hard": e["hard"], "hard_total": e["hard_total"], "under_mm": e["under_mm"],
-                        "parts": e["parts"]},
-              "decision": "hard+weighted", "score_config_sha256": route_score.config_hash(),
-              "metrics_version": route_score.METRICS_VERSION, "details": d,
-              "router": info.get("router"), "variant": info.get("variant"),
-              "runs": info.get("runs"), "note": info.get("note"),
-              "timestamp": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
-              "tools": tool_versions(info.get("router"))}
-    record_path(board).write_text(json.dumps({k: v for k, v in record.items() if v is not None}, indent=2,
-                                             ensure_ascii=False) + "\n")
+    record = {
+        "board": board,
+        "fingerprint": fingerprint,
+        "board_hash": board_hash,
+        "metrics": m,
+        "score": {
+            "S": e["S"],
+            "hard": e["hard"],
+            "hard_total": e["hard_total"],
+            "under_mm": e["under_mm"],
+            "parts": e["parts"],
+        },
+        "decision": "hard+weighted",
+        "score_config_sha256": route_score.config_hash(),
+        "metrics_version": route_score.METRICS_VERSION,
+        "details": d,
+        "router": info.get("router"),
+        "variant": info.get("variant"),
+        "runs": info.get("runs"),
+        "note": info.get("note"),
+        "timestamp": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
+        "tools": tool_versions(info.get("router")),
+    }
+    record_path(board).write_text(
+        json.dumps({k: v for k, v in record.items() if v is not None}, indent=2, ensure_ascii=False) + "\n"
+    )
 
 
 def refresh_record(board, record, meas):
@@ -237,8 +269,12 @@ def refresh_record(board, record, meas):
 
 def record_current(record):
     """Do the stored metrics match the configuration and metrics version?"""
-    return bool(record) and record.get("score_config_sha256") == route_score.config_hash() \
-        and record.get("metrics_version") == route_score.METRICS_VERSION and "drc_errors" in record.get("metrics", {})
+    return (
+        bool(record)
+        and record.get("score_config_sha256") == route_score.config_hash()
+        and record.get("metrics_version") == route_score.METRICS_VERSION
+        and "drc_errors" in record.get("metrics", {})
+    )
 
 
 def stamp():
@@ -269,6 +305,7 @@ def find_copy(board, board_hash, project):
 
 # --- Gate -----------------------------------------------------------------------------------------------------------
 
+
 def official_measurement(board, record, project, log=print):
     """Metrics of the official board: from routing.json if configuration hash and metrics version match; otherwise
     measured again (official file if it is still the result from routing.json, otherwise the copy from
@@ -276,12 +313,20 @@ def official_measurement(board, record, project, log=print):
     if record_current(record):
         return {"metrics": record["metrics"], "details": record.get("details", {})}, False
     official = pcb_path(board)
-    source = official if content_hash(official, project) == record["board_hash"] else \
-        find_copy(board, record["board_hash"], project)
+    source = (
+        official
+        if content_hash(official, project) == record["board_hash"]
+        else find_copy(board, record["board_hash"], project)
+    )
     if source is None:
         return None, False
-    why = "metrics version changed" if record.get("metrics_version") not in (None, route_score.METRICS_VERSION) \
-        else "score configuration changed" if record.get("score_config_sha256") else "no score in routing.json yet"
+    why = (
+        "metrics version changed"
+        if record.get("metrics_version") not in (None, route_score.METRICS_VERSION)
+        else "score configuration changed"
+        if record.get("score_config_sha256")
+        else "no score in routing.json yet"
+    )
     log(f"Official board measured again ({why}): {source.relative_to(ROOT)}")
     return measure(source, project, board), True
 
@@ -305,8 +350,10 @@ def gate(board, candidate, fingerprint, metrics=None, info=None, force=False, lo
         shutil.copy(candidate, official)
         shutil.copy(candidate, keep_dir(board) / f"accepted-{stamp()}-{slug(m, cfg, meas.get('details'))}.kicad_pcb")
         write_record(board, fingerprint, content_hash(official, project), meas, info)
-        log(f"New run: {short(m, cfg, meas.get('details'))} → accepted ({reason}); "
-            f"{official.relative_to(ROOT)} and {record_path(board).relative_to(ROOT)} updated")
+        log(
+            f"New run: {short(m, cfg, meas.get('details'))} → accepted ({reason}); "
+            f"{official.relative_to(ROOT)} and {record_path(board).relative_to(ROOT)} updated"
+        )
         return True
 
     if force:
@@ -317,13 +364,17 @@ def gate(board, candidate, fingerprint, metrics=None, info=None, force=False, lo
     if record["fingerprint"] != fingerprint:
         old = record["metrics"]
         info["note"] = f"design changed, baseline reset (before: {short(old)})"
-        return accept(f"design changed, fingerprint {record['fingerprint'][:10]} → {fingerprint[:10]}, "
-                      f"previous state {short(old)}")
+        return accept(
+            f"design changed, fingerprint {record['fingerprint'][:10]} → {fingerprint[:10]}, "
+            f"previous state {short(old)}"
+        )
     off, refreshed = official_measurement(board, record, project, log)
     if off is None:
         info["note"] = "previous result not found, new run accepted"
-        log("  previous result (board_hash from routing.json) found neither in build/<board>/keep/ nor in Git "
-            "– accepting the new run")
+        log(
+            "  previous result (board_hash from routing.json) found neither in build/<board>/keep/ nor in Git "
+            "– accepting the new run"
+        )
         return accept("replacement")
     ok, why, drivers = route_score.decide(cfg, meas, off)
     report = route_score.explain(cfg, "new", meas, "official", off)
@@ -333,9 +384,11 @@ def gate(board, candidate, fingerprint, metrics=None, info=None, force=False, lo
         (out / "score-report.txt").write_text("\n".join(report) + "\n")
     for line in report:
         log(line)
-    eo, ec = route_score.evaluate(cfg, off["metrics"], off.get("details")), \
-        route_score.evaluate(cfg, m, meas.get("details"))
-    summary = (f"S {ec['S']:.2f} ({ec['S'] - eo['S']:+.2f}), hard {ec['hard_total']} (before {eo['hard_total']})")
+    eo, ec = (
+        route_score.evaluate(cfg, off["metrics"], off.get("details")),
+        route_score.evaluate(cfg, m, meas.get("details")),
+    )
+    summary = f"S {ec['S']:.2f} ({ec['S'] - eo['S']:+.2f}), hard {ec['hard_total']} (before {eo['hard_total']})"
     if ok:
         return accept(f"{why}; {summary}; main drivers {drivers}")
     if dry_run:
@@ -348,8 +401,7 @@ def gate(board, candidate, fingerprint, metrics=None, info=None, force=False, lo
     rejected.mkdir(parents=True, exist_ok=True)
     target = rejected / f"{stamp()}-{slug(m, cfg, meas.get('details'))}.kicad_pcb"
     shutil.copy(candidate, target)
-    log(f"New run: {summary} → rejected ({why}; main drivers {drivers}), "
-        f"stored under {target.relative_to(ROOT)}")
+    log(f"New run: {summary} → rejected ({why}; main drivers {drivers}), stored under {target.relative_to(ROOT)}")
     log(f"  new:    {short(m, cfg, meas.get('details'))}\n  before: {short(off['metrics'], cfg, off.get('details'))}")
     # the official file must be the previous result (just pcb overwrites it with the unrouted one)
     if content_hash(official, project) != record["board_hash"]:
@@ -359,8 +411,10 @@ def gate(board, candidate, fingerprint, metrics=None, info=None, force=False, lo
             log(f"  previous result restored from {source.relative_to(ROOT)}")
         else:
             info["note"] = "previous result not found, worse run accepted"
-            log("  previous result (board_hash from routing.json) found neither in build/<board>/keep/ nor in Git "
-                "– accepting the new run so that no unrouted board is left behind")
+            log(
+                "  previous result (board_hash from routing.json) found neither in build/<board>/keep/ nor in Git "
+                "– accepting the new run so that no unrouted board is left behind"
+            )
             return accept("replacement")
     return False
 
@@ -375,8 +429,12 @@ def preroute_board(board, out_dir):
         if f.suffix in (".kicad_pro", ".kicad_dru") or f.name in ("fp-lib-table", "sym-lib-table"):
             shutil.copy(f, out.parent / f.name)
     python = os.environ.get("KICAD_PYTHON", sys.executable)
-    subprocess.run([python, str(Path(__file__).parent / "gen_main_pcb.py")],
-                   check=True, env=dict(os.environ, PCB_OUT=str(out)), capture_output=True)
+    subprocess.run(
+        [python, str(Path(__file__).parent / "gen_main_pcb.py")],
+        check=True,
+        env=dict(os.environ, PCB_OUT=str(out)),
+        capture_output=True,
+    )
     return out
 
 
@@ -389,20 +447,32 @@ def init(board, preroute=None, accept_mismatch=False):
         fp = content_hash(pre, project)
         # Does the official (routed) board match this unrouted one? Placement/zones/rules equal and all
         # pre-routes contained unchanged.
-        same_design = (content_hash(pre, project, drop_tracks=True)
-                       == content_hash(official, drop_tracks=True))
+        same_design = content_hash(pre, project, drop_tracks=True) == content_hash(official, drop_tracks=True)
         missing = track_items(pre) - track_items(official)
-    print(f"{board}: fingerprint {fp[:16]}…, placement/zones/rules equal: {same_design}, "
-          f"missing pre-routes: {len(missing)}")
+    print(
+        f"{board}: fingerprint {fp[:16]}…, placement/zones/rules equal: {same_design}, "
+        f"missing pre-routes: {len(missing)}"
+    )
     if not (same_design and not missing) and not accept_mismatch:
-        sys.exit("official board does not match the unrouted one – routing.json not written "
-                 "(--accept-mismatch forces it)")
+        sys.exit(
+            "official board does not match the unrouted one – routing.json not written (--accept-mismatch forces it)"
+        )
     meas = measure(official, board=board)
     old = load_record(board) or {}
-    write_record(board, fp, content_hash(official), meas,
-                 {"router": old.get("router") or ("own" if board == "main-board" else "freerouting"),
-                  "variant": old.get("variant"), "note": "created from the official board (route_gate.py init)"})
-    print(f"{record_path(board).relative_to(ROOT)}: {short(meas['metrics'], route_score.load_config(board), meas['details'])}")
+    write_record(
+        board,
+        fp,
+        content_hash(official),
+        meas,
+        {
+            "router": old.get("router") or ("own" if board == "main-board" else "freerouting"),
+            "variant": old.get("variant"),
+            "note": "created from the official board (route_gate.py init)",
+        },
+    )
+    print(
+        f"{record_path(board).relative_to(ROOT)}: {short(meas['metrics'], route_score.load_config(board), meas['details'])}"
+    )
 
 
 def split_board(args):
@@ -440,9 +510,15 @@ def score_cmd(args, explain_only=False):
             for k, v in sorted(e["parts"].items(), key=lambda kv: -abs(kv[1])):
                 print(f"  {k:24} {route_score.fmt(m.get(k)):>10} {v:>+8.2f}")
             for p in boards[0][1]["details"].get("paths", []):
-                print(f"  path {p['name']}: " + (f"{p['drop_mv']} mV, min. {p['min_width_mm']} mm, {p['vias']} vias, "
-                                                 f"too narrow {p['under_width_mm']} mm" if p.get("connected")
-                                                 else "not connected"))
+                print(
+                    f"  path {p['name']}: "
+                    + (
+                        f"{p['drop_mv']} mV, min. {p['min_width_mm']} mm, {p['vias']} vias, "
+                        f"too narrow {p['under_width_mm']} mm"
+                        if p.get("connected")
+                        else "not connected"
+                    )
+                )
 
 
 def main(argv):
@@ -467,8 +543,14 @@ def main(argv):
         start = Path(args[args.index("--start") + 1]) if "--start" in args else pcb_path(board)
         fp, why = run_fingerprint(start, record, pcb_path(board).with_suffix(".kicad_pro"))
         print(f"fingerprint {fp[:16]}… ({why})")
-        gate(board, cand, fp, info={"router": "manual", "variant": f"route_gate.py check {cand.name}"},
-             force="--force" in args, dry_run="--apply" not in args)
+        gate(
+            board,
+            cand,
+            fp,
+            info={"router": "manual", "variant": f"route_gate.py check {cand.name}"},
+            force="--force" in args,
+            dry_run="--apply" not in args,
+        )
     elif cmd == "score":
         score_cmd(args)
     elif cmd == "explain":

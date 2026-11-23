@@ -6,6 +6,7 @@ Usage: route_finish.py <routed.kicad_pcb> <unrouted.kicad_pcb> <target.kicad_pcb
 Afterwards the result goes through the gate like any run (route_gate.py check main-board <target> --start <unrouted>
 --apply). Must run with the system Python that contains pcbnew.
 """
+
 import shutil
 import sys
 from pathlib import Path
@@ -35,10 +36,14 @@ def main(routed, unrouted, target, max_rounds=200):
     board = pcbnew.LoadBoard(str(target))
     pcbnew.ZONE_FILLER(board).Fill(board.Zones())
     pcbnew.SaveBoard(str(target), board)
-    rip = {t.m_Uuid.AsString(): t.GetNetname() for t in board.GetTracks()
-           if key(t) not in pre and t.GetNetname() not in route_fix.SKIP_NETS}
-    done, still = route_fix.fix(target, max_rounds=int(max_rounds), gnd=True, rip_tracks=rip,
-                                log=lambda m: print(m, flush=True))
+    rip = {
+        t.m_Uuid.AsString(): t.GetNetname()
+        for t in board.GetTracks()
+        if key(t) not in pre and t.GetNetname() not in route_fix.SKIP_NETS
+    }
+    done, still = route_fix.fix(
+        target, max_rounds=int(max_rounds), gnd=True, rip_tracks=rip, log=lambda m: print(m, flush=True)
+    )
     print(f"route_fix: {done} routed, {still} open")
     for _ in range(2):
         d, _f = stitch(target, ["/GND"])
