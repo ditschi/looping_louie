@@ -28,6 +28,10 @@ else
     bad "easyeda2kicad missing  → uv tool install easyeda2kicad"
 fi
 
+for tool in pre-commit jq; do
+    if command -v "$tool" >/dev/null; then ok "$tool"; else bad "$tool missing  → ./setup.sh (commit gate, docs/code-health.md)"; fi
+done
+
 echo "Optional:"
 if [[ -d /usr/share/kicad/3dmodels ]]; then
     ok "KiCad 3D models"

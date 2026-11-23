@@ -1,0 +1,13 @@
+# ai-health config, component: Python scripts (docs/code-health.md). Profile "strict".
+# Keep identical to the other component config except large_file (checked by: just code-health-config).
+[thresholds]
+large_file = 600
+primitive_obsession = 0.3
+
+[score]
+decay = 8
+symbol_cap = 4
+density_loc = 100000
+
+[delta]
+tolerance = 0.0

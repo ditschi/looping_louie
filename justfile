@@ -270,6 +270,50 @@ fw-monitor port="":
 fw-ports:
     @ls -l /dev/serial/by-id/ 2>/dev/null | grep -E "1a86|Espressif|303a" || echo "no dev board found (USB cable, dialout group?)"
 
+# Code health (docs/code-health.md): ai-health per component, each with its own config. Pinned to the commit
+# behind v0.4.0 (a commit pin comes from the uv cache, offline too; a tag would be resolved over the network).
+aihealth := "uvx -q --from git+https://github.com/epatel/ai-health@033d1867fe514867d944d9387ee72db0188eed47 aihealth"
+health_components := "firmware/louie-fw hardware/scripts"
+
+# Code health scan per component (firmware, Python scripts); e.g. -v, --format markdown, --format json (one object per component)
+code-health *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [[ " {{args}} " == *" json "* ]]; then
+        out=$(for c in {{health_components}}; do {{aihealth}} scan "$c" --config "$c/.aihealth.toml" {{args}} | jq -c --arg c "$c" '{($c): .}'; done)
+        jq -s 'add' <<< "$out"
+    else
+        for c in {{health_components}}; do echo "== $c"; {{aihealth}} scan "$c" --config "$c/.aihealth.toml" {{args}}; done
+    fi
+
+# Code health delta per component, exit 1 if anything got worse: working tree vs HEAD; e.g. --staged, --base origin/main
+code-health-delta *args:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    rc=0
+    for c in {{health_components}}; do {{aihealth}} delta "$c" --config "$c/.aihealth.toml" {{args}} || rc=1; done
+    exit $rc
+
+# Check that the component configs share the profile (they may differ only in large_file)
+code-health-config:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    profile() { grep -v -e '^large_file' -e '^# ai-health config, component' "$1/.aihealth.toml"; }
+    set -- {{health_components}}
+    diff <(profile "$1") <(profile "$2") || { echo "code-health configs differ beyond large_file"; exit 1; }
+
+# Hardware checks: ERC and DRC of both boards, generators reproduce the committed symbols and schematics
+hw-check:
+    @just erc main-board
+    @just drc main-board
+    @just erc charger-board
+    @just drc charger-board
+    @python3 {{hw}}/scripts/check_generated.py
+
+# All pre-commit hooks on all files (ruff, code health, suppressions, hardware checks)
+lint:
+    pre-commit run --all-files
+
 # Delete generated output (build/)
 clean:
     rm -rf build

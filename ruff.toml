@@ -2,7 +2,7 @@
 # nesting) comes from ai-health alone, so ruff's structural rules (C90, PLR09xx, PLR1702) stay off.
 line-length = 120
 target-version = "py311"
-extend-exclude = ["tools"]
+extend-exclude = ["tools", ".claude"]  # downloaded tools, vendored skills
 
 [lint]
 select = ["E", "W", "F", "I", "B", "UP"]

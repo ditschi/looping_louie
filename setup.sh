@@ -4,7 +4,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-APT_PACKAGES=(kicad kicad-packages3d just zip python3 python3-matplotlib python3-numpy default-jre curl openscad inkscape)
+APT_PACKAGES=(kicad kicad-packages3d just zip python3 python3-matplotlib python3-numpy default-jre curl openscad inkscape jq)
 
 echo "== System packages (apt)"
 missing=()
@@ -30,6 +30,10 @@ if command -v easyeda2kicad >/dev/null; then
 else
     uv tool install easyeda2kicad
 fi
+command -v pre-commit >/dev/null || uv tool install pre-commit
+
+echo "== Commit gate (pre-commit: ruff, code health, hardware checks; docs/code-health.md)"
+pre-commit install
 
 echo "== Autorouter Freerouting (tools/freerouting.jar)"
 if [[ -f tools/freerouting.jar ]]; then
