@@ -114,7 +114,8 @@ All outputs go to `build/<board>/` (not in Git).
   [decision-history.md](decision-history.md)). The charger board has 2 layers.
 - `just pcb` recreates the board by script (`gen_main_pcb.py`): outline, stack-up, footprints with
   nets, design rules (also `louie-main.kicad_dru`), net classes, antenna keep-outs, pre-routes, thermal vias,
-  ground planes on all layers. The placement is in `placement.py`: everything assembled on top; bottom only solder
+  ground planes on all layers. The pre-routes are in `preroute_main.py`, helpers shared with the charger board
+  (`gen_charger_pcb.py`) in `pcb_tools.py`. The placement is in `placement.py`: everything assembled on top; bottom only solder
   pads, test points and optional, unassembled footprints (DNP, [idea-optional-hardware.md](idea-optional-hardware.md) 0b).
 - `just plot` draws top and bottom with ratsnest and reports overlaps.
 - `just route` routes with the own router `route_fix.py` (`ROUTER=freerouting` as an alternative). Then `just drc`.

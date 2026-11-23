@@ -20,9 +20,8 @@ Warning: removes all footprints, tracks and zones of the board and places them a
 from pathlib import Path
 
 import board_outline
-import gen_main_pcb as base
 import pcbnew
-from gen_main_pcb import add_track, add_via, ground_via_at_pad, mm, pad_of
+from pcb_tools import RULES, Placer, add_track, add_via, clear_board, ground_via_at_pad, mm, pad_of, read_netlist
 
 HARDWARE = Path(__file__).resolve().parent.parent
 SCH = HARDWARE / "charger-board" / "louie-charger.kicad_sch"
@@ -88,14 +87,16 @@ def setup_rules(board):
     ds = board.GetDesignSettings()
     ds.SetCopperLayerCount(2)
     ds.SetBoardThickness(mm(THICKNESS))
-    ds.m_TrackMinWidth = mm(base.RULES["track_min"])
-    ds.m_MinClearance = mm(base.RULES["clearance"])
-    ds.m_ViasMinSize = mm(base.RULES["via_d"])
-    ds.m_MinThroughDrill = mm(base.RULES["via_drill"])
-    ds.m_CopperEdgeClearance = mm(base.RULES["edge"])
+    ds.m_TrackMinWidth = mm(RULES["track_min"])
+    ds.m_MinClearance = mm(RULES["clearance"])
+    ds.m_ViasMinSize = mm(RULES["via_d"])
+    ds.m_MinThroughDrill = mm(RULES["via_drill"])
+    ds.m_CopperEdgeClearance = mm(RULES["edge"])
 
 
-def add_text(board, text, x, y, size, side, angle=0):
+def add_text(board, silk):
+    """Silkscreen text from a SILK entry (text, x, y, size, side[, rotation])."""
+    text, x, y, size, side, angle = (*silk, 0)[:6]
     t = pcbnew.PCB_TEXT(board)
     t.SetTextAngleDegrees(angle)
     t.SetText(text)
@@ -113,7 +114,13 @@ def preroute_bridge(board, fps):
     a, b = (pad_of(fps[r], "1").GetPosition() for r in ("BT101", "BT102"))
     y = mm(ORIGIN[1] + BRIDGE_Y)
     add_track(
-        board, pad_of(fps["BT101"], "1").GetNet(), pcbnew.B_Cu, BRIDGE_TRACK, (a.x, a.y), (a.x, y), (b.x, y), (b.x, b.y)
+        board,
+        pad_of(fps["BT101"], "1").GetNet(),
+        (pcbnew.B_Cu, BRIDGE_TRACK),
+        (a.x, a.y),
+        (a.x, y),
+        (b.x, y),
+        (b.x, b.y),
     )
 
 
@@ -126,19 +133,19 @@ def preroute_vbus(board, fps):
     vias = []
     for num in ("A4", "A9"):
         q = pad_of(usb, num).GetPosition()
-        add_track(board, net, pcbnew.F_Cu, 0.4, (q.x, q.y), (q.x, via_y))
+        add_track(board, net, (pcbnew.F_Cu, 0.4), (q.x, q.y), (q.x, via_y))
         add_via(board, net, q.x, via_y)
         vias.append(q.x)
     anode = pad_of(fps["D102"], "2").GetPosition()
-    add_track(board, net, pcbnew.B_Cu, 0.5, (min(vias), via_y), (anode.x, via_y))
+    add_track(board, net, (pcbnew.B_Cu, 0.5), (min(vias), via_y), (anode.x, via_y))
     add_via(board, net, anode.x, via_y)
-    add_track(board, net, pcbnew.F_Cu, 0.5, (anode.x, via_y), (anode.x, anode.y))
+    add_track(board, net, (pcbnew.F_Cu, 0.5), (anode.x, via_y), (anode.x, anode.y))
     # VBUS pin 5 of the ESD diode: via to its right, on the bottom onto the common track (on top CC1 would cross)
     pin5 = pad_of(fps["U102"], "5").GetPosition()
     v = (pin5.x + mm(1.11), pin5.y)
-    add_track(board, net, pcbnew.F_Cu, 0.3, (pin5.x, pin5.y), v)
+    add_track(board, net, (pcbnew.F_Cu, 0.3), (pin5.x, pin5.y), v)
     add_via(board, net, *v)
-    add_track(board, net, pcbnew.B_Cu, 0.4, v, (v[0], via_y), (max(vias), via_y))
+    add_track(board, net, (pcbnew.B_Cu, 0.4), v, (v[0], via_y), (max(vias), via_y))
 
 
 def copper_zones(board, gnd):
@@ -162,63 +169,38 @@ def copper_zones(board, gnd):
 
 
 def main():
-    comps, nets = base.read_netlist(SCH)
+    comps, nets = read_netlist(SCH)
     missing = set(comps) - set(PLACEMENT)
     if missing:
         raise SystemExit(f"No placement for: {', '.join(sorted(missing))}")
-
     board = pcbnew.LoadBoard(str(PCB)) if PCB.exists() else pcbnew.NewBoard(str(PCB))
-    base.clear_board(board)
+    clear_board(board)
     for d in list(board.GetDrawings()):  # outline and texts are placed anew
         board.Delete(d)
     board_outline.draw_outline(board, BOARD_L, BOARD_W)
     setup_rules(board)
-
-    netinfo = {}
-    for name in nets:
-        item = pcbnew.NETINFO_ITEM(board, name)
-        board.Add(item)
-        netinfo[name] = item
-    pad_net = {(ref, pin): net for net, nodes in nets.items() for ref, pin in nodes}
-
-    fps = {}
-    for ref, comp in sorted(comps.items()):
-        fp = base.load_footprint(comp["footprint"])
-        board.Add(fp)
-        fp.SetReference(ref)
-        fp.SetValue(comp["value"])
-        fp.SetPath(pcbnew.KIID_PATH(f"/{comp['uuid']}"))
-        for pad in fp.Pads():
-            net = pad_net.get((ref, pad.GetNumber()))
-            if net:
-                pad.SetNet(netinfo[net])
-        x, y, rot, side = PLACEMENT[ref]
-        fp.SetPosition(pos(x, y))
-        fp.SetOrientationDegrees(rot)
-        fp.Reference().SetLayer(pcbnew.F_Fab)
-        fp.Reference().SetTextSize(pcbnew.VECTOR2I(mm(0.5), mm(0.5)))
-        fp.Reference().SetTextThickness(mm(0.08))
-        fp.Reference().SetPosition(fp.GetPosition())
-        fp.Value().SetVisible(False)
-        # component silkscreen (outlines) stays, designators only on Fab
-        for item in list(fp.GraphicalItems()):
-            on_silk = item.GetLayer() in (pcbnew.F_SilkS, pcbnew.B_SilkS)
-            # remove texts; for the USB receptacle also the outline lines (they run over the board edge)
-            if on_silk and (item.GetClass() == "PCB_TEXT" or ref == "J101"):
-                fp.Remove(item)
-        if side == "B":
-            fp.Flip(fp.GetPosition(), pcbnew.FLIP_DIRECTION_LEFT_RIGHT)
-            fp.Reference().SetLayer(pcbnew.B_Fab)
-        fps[ref] = fp
-
+    placer = Placer(board, nets, pos)
+    fps = {ref: place(placer, ref, comp) for ref, comp in sorted(comps.items())}
     preroute_bridge(board, fps)
     preroute_vbus(board, fps)
-    ground_via_at_pad(board, fps["U102"], "2", -1.06, -0.2, width=0.3)  # otherwise GND island between the pins
-    copper_zones(board, netinfo["/GND"])
-    for args in SILK:
-        add_text(board, *args)
+    ground_via_at_pad(
+        board, pad_of(fps["U102"], "2"), (-1.06, -0.2), width=0.3
+    )  # otherwise GND island between the pins
+    copper_zones(board, placer.netinfo["/GND"])
+    for silk in SILK:
+        add_text(board, silk)
     pcbnew.SaveBoard(str(PCB), board)
     print(f"{PCB.relative_to(HARDWARE.parent)}: {BOARD_L} x {BOARD_W} x {THICKNESS} mm, {len(comps)} components")
+
+
+def place(placer, ref, comp):
+    """Footprint per PLACEMENT; component silkscreen (outlines) stays, its texts go (designators only on Fab)."""
+    fp = placer.place(ref, comp, PLACEMENT[ref])
+    for item in [i for i in fp.GraphicalItems() if i.GetLayer() in (pcbnew.F_SilkS, pcbnew.B_SilkS)]:
+        # the USB receptacle also loses its outline lines (they run over the board edge)
+        if item.GetClass() == "PCB_TEXT" or ref == "J101":
+            fp.Remove(item)
+    return fp
 
 
 if __name__ == "__main__":

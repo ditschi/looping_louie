@@ -57,7 +57,7 @@ PLACEMENT = {
     # 3.3 V LDO TPS7A2633 (rev B, docs/proposal-supply-standby.md), WSON-6 2x2: rotation 270 puts EN/GND/IN (pins 4-6)
     # on the +y side at y 5.86 (EN x 1.75, IN x 3.05, both up to the VSYS edge track) and PG/NC/OUT (pins 3-1) on the
     # -y side at y 4.08 (OUT x 3.05 towards C9). Two thermal vias in the EP, in the gap between J2 pads 2 and 3 on the
-    # bottom (gen_main_pcb.ldo_thermal_vias).
+    # bottom (preroute_main.ldo_thermal_vias).
     "U3": (2.4, 4.97, 270, "F"),  # TPS7A2633DRV
     "Q1": (7.6, 4.95, 0, "F"),  # AO3401A (0.1 mm towards the edge, clears the C9 courtyard of the buck trial)
     "C8": (4.22, 5.6, 90, "F"),  # 4.7 uF LDO input right of IN: pad 1 (VSYS) at the edge side, pad 2 GND to the EP
