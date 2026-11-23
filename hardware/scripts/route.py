@@ -463,7 +463,9 @@ def main():
         print(line)
     print(f"best attempt of this invocation: {best[1]} ({best[2]})")
     info = {"router": ROUTER, "variant": f"attempt {best[1]}: {best[2]}", "runs": len(numbers)}
-    route_gate.gate(BOARD, best_file, fingerprint, best[3], info, force=FORCE)
+    route_gate.gate(
+        BOARD, route_gate.Candidate(best_file, fingerprint, best[3], info), route_gate.GateMode(force=FORCE)
+    )
     print(f"next: just drc {BOARD}")
 
 
