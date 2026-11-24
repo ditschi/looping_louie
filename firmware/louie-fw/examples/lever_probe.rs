@@ -43,27 +43,7 @@ fn main() -> anyhow::Result<()> {
 
     let mode = RTC_MODE.load(Ordering::Relaxed);
     if mode != MODE_NONE {
-        let cause = diag::wake_cause();
-        if cause == esp_idf_svc::sys::esp_sleep_source_t_ESP_SLEEP_WAKEUP_EXT1 && hw::level(sense) {
-            let n = RTC_COUNTER.fetch_add(1, Ordering::Relaxed) + 1;
-            log::info!(">>> wake #{n} by lever closed (IO3 HIGH)");
-        } else {
-            log::info!(">>> wake by {} · lever {}", diag::wake_cause_name(cause), level_name(hw::level(sense)));
-        }
-        log::info!("auto cycle running: 'x' within 2 s stops it");
-        if console::wait_key(2000) == Some(b'x') {
-            RTC_MODE.store(MODE_NONE, Ordering::Relaxed);
-            log::info!("auto cycle stopped after {} wake-ups", RTC_COUNTER.load(Ordering::Relaxed));
-        } else {
-            // wait up to 3 s for the lever to open, otherwise test the special case "closed at sleep"
-            for _ in 0..300 {
-                if !hw::level(sense) {
-                    break;
-                }
-                std::thread::sleep(std::time::Duration::from_millis(10));
-            }
-            sleep_for_lever(sense, mode)?;
-        }
+        resume_cycle(sense, mode)?;
     }
 
     console::menu(&[
@@ -74,38 +54,89 @@ fn main() -> anyhow::Result<()> {
     ]);
     log::info!("logging IO3 edges every 10 ms; lever {}", level_name(hw::level(sense)));
 
-    let mut last = hw::level(sense);
-    let mut last_ms = diag::uptime_ms();
-    let mut closings: u32 = 0;
+    let mut edges = Edges::new(hw::level(sense));
     loop {
-        let now_level = hw::level(sense);
-        if now_level != last {
-            let now = diag::uptime_ms();
-            if now_level {
-                closings += 1;
-            }
-            log::info!("IO3 {} after {} ms · closings {closings}", level_name(now_level), now - last_ms);
-            last = now_level;
-            last_ms = now;
-        }
-        match console::poll_key() {
-            Some(k @ (b'c' | b't')) => {
-                let m = if k == b't' { MODE_CYCLE_TIMER } else { MODE_CYCLE_LOW };
-                RTC_MODE.store(m, Ordering::Relaxed);
-                RTC_COUNTER.store(0, Ordering::Relaxed);
-                log::info!("auto cycle started: toggle the lever 20 ×, the count appears after every wake");
-                sleep_for_lever(sense, m)?;
-            }
-            Some(b's') => sleep_for_lever(sense, MODE_CYCLE_LOW)?,
-            Some(b'z') => {
-                closings = 0;
-                RTC_COUNTER.store(0, Ordering::Relaxed);
-                log::info!("counters reset");
-            }
-            _ => {}
+        edges.poll(hw::level(sense));
+        if let Some(k) = console::poll_key() {
+            on_key(k, sense, &mut edges)?;
         }
         std::thread::sleep(std::time::Duration::from_millis(10));
     }
+}
+
+/// Woken from the auto cycle: count a lever wake, then stop on 'x' or go back to sleep.
+fn resume_cycle(sense: i32, mode: u32) -> anyhow::Result<()> {
+    let cause = diag::wake_cause();
+    if cause == esp_idf_svc::sys::esp_sleep_source_t_ESP_SLEEP_WAKEUP_EXT1 && hw::level(sense) {
+        let n = RTC_COUNTER.fetch_add(1, Ordering::Relaxed) + 1;
+        log::info!(">>> wake #{n} by lever closed (IO3 HIGH)");
+    } else {
+        log::info!(">>> wake by {} · lever {}", diag::wake_cause_name(cause), level_name(hw::level(sense)));
+    }
+    log::info!("auto cycle running: 'x' within 2 s stops it");
+    if console::wait_key(2000) == Some(b'x') {
+        RTC_MODE.store(MODE_NONE, Ordering::Relaxed);
+        log::info!("auto cycle stopped after {} wake-ups", RTC_COUNTER.load(Ordering::Relaxed));
+        return Ok(());
+    }
+    wait_lever_open(sense);
+    sleep_for_lever(sense, mode)
+}
+
+/// Wait up to 3 s for the lever to open, otherwise the special case "closed at sleep" is tested.
+fn wait_lever_open(sense: i32) {
+    for _ in 0..300 {
+        if !hw::level(sense) {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+}
+
+/// IO3 edge log: level, time of the last edge, number of closings.
+struct Edges {
+    last: bool,
+    last_ms: u32,
+    closings: u32,
+}
+
+impl Edges {
+    fn new(level: bool) -> Self {
+        Self { last: level, last_ms: diag::uptime_ms(), closings: 0 }
+    }
+
+    fn poll(&mut self, level: bool) {
+        if level == self.last {
+            return;
+        }
+        let now = diag::uptime_ms();
+        if level {
+            self.closings += 1;
+        }
+        log::info!("IO3 {} after {} ms · closings {}", level_name(level), now - self.last_ms, self.closings);
+        self.last = level;
+        self.last_ms = now;
+    }
+}
+
+fn on_key(key: u8, sense: i32, edges: &mut Edges) -> anyhow::Result<()> {
+    match key {
+        b'c' | b't' => {
+            let m = if key == b't' { MODE_CYCLE_TIMER } else { MODE_CYCLE_LOW };
+            RTC_MODE.store(m, Ordering::Relaxed);
+            RTC_COUNTER.store(0, Ordering::Relaxed);
+            log::info!("auto cycle started: toggle the lever 20 ×, the count appears after every wake");
+            sleep_for_lever(sense, m)?;
+        }
+        b's' => sleep_for_lever(sense, MODE_CYCLE_LOW)?,
+        b'z' => {
+            edges.closings = 0;
+            RTC_COUNTER.store(0, Ordering::Relaxed);
+            log::info!("counters reset");
+        }
+        _ => {}
+    }
+    Ok(())
 }
 
 fn level_name(closed: bool) -> &'static str {

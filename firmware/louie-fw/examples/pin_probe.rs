@@ -46,13 +46,7 @@ fn main() -> anyhow::Result<()> {
     );
 
     if RTC_MODE.load(Ordering::Relaxed) == MODE_CYCLE_HOLD {
-        let n = RTC_COUNTER.fetch_add(1, Ordering::Relaxed) + 1;
-        log::info!(">>> sleep cycle {n} / {CYCLES} with hold done");
-        if n < CYCLES && console::wait_key(1000) != Some(b'x') {
-            sleep_with(true)?;
-        }
-        RTC_MODE.store(0, Ordering::Relaxed);
-        log::info!("cycle finished after {n} sleeps");
+        resume_cycle()?;
     }
 
     console::menu(&[
@@ -64,25 +58,44 @@ fn main() -> anyhow::Result<()> {
         ("d", "case a: interrupt watchdog reset"),
     ]);
     loop {
-        match console::poll_key() {
-            Some(b'w') => sleep_with(false)?,
-            Some(b'h') => sleep_with(true)?,
-            Some(b'n') => {
-                RTC_MODE.store(MODE_CYCLE_HOLD, Ordering::Relaxed);
-                RTC_COUNTER.store(0, Ordering::Relaxed);
-                sleep_with(true)?;
-            }
-            // SAFETY: no arguments; software reset, does not return.
-            Some(b'r') => unsafe { esp_idf_svc::sys::esp_restart() },
-            Some(b'p') => panic!("deliberate panic (pin_probe case a)"),
-            Some(b'd') => {
-                log::info!("spinning with interrupts off → interrupt watchdog");
-                esp_idf_svc::hal::interrupt::free(|| loop {
-                    core::hint::spin_loop();
-                });
-            }
-            _ => {}
+        if let Some(k) = console::poll_key() {
+            on_key(k)?;
         }
         std::thread::sleep(std::time::Duration::from_millis(20));
     }
+}
+
+/// Woken in the hold cycle: count, sleep again until CYCLES or 'x'.
+fn resume_cycle() -> anyhow::Result<()> {
+    let n = RTC_COUNTER.fetch_add(1, Ordering::Relaxed) + 1;
+    log::info!(">>> sleep cycle {n} / {CYCLES} with hold done");
+    if n < CYCLES && console::wait_key(1000) != Some(b'x') {
+        sleep_with(true)?;
+    }
+    RTC_MODE.store(0, Ordering::Relaxed);
+    log::info!("cycle finished after {n} sleeps");
+    Ok(())
+}
+
+fn on_key(key: u8) -> anyhow::Result<()> {
+    match key {
+        b'w' => sleep_with(false)?,
+        b'h' => sleep_with(true)?,
+        b'n' => {
+            RTC_MODE.store(MODE_CYCLE_HOLD, Ordering::Relaxed);
+            RTC_COUNTER.store(0, Ordering::Relaxed);
+            sleep_with(true)?;
+        }
+        // SAFETY: no arguments; software reset, does not return.
+        b'r' => unsafe { esp_idf_svc::sys::esp_restart() },
+        b'p' => panic!("deliberate panic (pin_probe case a)"),
+        b'd' => {
+            log::info!("spinning with interrupts off → interrupt watchdog");
+            esp_idf_svc::hal::interrupt::free(|| loop {
+                core::hint::spin_loop();
+            });
+        }
+        _ => {}
+    }
+    Ok(())
 }

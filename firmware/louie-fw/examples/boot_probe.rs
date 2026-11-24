@@ -48,33 +48,12 @@ fn bit(pin: i32) -> u8 {
 
 fn main() -> anyhow::Result<()> {
     louie_fw::init("boot_probe (test-hardware.md 4.3)");
-    let p = &BOARD.pins;
-    let s1 = p.buttons[0].expect("S1");
-    // external pull-downs (R22, VBUS divider, 100 k on SENSE/INT) → no internal pulls; buttons → pull-up;
-    // IO8 has its own 10 k pull-up on the dev board and the board
-    for pin in [p.accel_int, p.sense, p.vbus_det, p.led_chain_enable, 8] {
-        hw::input(pin, Pull::None)?;
-    }
-    for pin in [s1, p.boot_button] {
-        hw::input(pin, Pull::Up)?;
-    }
+    configure_inputs()?;
     log_levels();
 
     let case = RTC_MODE.load(Ordering::Relaxed);
     if let Some(wake) = wake_for_case(case) {
-        if diag::wake_cause() == esp_idf_svc::sys::esp_sleep_source_t_ESP_SLEEP_WAKEUP_EXT1 {
-            let n = RTC_COUNTER.fetch_add(1, Ordering::Relaxed) + 1;
-            log::info!(">>> case {case}: wake #{n} by {}", diag::mask_pins(diag::ext1_status()));
-        } else {
-            log::warn!(">>> case {case}: start without ext1 wake ({})", diag::wake_cause_name(diag::wake_cause()));
-        }
-        log::info!("release the wake source; sleeping again in 2 s, 'x' stops");
-        if console::wait_key(2000) == Some(b'x') {
-            RTC_MODE.store(0, Ordering::Relaxed);
-            log::info!("case {case} stopped after {} wake-ups", RTC_COUNTER.load(Ordering::Relaxed));
-        } else {
-            sleep::deep_sleep(&wake)?;
-        }
+        resume_case(case, &wake)?;
     }
 
     console::menu(&[
@@ -86,34 +65,89 @@ fn main() -> anyhow::Result<()> {
         ("r", "software restart"),
     ]);
 
-    let mut live = false;
-    let mut last = String::new();
+    let mut live = LiveLevels::default();
     loop {
-        match console::poll_key() {
-            Some(k @ (b'7' | b'8' | b'9' | b'a')) => {
-                let case = if k == b'a' { 10 } else { (k - b'0') as u32 };
-                RTC_MODE.store(case, Ordering::Relaxed);
-                RTC_COUNTER.store(0, Ordering::Relaxed);
-                sleep::deep_sleep(&wake_for_case(case).expect("case"))?;
-            }
-            Some(b'l') => {
-                live = !live;
-                last.clear();
-            }
-            // SAFETY: no arguments; software reset, does not return.
-            Some(b'r') => unsafe { esp_idf_svc::sys::esp_restart() },
-            _ => {}
+        if let Some(k) = console::poll_key() {
+            on_key(k, &mut live)?;
         }
-        if live {
-            let now: String = [p.accel_int, p.sense, p.vbus_det, s1, 8, p.boot_button, p.led_chain_enable]
-                .iter()
-                .map(|&pin| char::from(b'0' + bit(pin)))
-                .collect();
-            if now != last {
-                log_levels();
-                last = now;
-            }
-        }
+        live.poll();
         std::thread::sleep(std::time::Duration::from_millis(20));
+    }
+}
+
+/// External pull-downs (R22, VBUS divider, 100 k on SENSE/INT) → no internal pulls; buttons → pull-up;
+/// IO8 has its own 10 k pull-up on the dev board and the board.
+fn configure_inputs() -> anyhow::Result<()> {
+    let p = &BOARD.pins;
+    for pin in [p.accel_int, p.sense, p.vbus_det, p.led_chain_enable, 8] {
+        hw::input(pin, Pull::None)?;
+    }
+    for pin in [p.buttons[0].expect("S1"), p.boot_button] {
+        hw::input(pin, Pull::Up)?;
+    }
+    Ok(())
+}
+
+/// Woken in a wake case: count the ext1 wake, then stop on 'x' or sleep again.
+fn resume_case(case: u32, wake: &Wake) -> anyhow::Result<()> {
+    if diag::wake_cause() == esp_idf_svc::sys::esp_sleep_source_t_ESP_SLEEP_WAKEUP_EXT1 {
+        let n = RTC_COUNTER.fetch_add(1, Ordering::Relaxed) + 1;
+        log::info!(">>> case {case}: wake #{n} by {}", diag::mask_pins(diag::ext1_status()));
+    } else {
+        log::warn!(">>> case {case}: start without ext1 wake ({})", diag::wake_cause_name(diag::wake_cause()));
+    }
+    log::info!("release the wake source; sleeping again in 2 s, 'x' stops");
+    if console::wait_key(2000) == Some(b'x') {
+        RTC_MODE.store(0, Ordering::Relaxed);
+        log::info!("case {case} stopped after {} wake-ups", RTC_COUNTER.load(Ordering::Relaxed));
+        return Ok(());
+    }
+    sleep::deep_sleep(wake)?;
+    Ok(())
+}
+
+fn on_key(key: u8, live: &mut LiveLevels) -> anyhow::Result<()> {
+    match key {
+        b'7' | b'8' | b'9' | b'a' => {
+            let case = if key == b'a' { 10 } else { (key - b'0') as u32 };
+            RTC_MODE.store(case, Ordering::Relaxed);
+            RTC_COUNTER.store(0, Ordering::Relaxed);
+            sleep::deep_sleep(&wake_for_case(case).expect("case"))?;
+        }
+        b'l' => live.toggle(),
+        // SAFETY: no arguments; software reset, does not return.
+        b'r' => unsafe { esp_idf_svc::sys::esp_restart() },
+        _ => {}
+    }
+    Ok(())
+}
+
+/// Live level view: logs the levels whenever one of the pins changes.
+#[derive(Default)]
+struct LiveLevels {
+    on: bool,
+    last: String,
+}
+
+impl LiveLevels {
+    fn toggle(&mut self) {
+        self.on = !self.on;
+        self.last.clear();
+    }
+
+    fn poll(&mut self) {
+        if !self.on {
+            return;
+        }
+        let p = &BOARD.pins;
+        let s1 = p.buttons[0].expect("S1");
+        let now: String = [p.accel_int, p.sense, p.vbus_det, s1, 8, p.boot_button, p.led_chain_enable]
+            .iter()
+            .map(|&pin| char::from(b'0' + bit(pin)))
+            .collect();
+        if now != self.last {
+            log_levels();
+            self.last = now;
+        }
     }
 }
