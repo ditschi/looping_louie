@@ -28,7 +28,7 @@ envelope check `just hull` confirms it stays inside the AA diameter.*
 | Main board | schematic done, routed (own router), ERC/DRC 0, 0 unconnected; rev B with the LDO TPS7A2633 (VSYS 3.0–6.6 V, standby approx. 15–18 µA), datasheet delta review done ([main-board-c6.md](docs/main-board-c6.md)) |
 | Charger board | schematic and layout done, ERC/DRC clean ([charger-board.md](docs/charger-board.md)) |
 | 3D-printed parts | AA sleeve, C-cell adapter and charger holder modelled; checked against the current layout (`just hull`) |
-| Firmware | Rust, step 0 written (bring-up and test probes), not built yet ([firmware/louie-fw](firmware/louie-fw/README.md)) |
+| Firmware | Rust, step 0 written (bring-up and test probes), builds, not yet run on a board ([firmware/louie-fw](firmware/louie-fw/README.md)) |
 | Web UI | clickable prototype ([web/poc](web/poc/README.md)) |
 
 The old MicroPython/ESP8266 version is in the tag `v1-legacy`.
@@ -52,7 +52,7 @@ The old MicroPython/ESP8266 version is in the tag `v1-legacy`.
   [web UI concept](docs/web-ui-concept.md), [mode builder](docs/mode-builder.md), [device pairing](docs/device-pairing.md)
 - Test setup before the board exists: [test hardware](docs/test-hardware.md)
 - Development workflow (tools, generators, router, routing score): [development](docs/development.md),
-  [routing score](docs/routing-score.md)
+  [routing score](docs/routing-score.md), [code health](docs/code-health.md) (score, commit gate, hardware checks)
 - Open items and decisions: [open items](docs/open-items.md), [decision history](docs/decision-history.md),
   [concept review 2026-11-10](docs/review-2026-11-10.md), [supply proposal: buck converter](docs/proposal-supply-buck.md),
   [supply proposal: standby with Li-ion](docs/proposal-supply-standby.md),
@@ -80,6 +80,7 @@ web/
   prototype/          first, outdated UI draft
 firmware/louie-fw/    Rust firmware (ESP-IDF), step 0: bring-up and test probes
 tools/                downloaded tools (Freerouting, pre-router), created by setup.sh, not in Git
+AGENTS.md             orientation and validation for coding agents
 justfile              all development commands (just --list)
 setup.sh              installs all tools
 ```

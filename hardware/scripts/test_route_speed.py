@@ -16,6 +16,7 @@ Usage: test_route_speed.py [routed.kicad_pcb]   (just route-check-speed); exit c
 Default: official board; the unrouted start board comes from build/main-board/route/start.kicad_pcb.
 Must run with the system Python that contains pcbnew.
 """
+
 import heapq
 import json
 import random
@@ -35,7 +36,9 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 OFFICIAL = ROOT / "hardware" / "main-board" / "louie-main.kicad_pcb"
 
 
-def astar_ref(grid, track, via, sources, targets, max_expand=1_000_000, goal_via=False, area_sources=(), area_targets=()):
+def astar_ref(
+    grid, track, via, sources, targets, max_expand=1_000_000, goal_via=False, area_sources=(), area_targets=()
+):
     """A* over (layer, row, column). sources/targets: list of (layer, cell). Returns a list of (layer, cell).
     goal_via=True: no target, but the nearest spot on the start layer where a via fits
     (connecting a GND pad to the GND layer In1)."""
@@ -44,7 +47,7 @@ def astar_ref(grid, track, via, sources, targets, max_expand=1_000_000, goal_via
     blocked = np.stack([track[L] for L in layers])
     k = 1
     for L, c in list(sources) + list(targets):  # free the own terminal points
-        blocked[li[L], max(0, c[0] - k):c[0] + k + 1, max(0, c[1] - k):c[1] + k + 1] = False
+        blocked[li[L], max(0, c[0] - k) : c[0] + k + 1, max(0, c[1] - k) : c[1] + k + 1] = False
     # area start points (ISLAND_AREA_SEARCH): only free cells, free nothing
     sources = list(sources) + [(L, c) for L, c in area_sources if not blocked[li[L], c[0], c[1]]]
     via_ok = ~via
@@ -57,8 +60,9 @@ def astar_ref(grid, track, via, sources, targets, max_expand=1_000_000, goal_via
     def h(c):
         if goal_via:
             return 0
-        return min(max(abs(c[0] - t[0]), abs(c[1] - t[1])) + 0.414 * min(abs(c[0] - t[0]), abs(c[1] - t[1]))
-                   for t in tl)
+        return min(
+            max(abs(c[0] - t[0]), abs(c[1] - t[1])) + 0.414 * min(abs(c[0] - t[0]), abs(c[1] - t[1])) for t in tl
+        )
 
     cost_l = [rf.LAYER_COST[L] for L in layers]
     extra = grid.fcost
@@ -92,8 +96,13 @@ def astar_ref(grid, track, via, sources, targets, max_expand=1_000_000, goal_via
             n = (c[0] + di, c[1] + dj)
             if not (0 <= n[0] < ny and 0 <= n[1] < nx) or blocked[l, n[0], n[1]]:
                 continue
-            ng = g + cost * (extra[n] if l == 0 else cost_l[l]) + (rf.BEND_COST if d not in (-1, kk) else 0) \
-                + (rf.RIP_COST if soft[l, n[0], n[1]] else 0) + hist[l, n[0], n[1]]
+            ng = (
+                g
+                + cost * (extra[n] if l == 0 else cost_l[l])
+                + (rf.BEND_COST if d not in (-1, kk) else 0)
+                + (rf.RIP_COST if soft[l, n[0], n[1]] else 0)
+                + hist[l, n[0], n[1]]
+            )
             ns = (l, n)
             if ng < best.get(ns, 1e18):
                 best[ns] = ng
@@ -139,9 +148,12 @@ def drc_pairs(pcb):
         r = Path(tmp) / "d.json"
         subprocess.run(["kicad-cli", "pcb", "drc", "--format", "json", "-o", str(r), str(pcb)], capture_output=True)
         data = json.loads(r.read_text())
-    return [[i["uuid"] for i in u["items"]] for u in data["unconnected_items"]
-            if not any(f"[{n}]" in i["description"] for n in rf.SKIP_NETS for i in u["items"])
-            and "Zone" not in " ".join(i["description"] for i in u["items"])]
+    return [
+        [i["uuid"] for i in u["items"]]
+        for u in data["unconnected_items"]
+        if not any(f"[{n}]" in i["description"] for n in rf.SKIP_NETS for i in u["items"])
+        and "Zone" not in " ".join(i["description"] for i in u["items"])
+    ]
 
 
 def states(pcb, tmp, counts):
@@ -185,13 +197,16 @@ def check_connections(pcb, tmp):
         cl = clusters(board)
         tree_d, tree_o = tree_length(board, drc), tree_length(board, own)
         same = tree_d.keys() == tree_o.keys() and all(
-            tree_d[k][0] == tree_o[k][0] and abs(tree_d[k][1] - tree_o[k][1]) < 1e-6 for k in tree_d)
+            tree_d[k][0] == tree_o[k][0] and abs(tree_d[k][1] - tree_o[k][1]) < 1e-6 for k in tree_d
+        )
         pairs_d = {tuple(sorted(cl[u] for u in p)) for p in drc}
         edges = sum(1 for p in own if tuple(sorted(cl[u] for u in p)) not in pairs_d)
         elems = sum(1 for p in own if sorted(p) not in [sorted(q) for q in drc]) - edges
         total += len(drc)
-        print(f"  {n:3d} tracks removed: DRC {len(drc)}, own {len(own)} open, spanning tree per net "
-              f"{'equal' if same else 'DIFFERENT'}; on ties other edge {edges}, other item {elems}")
+        print(
+            f"  {n:3d} tracks removed: DRC {len(drc)}, own {len(own)} open, spanning tree per net "
+            f"{'equal' if same else 'DIFFERENT'}; on ties other edge {edges}, other item {elems}"
+        )
         ok &= same
     print(f"1 open_connections: {total} connections, DRC {t_drc:.1f} s, own {t_own:.2f} s → {'ok' if ok else 'ERROR'}")
     return ok
@@ -241,8 +256,8 @@ def check_astar(pcb):
                 walled = {L: m.copy() for L, m in track.items()}
                 L0, (i, j) = dst[0]
                 for L in rf.SIGNAL_LAYERS:
-                    walled[L][max(0, i - 4):i + 5, max(0, j - 4):j + 5] = True
-                    walled[L][max(0, i - 2):i + 3, max(0, j - 2):j + 3] = False
+                    walled[L][max(0, i - 4) : i + 5, max(0, j - 4) : j + 5] = True
+                    walled[L][max(0, i - 2) : i + 3, max(0, j - 2) : j + 3] = False
                 cases.append(dict(sources=src, targets=[dst[0]], track=walled))
                 cases.append(dict(sources=src[:1], targets=[], goal_via=True, max_expand=60_000))
             for c in cases:
@@ -258,8 +273,10 @@ def check_astar(pcb):
                 if a != b:
                     ok = False
                     print(f"  DIFFERENCE: {u['items'][0]['description']} | {u['items'][1]['description']} {c.keys()}")
-    print(f"3 astar: {n} searches ({none} without path) equal to astar_ref, new {t_new:.1f} s, old {t_ref:.1f} s "
-          f"→ {'ok' if ok else 'ERROR'}")
+    print(
+        f"3 astar: {n} searches ({none} without path) equal to astar_ref, new {t_new:.1f} s, old {t_ref:.1f} s "
+        f"→ {'ok' if ok else 'ERROR'}"
+    )
     return ok
 
 

@@ -29,8 +29,8 @@ pub fn input(pin: Gpio, pull: Pull) -> Result<(), EspError> {
             sys::gpio_pulldown_t_GPIO_PULLDOWN_DISABLE
         },
         intr_type: sys::gpio_int_type_t_GPIO_INTR_DISABLE,
-        ..Default::default()
     };
+    // SAFETY: the pointers refer to locals that outlive the call; ESP-IDF copies the data and keeps no reference.
     esp!(unsafe { sys::gpio_config(&cfg) })
 }
 
@@ -43,29 +43,31 @@ pub fn output(pin: Gpio, high: bool) -> Result<(), EspError> {
         pull_up_en: sys::gpio_pullup_t_GPIO_PULLUP_DISABLE,
         pull_down_en: sys::gpio_pulldown_t_GPIO_PULLDOWN_DISABLE,
         intr_type: sys::gpio_int_type_t_GPIO_INTR_DISABLE,
-        ..Default::default()
     };
+    // SAFETY: the pointers refer to locals that outlive the call; ESP-IDF copies the data and keeps no reference.
     esp!(unsafe { sys::gpio_config(&cfg) })?;
     set(pin, high);
     Ok(())
 }
 
 pub fn set(pin: Gpio, high: bool) {
+    // SAFETY: plain value arguments (pin and channel numbers from the board definition); no memory is shared.
     unsafe { sys::gpio_set_level(pin, high as u32) };
 }
 
 pub fn level(pin: Gpio) -> bool {
+    // SAFETY: plain value arguments (pin and channel numbers from the board definition); no memory is shared.
     unsafe { sys::gpio_get_level(pin) != 0 }
 }
 
 /// Latch the current pad state (also through deep sleep on the C6, SOC_GPIO_SUPPORT_HOLD_SINGLE_IO_IN_DSLP).
 pub fn hold(pin: Gpio, on: bool) -> Result<(), EspError> {
-    esp!(unsafe {
-        if on {
-            sys::gpio_hold_en(pin)
-        } else {
-            sys::gpio_hold_dis(pin)
-        }
+    esp!(if on {
+        // SAFETY: plain value arguments (pin and channel numbers from the board definition); no memory is shared.
+        unsafe { sys::gpio_hold_en(pin) }
+    } else {
+        // SAFETY: plain value arguments (pin and channel numbers from the board definition); no memory is shared.
+        unsafe { sys::gpio_hold_dis(pin) }
     })
 }
 
@@ -130,17 +132,20 @@ impl Adc {
             ulp_mode: sys::adc_ulp_mode_t_ADC_ULP_MODE_DISABLE,
             ..Default::default()
         };
+        // SAFETY: the pointers refer to locals that outlive the call; ESP-IDF copies the data and keeps no reference.
         esp!(unsafe { sys::adc_oneshot_new_unit(&unit_cfg, &mut unit) })?;
 
         let mut channels = Vec::new();
         for &pin in pins {
             let mut unit_id: sys::adc_unit_t = 0;
             let mut chan: sys::adc_channel_t = 0;
+            // SAFETY: the pointers refer to locals that outlive the call; ESP-IDF copies the data and keeps no reference.
             esp!(unsafe { sys::adc_oneshot_io_to_channel(pin, &mut unit_id, &mut chan) })?;
             let chan_cfg = sys::adc_oneshot_chan_cfg_t {
                 atten: sys::adc_atten_t_ADC_ATTEN_DB_12,
                 bitwidth: sys::adc_bitwidth_t_ADC_BITWIDTH_DEFAULT,
             };
+            // SAFETY: the pointers refer to locals that outlive the call; ESP-IDF copies the data and keeps no reference.
             esp!(unsafe { sys::adc_oneshot_config_channel(unit, chan, &chan_cfg) })?;
 
             let cali_cfg = sys::adc_cali_curve_fitting_config_t {
@@ -150,6 +155,7 @@ impl Adc {
                 bitwidth: sys::adc_bitwidth_t_ADC_BITWIDTH_DEFAULT,
             };
             let mut cali: sys::adc_cali_handle_t = core::ptr::null_mut();
+            // SAFETY: the pointers refer to locals that outlive the call; ESP-IDF copies the data and keeps no reference.
             esp!(unsafe { sys::adc_cali_create_scheme_curve_fitting(&cali_cfg, &mut cali) })?;
             channels.push((pin, chan, cali));
         }
@@ -167,7 +173,9 @@ impl Adc {
         let (chan, cali) = self.channel(pin);
         let mut raw: i32 = 0;
         let mut mv: i32 = 0;
+        // SAFETY: unit and channel come from Adc::new and stay valid until drop; `raw` outlives the call.
         esp!(unsafe { sys::adc_oneshot_read(self.unit, chan, &mut raw) })?;
+        // SAFETY: the calibration handle comes from Adc::new and stays valid until drop; `mv` outlives the call.
         esp!(unsafe { sys::adc_cali_raw_to_voltage(cali, raw, &mut mv) })?;
         Ok((raw.max(0) as u32, mv.max(0) as u32))
     }
@@ -188,12 +196,12 @@ impl Adc {
 
 impl Drop for Adc {
     fn drop(&mut self) {
-        unsafe {
-            for &(_, _, cali) in &self.channels {
-                sys::adc_cali_delete_scheme_curve_fitting(cali);
-            }
-            sys::adc_oneshot_del_unit(self.unit);
+        for &(_, _, cali) in &self.channels {
+            // SAFETY: created in Adc::new, deleted exactly once here; the Adc is not used afterwards.
+            unsafe { sys::adc_cali_delete_scheme_curve_fitting(cali) };
         }
+        // SAFETY: created in Adc::new, deleted exactly once here, after the calibration schemes that refer to it.
+        unsafe { sys::adc_oneshot_del_unit(self.unit) };
     }
 }
 
@@ -224,6 +232,7 @@ impl MotorPwm {
             clk_cfg: sys::soc_periph_ledc_clk_src_legacy_t_LEDC_AUTO_CLK,
             ..Default::default()
         };
+        // SAFETY: the pointers refer to locals that outlive the call; ESP-IDF copies the data and keeps no reference.
         esp!(unsafe { sys::ledc_timer_config(&timer) })?;
         for (pin, channel) in [(in1, sys::ledc_channel_t_LEDC_CHANNEL_0), (in2, sys::ledc_channel_t_LEDC_CHANNEL_1)] {
             let ch = sys::ledc_channel_config_t {
@@ -235,6 +244,7 @@ impl MotorPwm {
                 hpoint: 0,
                 ..Default::default()
             };
+            // SAFETY: the pointers refer to locals that outlive the call; ESP-IDF copies the data and keeps no reference.
             esp!(unsafe { sys::ledc_channel_config(&ch) })?;
         }
         Ok(Self { duty_permille: 0 })
@@ -242,10 +252,10 @@ impl MotorPwm {
 
     fn set_channels(&self, in1: u32, in2: u32) {
         for (channel, duty) in [(sys::ledc_channel_t_LEDC_CHANNEL_0, in1), (sys::ledc_channel_t_LEDC_CHANNEL_1, in2)] {
-            unsafe {
-                sys::ledc_set_duty(sys::ledc_mode_t_LEDC_LOW_SPEED_MODE, channel, duty);
-                sys::ledc_update_duty(sys::ledc_mode_t_LEDC_LOW_SPEED_MODE, channel);
-            }
+            // SAFETY: plain values; the channel was configured in MotorPwm::new.
+            unsafe { sys::ledc_set_duty(sys::ledc_mode_t_LEDC_LOW_SPEED_MODE, channel, duty) };
+            // SAFETY: as above, applies the duty just set.
+            unsafe { sys::ledc_update_duty(sys::ledc_mode_t_LEDC_LOW_SPEED_MODE, channel) };
         }
     }
 

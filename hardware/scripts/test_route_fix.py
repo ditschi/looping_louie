@@ -15,6 +15,7 @@ Works on a copy of the official board (the file stays unchanged) and checks:
 Usage: test_route_fix.py [board.kicad_pcb]   (just route-check); exit code 1 if check 1, 2, 5 or 6 fails.
 Must run with the system Python that contains pcbnew.
 """
+
 import shutil
 import sys
 import tempfile
@@ -42,7 +43,12 @@ def copy_board(pcb, tmp):
 def check_endpoint_vias(board, grid):
     stub = None
     for t in board.GetTracks():
-        if t.GetClass() == "PCB_TRACK" and t.GetNetname() == "/VBAT_ADC" and t.IsLocked() and t.GetLayer() == pcbnew.F_Cu:
+        if (
+            t.GetClass() == "PCB_TRACK"
+            and t.GetNetname() == "/VBAT_ADC"
+            and t.IsLocked()
+            and t.GetLayer() == pcbnew.F_Cu
+        ):
             if rf.endpoint_via_cells(board, grid, t):
                 stub = t
                 break
@@ -56,8 +62,10 @@ def check_endpoint_vias(board, grid):
     cells_off, _ = rf.end_cells(board, grid, item)
     rf.ENDPOINT_VIAS = True
     ok = layers_on == set(rf.SIGNAL_LAYERS) and {L for L, _ in cells_off} == {pcbnew.F_Cu}
-    print(f"1 ENDPOINT_VIAS: layers with option {sorted(pcbnew.BOARD.GetStandardLayerName(L) for L in layers_on)}, "
-          f"without {sorted(pcbnew.BOARD.GetStandardLayerName(L) for L, _ in cells_off)} → {'ok' if ok else 'ERROR'}")
+    print(
+        f"1 ENDPOINT_VIAS: layers with option {sorted(pcbnew.BOARD.GetStandardLayerName(L) for L in layers_on)}, "
+        f"without {sorted(pcbnew.BOARD.GetStandardLayerName(L) for L, _ in cells_off)} → {'ok' if ok else 'ERROR'}"
+    )
     return ok
 
 
@@ -82,7 +90,9 @@ def check_via_under_bodies(board, obstacles):
         if 0 <= c[0] < g.ny and 0 <= c[1] < g.nx and ok_cells[c]:
             bad += 1
     for z in board.Zones():
-        if z.GetIsRuleArea() and z.GetDoNotAllowVias() and z.GetZoneName().startswith(("Antenna", "Antenne")):  # "Antenne": name before 2026-11-08
+        if (
+            z.GetIsRuleArea() and z.GetDoNotAllowVias() and z.GetZoneName().startswith(("Antenna", "Antenne"))
+        ):  # "Antenne": name before 2026-11-08
             bb = z.GetBoundingBox()
             sel = g._sel(*(pcbnew.ToMM(v) for v in (bb.GetLeft(), bb.GetTop(), bb.GetRight(), bb.GetBottom())))
             inner = ok_cells[sel][2:-2, 2:-2]
@@ -106,7 +116,9 @@ def check_oval_drills(board, spot=(10.47, 4.53)):
         res[flag] = bool(via[c])
     rf.OVAL_DRILLS = True
     ok = res[True]
-    print(f"5 through-hole pad clearance: via at {spot} blocked: circle {res[False]}, capsule {res[True]} → {'ok' if ok else 'ERROR'}")
+    print(
+        f"5 through-hole pad clearance: via at {spot} blocked: circle {res[False]}, capsule {res[True]} → {'ok' if ok else 'ERROR'}"
+    )
     return ok
 
 
@@ -119,38 +131,51 @@ def check_fanout(unrouted):
         shutil.copy(Path(unrouted).with_suffix(suf), work.with_suffix(suf))
     done, failed = rf.gnd_fanout(work, log=lambda m: None)
     import route_score
+
     drc = route_score.run_drc(work)
     errors = [v for v in drc["violations"] if v["severity"] == "error" and v["type"] not in route_score.LIB_CHECKS]
     ok = not errors
-    print(f"6 GND_FANOUT_FIRST: {done} vias placed, without space {len(failed)} ({', '.join(failed)}); "
-          f"DRC errors {len(errors)} {sorted({v['type'] for v in errors})} → {'ok' if ok else 'ERROR'}")
+    print(
+        f"6 GND_FANOUT_FIRST: {done} vias placed, without space {len(failed)} ({', '.join(failed)}); "
+        f"DRC errors {len(errors)} {sorted({v['type'] for v in errors})} → {'ok' if ok else 'ERROR'}"
+    )
     return ok
 
 
 def replay_open(pcb):
-    board = pcbnew.LoadBoard(str(pcb))
-    open_items = [u for u in rf.drc_unconnected(pcb)
-                  if not any("[/GND]" in i["description"] or "Zone" in i["description"] for i in u["items"])]
+    open_items = [
+        u
+        for u in rf.drc_unconnected(pcb)
+        if not any("[/GND]" in i["description"] or "Zone" in i["description"] for i in u["items"])
+    ]
     # rip-up-able: everything the router placed (not in the unrouted start board), except GND
     start = pcbnew.LoadBoard(str(START)) if START.exists() else None
 
     def key(t):
         return (t.GetNetname(), t.GetLayer(), t.GetStart().x, t.GetStart().y, t.GetEnd().x, t.GetEnd().y)
+
     pre = {key(t) for t in start.GetTracks()} if start else set()
     for rip in (False, True):
         b = pcbnew.LoadBoard(str(pcb))
-        rippable = {t.m_Uuid.AsString(): t.GetNetname() for t in b.GetTracks()
-                    if rip and key(t) not in pre and t.GetNetname() != "/GND"}
+        rippable = {
+            t.m_Uuid.AsString(): t.GetNetname()
+            for t in b.GetTracks()
+            if rip and key(t) not in pre and t.GetNetname() != "/GND"
+        }
         n_ok = 0
         for u in open_items:
             obstacles = rf.Obstacles(b)
             res = rf.connect(b, obstacles, *u["items"], rippable=rippable)
             desc = " | ".join(i["description"] for i in u["items"])
-            print(f"3 {'routed' if res else 'no path'}{' (rip-up allowed)' if rip else ''}: {desc}"
-                  + (f" ({res[0]}" + (f", ripped up {', '.join(sorted(res[1]))}" if res[1] else "") + ")" if res else ""))
+            print(
+                f"3 {'routed' if res else 'no path'}{' (rip-up allowed)' if rip else ''}: {desc}"
+                + (f" ({res[0]}" + (f", ripped up {', '.join(sorted(res[1]))}" if res[1] else "") + ")" if res else "")
+            )
             n_ok += bool(res)
-        print(f"3 open signal connections: {n_ok} of {len(open_items)} routed"
-              f"{' with rip-up' if rip else ' without rip-up'}")
+        print(
+            f"3 open signal connections: {n_ok} of {len(open_items)} routed"
+            f"{' with rip-up' if rip else ' without rip-up'}"
+        )
 
 
 def replay_islands(pcb):
@@ -158,12 +183,16 @@ def replay_islands(pcb):
 
     def key(t):
         return (t.GetNetname(), t.GetLayer(), t.GetStart().x, t.GetStart().y, t.GetEnd().x, t.GetEnd().y)
+
     pre = {key(t) for t in start.GetTracks()} if start else set()
     for flag, rip in ((False, False), (True, False), (True, True)):
         board = pcbnew.LoadBoard(str(pcb))
         rf.ISLAND_AREA_SEARCH = flag
-        rippable = {t.m_Uuid.AsString(): t.GetNetname() for t in board.GetTracks()
-                    if rip and key(t) not in pre and t.GetNetname() != "/GND"}
+        rippable = {
+            t.m_Uuid.AsString(): t.GetNetname()
+            for t in board.GetTracks()
+            if rip and key(t) not in pre and t.GetNetname() != "/GND"
+        }
         tasks = rf.island_tasks(board)
         n_ok = 0
         for task in tasks:
@@ -173,8 +202,10 @@ def replay_islands(pcb):
                 if rf.connect_gnd(board, obstacles, pad, rippable=rippable, exclude=set(task)):
                     n_ok += 1
                     break
-        print(f"4 GND islands {'with' if flag else 'without'} area search{', with rip-up' if rip else ''}: "
-              f"{n_ok} of {len(tasks)} connected ({'; '.join(','.join('.'.join(r) for r in t) for t in tasks)})")
+        print(
+            f"4 GND islands {'with' if flag else 'without'} area search{', with rip-up' if rip else ''}: "
+            f"{n_ok} of {len(tasks)} connected ({'; '.join(','.join('.'.join(r) for r in t) for t in tasks)})"
+        )
     rf.ISLAND_AREA_SEARCH = True
 
 
@@ -187,6 +218,7 @@ def main(pcb=OFFICIAL):
         ok = check_endpoint_vias(board, obstacles.grid)
         # via spots under components: on the unrouted board (when routed, everything around U6 is often occupied)
         import route_gate
+
         unrouted = route_gate.preroute_board("main-board", Path(tmp) / "unrouted")
         ub = pcbnew.LoadBoard(str(unrouted))
         ok &= check_via_under_bodies(ub, rf.Obstacles(ub))

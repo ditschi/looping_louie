@@ -1,0 +1,15 @@
+# ruff: lint and format for the Python scripts (docs/code-health.md). Structure (complexity, size, arguments,
+# nesting) comes from ai-health alone, so ruff's structural rules (C90, PLR09xx, PLR1702) stay off.
+line-length = 120
+target-version = "py311"
+extend-exclude = ["tools", ".claude"]  # downloaded tools, vendored skills
+
+[lint]
+select = ["E", "W", "F", "I", "B", "UP"]
+# Line length is the formatter's job; the remaining long lines are strings and comments.
+ignore = ["E501"]
+
+[lint.per-file-ignores]
+# Router: short layer names (l/L) throughout; renamed with the router refactoring (docs/code-health.md).
+"hardware/scripts/{route_fix,route_score,test_route_speed}.py" = ["E741"]
+

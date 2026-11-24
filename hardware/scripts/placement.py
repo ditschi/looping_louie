@@ -18,9 +18,9 @@ Coordinates in mm relative to the board centre (x along the length, antenna at -
 rotation in degrees, side "F" (top) or "B" (bottom, coordinates seen from the top).
 """
 
-MODULE_X = -8.8   # antenna edge of the module at x = -19.84
-COL1 = -1.9       # 0402 row directly at the right module pins
-USB_X = 15.3      # centre of the USB-C receptacle
+MODULE_X = -8.8  # antenna edge of the module at x = -19.84
+COL1 = -1.9  # 0402 row directly at the right module pins
+USB_X = 15.3  # centre of the USB-C receptacle
 USB_Y = 6.05 - 3.65  # front edge 0.7 mm behind the +y edge (footprint: opening at +3.65 mm)
 RC1 = 21.2  # row of 0402 (vertical) right of J4; x > 22.2 lies under the end cap of the sleeve
 
@@ -28,26 +28,26 @@ PLACEMENT = {
     # ---- Top side ----------------------------------------------------------------------------
     "U1": (MODULE_X, 0, 90, "F"),
     # 0402 row at the right module pins (pads y = +4.8 IO0 ... -4.8 IO18)
-    "R11": (COL1, -3.2, 180, "F"),      # pull-up IO8 (strapping)
-    "D1": (COL1, -2.1, 0, "F"),         # LED
-    "R9": (COL1, -1.0, 0, "F"),         # LED series resistor at IO14
-    "R10": (COL1, 1.85, 180, "F"),      # pull-up SCL (IO7)
-    "R16": (COL1, 3.1, 180, "F"),       # pull-up SDA (IO6)
-    "C14": (COL1, 4.35, 0, "F"),       # filter ISEN_ADC (IO1)
-    "C13": (COL1, 5.6, 0, "F"),        # filter VBAT_ADC (IO0)
+    "R11": (COL1, -3.2, 180, "F"),  # pull-up IO8 (strapping)
+    "D1": (COL1, -2.1, 0, "F"),  # LED
+    "R9": (COL1, -1.0, 0, "F"),  # LED series resistor at IO14
+    "R10": (COL1, 1.85, 180, "F"),  # pull-up SCL (IO7)
+    "R16": (COL1, 3.1, 180, "F"),  # pull-up SDA (IO6)
+    "C14": (COL1, 4.35, 0, "F"),  # filter ISEN_ADC (IO1)
+    "C13": (COL1, 5.6, 0, "F"),  # filter VBAT_ADC (IO0)
     # output stage at the -y module corner: inputs towards the module, outputs towards +x
-    "U2": (0.7, -4.6, 180, "F"),        # DRV8213
-    "R1": (0.1, -2.55, 0, "F"),         # R_IPROPI 1.24 k
-    "C4": (1.85, -2.3, 270, "F"),       # 100 nF VM, pin 1 directly above VM
-    "R8": (0.1, -1.5, 0, "F"),         # filter IPROPI -> ADC
-    "R3": (2.1, -0.8, 180, "F"),         # OUT_A -> GND (lever detection)
-    "R5": (2.1, 0.3, 180, "F"),         # OUT_A -> SENSE
-    "R4": (RC1, -1.6, 270, "F"),        # OUT_B -> 3V3: OUT_B on top by via to the OUT_B track on the bottom
-    "R6": (-0.46, 5.6, 90, "F"),        # divider VSYS top, next to C13 at the ADC pin (0.1 mm left of rev A: room for C8)
-    "R7": (-0.46, 3.5, 90, "F"),        # divider bottom, next to R6 (VBAT_ADC stays local, docs/main-board-c6.md 11)
-    "C1": (5.45, -2.7, 0, "F"),        # 47 µF
-    "C2": (5.45, -0.3, 0, "F"),        # 47 µF
-    "D2": (6.9, -5.25, 0, "F"),         # SS34F: cathode (VSYS) left, anode (VBUS) right
+    "U2": (0.7, -4.6, 180, "F"),  # DRV8213
+    "R1": (0.1, -2.55, 0, "F"),  # R_IPROPI 1.24 k
+    "C4": (1.85, -2.3, 270, "F"),  # 100 nF VM, pin 1 directly above VM
+    "R8": (0.1, -1.5, 0, "F"),  # filter IPROPI -> ADC
+    "R3": (2.1, -0.8, 180, "F"),  # OUT_A -> GND (lever detection)
+    "R5": (2.1, 0.3, 180, "F"),  # OUT_A -> SENSE
+    "R4": (RC1, -1.6, 270, "F"),  # OUT_B -> 3V3: OUT_B on top by via to the OUT_B track on the bottom
+    "R6": (-0.46, 5.6, 90, "F"),  # divider VSYS top, next to C13 at the ADC pin (0.1 mm left of rev A: room for C8)
+    "R7": (-0.46, 3.5, 90, "F"),  # divider bottom, next to R6 (VBAT_ADC stays local, docs/main-board-c6.md 11)
+    "C1": (5.45, -2.7, 0, "F"),  # 47 µF
+    "C2": (5.45, -0.3, 0, "F"),  # 47 µF
+    "D2": (6.9, -5.25, 0, "F"),  # SS34F: cathode (VSYS) left, anode (VBUS) right
     # edge +y: LDO, power path FET, 3V3 capacitors
     # EN pull-up and capacitor side by side at the top right module corner near J3.1 (EN). Their courtyards overlap by
     # 0.08 mm (pads 0.34 mm apart, fine for assembly); stacked horizontally instead they blocked pads 22-25 (variant
@@ -57,48 +57,47 @@ PLACEMENT = {
     # 3.3 V LDO TPS7A2633 (rev B, docs/proposal-supply-standby.md), WSON-6 2x2: rotation 270 puts EN/GND/IN (pins 4-6)
     # on the +y side at y 5.86 (EN x 1.75, IN x 3.05, both up to the VSYS edge track) and PG/NC/OUT (pins 3-1) on the
     # -y side at y 4.08 (OUT x 3.05 towards C9). Two thermal vias in the EP, in the gap between J2 pads 2 and 3 on the
-    # bottom (gen_main_pcb.ldo_thermal_vias).
-    "U3": (2.4, 4.97, 270, "F"),       # TPS7A2633DRV
-    "Q1": (7.6, 4.95, 0, "F"),          # AO3401A (0.1 mm towards the edge, clears the C9 courtyard of the buck trial)
-    "C8": (4.22, 5.6, 90, "F"),         # 4.7 uF LDO input right of IN: pad 1 (VSYS) at the edge side, pad 2 GND to the EP
-    "C9": (2.6, 2.45, 180, "F"),       # 22 uF LDO output (0805) below U3: pad 1 (+3V3) right under OUT, 0.55 mm above the
-                                       # USB pair in the channel (y 1.13)
-    "C10": (8.3, 2.3, 0, "F"),         # 100 nF 3V3
+    # bottom (preroute_main.ldo_thermal_vias).
+    "U3": (2.4, 4.97, 270, "F"),  # TPS7A2633DRV
+    "Q1": (7.6, 4.95, 0, "F"),  # AO3401A (0.1 mm towards the edge, clears the C9 courtyard of the buck trial)
+    "C8": (4.22, 5.6, 90, "F"),  # 4.7 uF LDO input right of IN: pad 1 (VSYS) at the edge side, pad 2 GND to the EP
+    "C9": (2.6, 2.45, 180, "F"),  # 22 uF LDO output (0805) below U3: pad 1 (+3V3) right under OUT, 0.55 mm above the
+    # USB pair in the channel (y 1.13)
+    "C10": (8.3, 2.3, 0, "F"),  # 100 nF 3V3
     # USB-C and ESD
     "J4": (USB_X, USB_Y, 0, "F"),
     # USBLC6-2SC6 flow-through: receptacle side right (pin 1 D+, pin 3 D-), module side left (pin 6, pin 4)
     "U5": (16.6, -4.85, 180, "F"),
-    "R12": (9.42, -1.0, 90, "F"),       # CC1: left of J4, CC1 runs under the receptacle body
-    "R13": (19.7, -3.45, 0, "F"),       # CC2
+    "R12": (9.42, -1.0, 90, "F"),  # CC1: left of J4, CC1 runs under the receptacle body
+    "R13": (19.7, -3.45, 0, "F"),  # CC2
     # accelerometer (population optional) right of U5
-    "U4": (20.75, -5.3, 180, "F"),         # LIS2DH12
-    "C15": (RC1, 1.6, 270, "F"),        # 100 nF, 3V3 on top (at R4)
+    "U4": (20.75, -5.3, 180, "F"),  # LIS2DH12
+    "C15": (RC1, 1.6, 270, "F"),  # 100 nF, 3V3 on top (at R4)
     # VBUS divider in the band left of the ESD, above the VBUS track (VBUS right, VBUS_DET left)
-    "R14": (11.2, -3.45, 180, "F"),     # VBUS -> VBUS_DET
-    "R15": (11.2, -4.49, 0, "F"),       # VBUS_DET -> GND
-
+    "R14": (11.2, -3.45, 180, "F"),  # VBUS -> VBUS_DET
+    "R15": (11.2, -4.49, 0, "F"),  # VBUS_DET -> GND
     # ---- Bottom side: copper pads only ---------------------------------------------------------
-    "J1": (14.5, 5.65, 270, "B"),         # charger cable under J4 at the +y edge (behind the tabs)
-    "J5": (15.15, 2.55, 180, "B"),         # cell direct: BAT_IN / GND, under J4 between the tabs
+    "J1": (14.5, 5.65, 270, "B"),  # charger cable under J4 at the +y edge (behind the tabs)
+    "J5": (15.15, 2.55, 180, "B"),  # cell direct: BAT_IN / GND, under J4 between the tabs
     # solder pads at 2.54 mm pitch (pin header/cable possible)
-    "J2": (3.4, 4.3, 180, "B"),         # expansion: 3V3, GND, SDA, SCL, INT; centre y 4.3 (pads up to 5.0 in the pocket)
-    "J3": (-8.55, -3.35, 0, "B"),       # service: EN, TXD, BOOT, GND, RXD (button on BOOT+GND)
+    "J2": (3.4, 4.3, 180, "B"),  # expansion: 3V3, GND, SDA, SCL, INT; centre y 4.3 (pads up to 5.0 in the pocket)
+    "J3": (-8.55, -3.35, 0, "B"),  # service: EN, TXD, BOOT, GND, RXD (button on BOOT+GND)
     # ---- Bottom side optional (DNP), position found with clearance check (pre-routes, vias, pads, keepouts) -------
     # J6 under the module towards the +y edge (pitch 2.0 mm, ends at x −2.9): the centre of the module and right of it
     # stay free for the vias with which the router takes the right module pads to the bottom
-    "J6": (-8.63, 3.2, 0, "B"),         # players (pitch 2.0): 3V3 (x −3.63) … GND (x −13.63), towards the +y edge
-    "R19": (-11.9, 0.0, 0, "B"),        # IO5 to 3V3 (between the module vias)
-    "R20": (-9.8, 0.0, 0, "B"),         # IO5 to GND
-    "C16": (-7.8, 0.0, 0, "B"),         # IO5 to GND
-    "J7": (8.2, -4.2, 0, "B"),         # LED: VLED (x 10.74), IO23, GND (x 5.66); under D2/USB side −y, away from the driver
-    "U6": (2.2, 1.2, 90, "B"),         # LDO for VLED (SPX3819 adj., enable IO15); OUT/ADJ face -y (towards C18/R23 and R24)
-    "R22": (-0.15, 2.0, 90, "B"),       # IO15 → GND (U6 off in reset/deep sleep), next to the EN pin of U6
-    "C18": (6.15, -2.65, 0, "B"),      # output capacitor U6 (former F1 place; lower part blocked by the VSYS vias)
-    "R23": (6.15, -1.57, 0, "B"),      # U6 feedback top (VLED → ADJ)
-    "R24": (1.5, -1.6, 0, "B"),        # U6 feedback bottom (ADJ → GND), above U6 at the ADJ pin
-    "C17": (14.7, -2.05, 0, "B"),        # 10 µF at VLED (under USB-C)
-    "TP1": (8.4, 2.4, 0, "B"),          # VSYS
-    "TP2": (12.2, -1.4, 0, "B"),        # VBUS
-    "BT1": (-21.4, 0, 0, "B"),          # end contact OUT_A (antenna end)
-    "BT2": (21.4, 0, 0, "B"),           # end contact OUT_B
+    "J6": (-8.63, 3.2, 0, "B"),  # players (pitch 2.0): 3V3 (x −3.63) … GND (x −13.63), towards the +y edge
+    "R19": (-11.9, 0.0, 0, "B"),  # IO5 to 3V3 (between the module vias)
+    "R20": (-9.8, 0.0, 0, "B"),  # IO5 to GND
+    "C16": (-7.8, 0.0, 0, "B"),  # IO5 to GND
+    "J7": (8.2, -4.2, 0, "B"),  # LED: VLED (x 10.74), IO23, GND (x 5.66); under D2/USB side −y, away from the driver
+    "U6": (2.2, 1.2, 90, "B"),  # LDO for VLED (SPX3819 adj., enable IO15); OUT/ADJ face -y (towards C18/R23 and R24)
+    "R22": (-0.15, 2.0, 90, "B"),  # IO15 → GND (U6 off in reset/deep sleep), next to the EN pin of U6
+    "C18": (6.15, -2.65, 0, "B"),  # output capacitor U6 (former F1 place; lower part blocked by the VSYS vias)
+    "R23": (6.15, -1.57, 0, "B"),  # U6 feedback top (VLED → ADJ)
+    "R24": (1.5, -1.6, 0, "B"),  # U6 feedback bottom (ADJ → GND), above U6 at the ADJ pin
+    "C17": (14.7, -2.05, 0, "B"),  # 10 µF at VLED (under USB-C)
+    "TP1": (8.4, 2.4, 0, "B"),  # VSYS
+    "TP2": (12.2, -1.4, 0, "B"),  # VBUS
+    "BT1": (-21.4, 0, 0, "B"),  # end contact OUT_A (antenna end)
+    "BT2": (21.4, 0, 0, "B"),  # end contact OUT_B
 }

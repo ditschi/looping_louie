@@ -16,6 +16,7 @@ Must run with the system Python that contains pcbnew.
 
 Direct usage: route_score.py <board.kicad_pcb> [board]   metrics as JSON
 """
+
 import fnmatch
 import hashlib
 import heapq
@@ -48,6 +49,7 @@ def mm(v):
 
 # --- Configuration --------------------------------------------------------------------------------------------------
 
+
 def load_config(board=None, path=None):
     """Load the TOML; [boards.<board>] overrides the general sections (nets, antenna, via_in_pad, paths …)."""
     path = Path(path) if path else CONFIG
@@ -69,6 +71,7 @@ def config_hash(path=None):
 
 # --- DRC ------------------------------------------------------------------------------------------------------------
 
+
 def run_drc(pcb, extra_rule=None):
     """kicad-cli DRC (JSON, all severities) of a copy including .kicad_pro/.kicad_dru; extra_rule is appended to the
     rules file."""
@@ -84,12 +87,15 @@ def run_drc(pcb, extra_rule=None):
             text = dru.read_text() if dru.exists() else "(version 1)\n"
             dru.write_text(text + "\n" + extra_rule + "\n")
         out = Path(tmp) / "drc.json"
-        subprocess.run(["kicad-cli", "pcb", "drc", "--format", "json", "--severity-all", "-o", str(out),
-                        str(copy)], capture_output=True)
+        subprocess.run(
+            ["kicad-cli", "pcb", "drc", "--format", "json", "--severity-all", "-o", str(out), str(copy)],
+            capture_output=True,
+        )
         return json.loads(out.read_text())
 
 
 # --- Geometry -------------------------------------------------------------------------------------------------------
+
 
 def seg_point_dist(px, py, ax, ay, bx, by):
     """Distance of many points (px, py) to many segments (a, b) → matrix [points, segments]."""
@@ -103,8 +109,16 @@ def seg_point_dist(px, py, ax, ay, bx, by):
 
 
 def point_seg(x, y, s):
-    return float(seg_point_dist(np.array([x]), np.array([y]), np.array([s["a"][0]]), np.array([s["a"][1]]),
-                                np.array([s["b"][0]]), np.array([s["b"][1]]))[0, 0])
+    return float(
+        seg_point_dist(
+            np.array([x]),
+            np.array([y]),
+            np.array([s["a"][0]]),
+            np.array([s["a"][1]]),
+            np.array([s["b"][0]]),
+            np.array([s["b"][1]]),
+        )[0, 0]
+    )
 
 
 def samples(seg):
@@ -135,9 +149,11 @@ def mst_length(points, metric=octi):
 
 # --- Board model ----------------------------------------------------------------------------------------------------
 
+
 class Board:
     def __init__(self, path):
         import pcbnew
+
         self.pcbnew = pcbnew
         self.board = b = pcbnew.LoadBoard(str(path))
         pcbnew.ZONE_FILLER(b).Fill(b.Zones())
@@ -151,19 +167,42 @@ class Board:
                     d = t.GetWidth(pcbnew.F_Cu)
                 except TypeError:
                     d = t.GetWidth()
-                self.vias.append(dict(net=net, p=(mm(t.GetPosition().x), mm(t.GetPosition().y)), d=mm(d),
-                                      drill=mm(t.GetDrillValue()), item=t))
+                self.vias.append(
+                    dict(
+                        net=net,
+                        p=(mm(t.GetPosition().x), mm(t.GetPosition().y)),
+                        d=mm(d),
+                        drill=mm(t.GetDrillValue()),
+                        item=t,
+                    )
+                )
             else:
                 a, e = t.GetStart(), t.GetEnd()
-                self.segs.append(dict(net=net, layer=t.GetLayer(), a=(mm(a.x), mm(a.y)), b=(mm(e.x), mm(e.y)),
-                                      w=mm(t.GetWidth()), len=mm(t.GetLength()), item=t))
+                self.segs.append(
+                    dict(
+                        net=net,
+                        layer=t.GetLayer(),
+                        a=(mm(a.x), mm(a.y)),
+                        b=(mm(e.x), mm(e.y)),
+                        w=mm(t.GetWidth()),
+                        len=mm(t.GetLength()),
+                        item=t,
+                    )
+                )
         self.pads = []
         for fp in b.GetFootprints():
             for p in fp.Pads():
-                self.pads.append(dict(ref=fp.GetReference(), num=p.GetNumber(), net=str(p.GetNetname()),
-                                      p=(mm(p.GetPosition().x), mm(p.GetPosition().y)),
-                                      smd=p.GetAttribute() == pcbnew.PAD_ATTRIB_SMD,
-                                      tht=p.GetDrillSize().x > 0, item=p))
+                self.pads.append(
+                    dict(
+                        ref=fp.GetReference(),
+                        num=p.GetNumber(),
+                        net=str(p.GetNetname()),
+                        p=(mm(p.GetPosition().x), mm(p.GetPosition().y)),
+                        smd=p.GetAttribute() == pcbnew.PAD_ATTRIB_SMD,
+                        tht=p.GetDrillSize().x > 0,
+                        item=p,
+                    )
+                )
         self.zones = [z for z in b.Zones() if not z.GetIsRuleArea()]
         self.rule_areas = [z for z in b.Zones() if z.GetIsRuleArea()]
         bb = b.GetBoardEdgesBoundingBox()
@@ -200,6 +239,7 @@ def inside(B, polys, x, y):
 
 
 # --- Metrics --------------------------------------------------------------------------------------------------------
+
 
 def gnd_islands(B, gnd):
     """GND fill pieces without via and without through-hole pad (like the former route_gate.gnd_islands)."""
@@ -292,8 +332,10 @@ def sense_coupling(B, cfg, planes):
         if not cand:
             continue
         px, py, dl = samples(s)
-        ax = np.array([a["a"][0] for a in cand]); ay = np.array([a["a"][1] for a in cand])  # noqa: E702
-        bx = np.array([a["b"][0] for a in cand]); by = np.array([a["b"][1] for a in cand])  # noqa: E702
+        ax = np.array([a["a"][0] for a in cand])
+        ay = np.array([a["a"][1] for a in cand])
+        bx = np.array([a["b"][0] for a in cand])
+        by = np.array([a["b"][1] for a in cand])
         hw = np.array([a["w"] / 2 for a in cand])
         d = seg_point_dist(px, py, ax, ay, bx, by) - hw[None] - s["w"] / 2
         hit = (d.min(axis=1) < gap).sum() * dl
@@ -318,7 +360,7 @@ def return_gaps(B, gnd, power, planes):
             neigh = [B.cu[j] for j in (i - 1, i + 1) if 0 <= j < len(B.cu)]
         px, py, dl = samples(s)
         own = [(v["p"], v["d"] / 2 + 0.25) for v in B.vias if v["net"] == s["net"]]
-        for x, y in zip(px, py):
+        for x, y in zip(px, py, strict=False):
             if any(math.hypot(x - q[0], y - q[1]) < r for q, r in own):
                 continue
             if not any(inside(B, fills[l], x, y) for l in neigh):
@@ -348,18 +390,29 @@ def usb(B, cfg):
             v = B.vec(x, y)
             on_pad = any(p["net"] == n and p["item"].IsOnLayer(layer) and p["item"].HitTest(v) for p in B.pads)
             on_via = any(o["net"] == n and math.hypot(o["p"][0] - x, o["p"][1] - y) < o["d"] / 2 for o in B.vias)
-            on_seg = any(s["layer"] == layer and point_seg(x, y, s) < s["w"] / 2 - 1e-3
-                         and (round(s["a"][0], 3), round(s["a"][1], 3)) != (x, y)
-                         and (round(s["b"][0], 3), round(s["b"][1], 3)) != (x, y) for s in segs)
+            on_seg = any(
+                s["layer"] == layer
+                and point_seg(x, y, s) < s["w"] / 2 - 1e-3
+                and (round(s["a"][0], 3), round(s["a"][1], 3)) != (x, y)
+                and (round(s["b"][0], 3), round(s["b"][1], 3)) != (x, y)
+                for s in segs
+            )
             if not (on_pad or on_via or on_seg):
                 stubs += 1
-    return dict(usb_len_dp=round(ln[dp], 2), usb_len_dm=round(ln[dm], 2), usb_skew_mm=round(abs(ln[dp] - ln[dm]), 2),
-                usb_vias=vias, usb_stubs=stubs)
+    return dict(
+        usb_len_dp=round(ln[dp], 2),
+        usb_len_dm=round(ln[dm], 2),
+        usb_skew_mm=round(abs(ln[dp] - ln[dm]), 2),
+        usb_vias=vias,
+        usb_stubs=stubs,
+    )
 
 
 def antenna(B, cfg, gnd):
     acfg = cfg["antenna"]
-    areas = [z for z in B.rule_areas if z.GetZoneName().startswith((acfg["area_prefix"], "Antenne"))]  # "Antenne": name before 2026-11-08
+    areas = [
+        z for z in B.rule_areas if z.GetZoneName().startswith((acfg["area_prefix"], "Antenne"))
+    ]  # "Antenne": name before 2026-11-08
     rects = []
     for z in areas:
         bb = z.GetBoundingBox()
@@ -371,13 +424,13 @@ def antenna(B, cfg, gnd):
         if s["net"] in acfg["allowed_nets"]:
             continue
         px, py, dl = samples(s)
-        for x, y in zip(px, py):
+        for x, y in zip(px, py, strict=False):
             if any(z.Outline().Contains(B.vec(x, y)) and z.IsOnLayer(s["layer"]) for z in areas):
                 intr += 1
                 break
         if s["net"] == gnd:
             continue
-        for x, y in zip(px, py):
+        for x, y in zip(px, py, strict=False):
             d = min(math.hypot(max(r[0] - x, 0, x - r[2]), max(r[1] - y, 0, y - r[3])) for r in rects)
             if 0 < d < acfg["margin_mm"]:
                 prox += dl
@@ -415,8 +468,9 @@ def via_in_pad(B, cfg):
 def stitching(B, gnd):
     """95th percentile and maximum of the distance from GND fill on the outer layers (0.25 mm grid) to the nearest
     GND via/through-hole pad."""
-    gv = np.array([v["p"] for v in B.vias if v["net"] == gnd] +
-                  [p["p"] for p in B.pads if p["net"] == gnd and p["tht"]])
+    gv = np.array(
+        [v["p"] for v in B.vias if v["net"] == gnd] + [p["p"] for p in B.pads if p["net"] == gnd and p["tht"]]
+    )
     pts = []
     x0, y0, x1, y1 = B.bbox
     for l in (B.cu[0], B.cu[-1]):
@@ -452,15 +506,19 @@ def thermal_vias(B, gnd, spec, margin=0.5):
     if p is None:
         return None
     bb = p["item"].GetBoundingBox()
-    return vias_in_box(B, gnd, (mm(bb.GetX()) - margin, mm(bb.GetY()) - margin,
-                                mm(bb.GetRight()) + margin, mm(bb.GetBottom()) + margin))
+    return vias_in_box(
+        B,
+        gnd,
+        (mm(bb.GetX()) - margin, mm(bb.GetY()) - margin, mm(bb.GetRight()) + margin, mm(bb.GetBottom()) + margin),
+    )
 
 
 # --- Current paths --------------------------------------------------------------------------------------------------
 
+
 def ipc_width(i, dt, k, t_mm):
     """Minimum width (mm) per IPC-2221: I = k · ΔT^0.44 · A^0.725 (A in mil²)."""
-    area_mil2 = (i / (k * dt ** 0.44)) ** (1 / 0.725)
+    area_mil2 = (i / (k * dt**0.44)) ** (1 / 0.725)
     return area_mil2 / (t_mm / 0.0254) * 0.0254
 
 
@@ -476,8 +534,11 @@ def power_paths(B, cfg):
             results.append(dict(name=path["name"], connected=False, violation=True, missing=True))
             continue
         net = a["net"]
-        nodes = ([("s", s) for s in B.segs if s["net"] == net] + [("v", v) for v in B.vias if v["net"] == net]
-                 + [("p", p) for p in B.pads if p["net"] == net])
+        nodes = (
+            [("s", s) for s in B.segs if s["net"] == net]
+            + [("v", v) for v in B.vias if v["net"] == net]
+            + [("p", p) for p in B.pads if p["net"] == net]
+        )
 
         def cost(kind, o):
             if kind == "s":
@@ -487,14 +548,17 @@ def power_paths(B, cfg):
             return 0.0
 
         def touch(n1, n2):
-            (k1, o1), (k2, o2) = sorted((n1, n2), key=lambda n: "psv".index(n[0]))
+            (k1, o1), (k2, o2) = sorted((n1, n2), key=lambda item: "psv".index(item[0]))
             if k1 == "p" and k2 == "p":
                 return False
             if k1 == "s" and k2 == "s":
                 if o1["layer"] != o2["layer"]:
                     return False
-                return any(point_seg(e[0], e[1], q) <= q["w"] / 2 + 1e-3
-                           for p, q in ((o1, o2), (o2, o1)) for e in (p["a"], p["b"]))
+                return any(
+                    point_seg(e[0], e[1], q) <= q["w"] / 2 + 1e-3
+                    for p, q in ((o1, o2), (o2, o1))
+                    for e in (p["a"], p["b"])
+                )
             if k1 == "s" and k2 == "v":
                 return point_seg(o2["p"][0], o2["p"][1], o1) <= o2["d"] / 2 + o1["w"] / 2
             if k1 == "p" and k2 == "s":
@@ -537,8 +601,12 @@ def power_paths(B, cfg):
         for kind, o in chain:
             if kind == "s":
                 ext = o["layer"] in (B.cu[0], B.cu[-1])
-                need = ipc_width(path["current_a"], th["copper_rise_k"],
-                                 th["ipc_k_external"] if ext else th["ipc_k_internal"], B.thickness[o["layer"]])
+                need = ipc_width(
+                    path["current_a"],
+                    th["copper_rise_k"],
+                    th["ipc_k_external"] if ext else th["ipc_k_internal"],
+                    B.thickness[o["layer"]],
+                )
                 length += o["len"]
                 minw = min(minw, o["w"])
                 inner += 0 if ext else o["len"]
@@ -550,15 +618,26 @@ def power_paths(B, cfg):
         drop = r * path["peak_a"] * 1e3
         # optional max_drop_mv per path (e.g. 3V3 regulator -> module): a larger drop counts like an under-width path
         too_much_drop = "max_drop_mv" in path and drop > path["max_drop_mv"]
-        results.append(dict(name=path["name"], connected=True, r_mohm=round(r * 1e3, 1),
-                            drop_mv=round(drop, 1), length_mm=round(length, 2),
-                            inner_mm=round(inner, 2), min_width_mm=round(minw, 3), vias=nvia,
-                            under_width_mm=round(under, 2), drop_violation=too_much_drop,
-                            violation=under > th["neckdown_allow_mm"] or too_much_drop))
+        results.append(
+            dict(
+                name=path["name"],
+                connected=True,
+                r_mohm=round(r * 1e3, 1),
+                drop_mv=round(drop, 1),
+                length_mm=round(length, 2),
+                inner_mm=round(inner, 2),
+                min_width_mm=round(minw, 3),
+                vias=nvia,
+                under_width_mm=round(under, 2),
+                drop_violation=too_much_drop,
+                violation=under > th["neckdown_allow_mm"] or too_much_drop,
+            )
+        )
     return results
 
 
 # --- Measurement ----------------------------------------------------------------------------------------------------
+
 
 def measure_all(pcb, cfg, project=None):
     """All metrics of a board → (metrics, details). project: .kicad_pro whose rules (including .kicad_dru) should
@@ -579,13 +658,16 @@ def measure_all(pcb, cfg, project=None):
     viol = [v for v in drc["violations"] if v["type"] not in LIB_CHECKS]
     B = Board(pcb)
     clearance = mm(B.board.GetDesignSettings().m_MinClearance)
-    margin_rule = (f'(rule "score_margin"\n  (condition "A.Type != \'Zone\' && B.Type != \'Zone\' && '
-                   f'!(A.Type == \'Pad\' && B.Type == \'Pad\')")\n'
-                   f'  (constraint clearance (min {clearance + nets["clearance_margin_mm"]:.3f}mm)))')
+    margin_rule = (
+        f"(rule \"score_margin\"\n  (condition \"A.Type != 'Zone' && B.Type != 'Zone' && "
+        f"!(A.Type == 'Pad' && B.Type == 'Pad')\")\n"
+        f"  (constraint clearance (min {clearance + nets['clearance_margin_mm']:.3f}mm)))"
+    )
     # The involved items (track, via, pad) are counted, not the reported pairs: which pairs the DRC reports varies
     # from run to run by a few percent (KiCad 9.0.8, multiple threads), the items do not.
-    tight = len({i["uuid"] for v in run_drc(pcb, margin_rule)["violations"] if v["type"] == "clearance"
-                 for i in v["items"]})
+    tight = len(
+        {i["uuid"] for v in run_drc(pcb, margin_rule)["violations"] if v["type"] == "clearance" for i in v["items"]}
+    )
     power = set(nets["power"])
     planes = plane_layers(B, gnd)
     zone_nets = {str(z.GetNetname()) for z in B.zones}
@@ -632,20 +714,29 @@ def measure_all(pcb, cfg, project=None):
         "stitch_gap_p95_mm": p95,
         "stitch_gap_max_mm": pmax,
         "gnd_vias_module": vias_in_box(B, gnd, footprint_box(B, module["ref"], module.get("margin_mm", 1.0)))
-        if module.get("ref") else None,
+        if module.get("ref")
+        else None,
         "thermal_vias": thermal_vias(B, gnd, module.get("thermal_pad")),
         "ref_plane_mm2": round(ref_area, 1),
         "layer_length_mm": {B.name[l]: round(sum(s["len"] for s in B.segs if s["layer"] == l), 1) for l in B.cu},
     }
     m.update(usb(B, cfg))
-    details = {"paths": paths, "detour_worst": worst, "coupling_per_net": coupling_per,
-               "return_gap_worst": gaps_worst, "via_in_pad": vip, "antenna_fill_mm2": ant_fill,
-               "plane_layers": [B.name[l] for l in planes],
-               "drc_types": sorted({v["type"] for v in viol}), "clearance_mm": clearance}
+    details = {
+        "paths": paths,
+        "detour_worst": worst,
+        "coupling_per_net": coupling_per,
+        "return_gap_worst": gaps_worst,
+        "via_in_pad": vip,
+        "antenna_fill_mm2": ant_fill,
+        "plane_layers": [B.name[l] for l in planes],
+        "drc_types": sorted({v["type"] for v in viol}),
+        "clearance_mm": clearance,
+    }
     return m, details
 
 
 # --- Evaluation and decision ----------------------------------------------------------------------------------------
+
 
 def evaluate(cfg, metrics, details=None):
     """→ dict(hard={metric: excess}, hard_total, under_mm, S, parts)."""
@@ -658,8 +749,13 @@ def evaluate(cfg, metrics, details=None):
         if v is None or s["weight"] == 0:
             continue
         parts[k] = s["weight"] * v / s["scale"]
-    return dict(hard={k: v for k, v in hard.items() if v}, hard_total=sum(hard.values()), under_mm=round(under, 2),
-                S=round(sum(parts.values()), 3), parts={k: round(v, 4) for k, v in parts.items()})
+    return dict(
+        hard={k: v for k, v in hard.items() if v},
+        hard_total=sum(hard.values()),
+        under_mm=round(under, 2),
+        S=round(sum(parts.values()), 3),
+        parts={k: round(v, 4) for k, v in parts.items()},
+    )
 
 
 def rank_key(cfg, metrics, details=None):
@@ -682,8 +778,10 @@ def decide(cfg, cand, official):
     """cand/official: dict(metrics=…, details=…). → (accept, reason, drivers). drivers: the two largest contributions
     to ΔS as text."""
     T = cfg["decision"]["min_improvement"]
-    ec, eo = evaluate(cfg, cand["metrics"], cand.get("details")), evaluate(cfg, official["metrics"],
-                                                                          official.get("details"))
+    ec, eo = (
+        evaluate(cfg, cand["metrics"], cand.get("details")),
+        evaluate(cfg, official["metrics"], official.get("details")),
+    )
     dS = ec["S"] - eo["S"]
     diffs = {k: ec["parts"].get(k, 0) - eo["parts"].get(k, 0) for k in set(ec["parts"]) | set(eo["parts"])}
     top = sorted(diffs.items(), key=lambda kv: -abs(kv[1]))[:2]
@@ -695,8 +793,14 @@ def decide(cfg, cand, official):
         return True, f"feasible, official board violates {', '.join(eo['hard'])}", drivers
     if ho > 0 and (hc, round(ec["under_mm"], 1)) != (ho, round(eo["under_mm"], 1)):
         better = (hc, ec["under_mm"]) < (ho, eo["under_mm"])
-        return better, (f"both infeasible, violation {hc}/{ec['under_mm']:.1f} mm vs. {ho}/{eo['under_mm']:.1f} mm "
-                        f"({'smaller' if better else 'larger'})"), drivers
+        return (
+            better,
+            (
+                f"both infeasible, violation {hc}/{ec['under_mm']:.1f} mm vs. {ho}/{eo['under_mm']:.1f} mm "
+                f"({'smaller' if better else 'larger'})"
+            ),
+            drivers,
+        )
     vetoes = _vetoes(cfg, cand["metrics"], official["metrics"])
     if vetoes:
         return False, "Veto: " + ", ".join(vetoes), drivers
@@ -708,8 +812,7 @@ def decide(cfg, cand, official):
 def dominates(cfg, a, b):
     keys = [k for k, s in cfg["soft"].items() if s["weight"] != 0 and a.get(k) is not None and b.get(k) is not None]
     sign = {k: 1 if cfg["soft"][k]["weight"] > 0 else -1 for k in keys}
-    return (all(sign[k] * a[k] <= sign[k] * b[k] for k in keys)
-            and any(sign[k] * a[k] < sign[k] * b[k] for k in keys))
+    return all(sign[k] * a[k] <= sign[k] * b[k] for k in keys) and any(sign[k] * a[k] < sign[k] * b[k] for k in keys)
 
 
 def fmt(v):
@@ -725,9 +828,11 @@ def table(cfg, boards):
     for name, b in boards:
         e = evaluate(cfg, b["metrics"], b.get("details"))
         m = b["metrics"]
-        lines.append(f"{name[:34]:34} {e['hard_total']:>4} {e['under_mm']:>8.1f} {e['S']:>8.2f} "
-                     f"{e['S'] - base['S']:>+7.2f}  {m.get('via_count', '?'):>4} {m.get('track_length_mm', 0):>7.1f}"
-                     + ("   hard: " + ", ".join(f"{k}={v}" for k, v in e["hard"].items()) if e["hard"] else ""))
+        lines.append(
+            f"{name[:34]:34} {e['hard_total']:>4} {e['under_mm']:>8.1f} {e['S']:>8.2f} "
+            f"{e['S'] - base['S']:>+7.2f}  {m.get('via_count', '?'):>4} {m.get('track_length_mm', 0):>7.1f}"
+            + ("   hard: " + ", ".join(f"{k}={v}" for k, v in e["hard"].items()) if e["hard"] else "")
+        )
     return lines
 
 
@@ -743,13 +848,17 @@ def explain(cfg, cand_name, cand, base_name, official):
     """Contribution table, flip factor per metric, robustness against random weights, paths (list of lines)."""
     T = cfg["decision"]["min_improvement"]
     accept, why, _ = decide(cfg, cand, official)
-    ec, eo = evaluate(cfg, cand["metrics"], cand.get("details")), evaluate(cfg, official["metrics"],
-                                                                          official.get("details"))
+    ec, eo = (
+        evaluate(cfg, cand["metrics"], cand.get("details")),
+        evaluate(cfg, official["metrics"], official.get("details")),
+    )
     dS = ec["S"] - eo["S"]
     lines = [f"=== {cand_name} vs. {base_name}: {'ACCEPT' if accept else 'REJECT'} ({why})"]
     if eo["hard_total"] or ec["hard_total"]:
-        lines.append(f"  hard stage: official {eo['hard'] or 'feasible'} (too narrow {eo['under_mm']} mm), "
-                     f"candidate {ec['hard'] or 'feasible'} (too narrow {ec['under_mm']} mm)")
+        lines.append(
+            f"  hard stage: official {eo['hard'] or 'feasible'} (too narrow {eo['under_mm']} mm), "
+            f"candidate {ec['hard'] or 'feasible'} (too narrow {ec['under_mm']} mm)"
+        )
     rows = []
     for k in sorted(set(ec["parts"]) | set(eo["parts"])):
         c = ec["parts"].get(k, 0) - eo["parts"].get(k, 0)
@@ -762,22 +871,27 @@ def explain(cfg, cand_name, cand, base_name, official):
             continue
         # factor on the weight of this one metric at which the soft decision flips (ΔS = −T)
         f = 1 + (-T - dS) / c
-        lines.append(f"  {k:24} {fmt(a):>10} {fmt(b):>10} {c:>+8.2f}  {abs(c) / tot:>5.0%}  "
-                     + (f"x{f:.2f}" if f >= 0 else "-"))
+        lines.append(
+            f"  {k:24} {fmt(a):>10} {fmt(b):>10} {c:>+8.2f}  {abs(c) / tot:>5.0%}  " + (f"x{f:.2f}" if f >= 0 else "-")
+        )
     lines.append(f"  {'sum':24} {'S ' + fmt(eo['S']):>10} {'S ' + fmt(ec['S']):>10} {dS:>+8.2f}")
     rnd = random.Random(1)
     diffs = [r[3] for r in rows]
     n_acc = sum(1 for _ in range(ROBUST_SAMPLES) if sum(c * 2 ** rnd.uniform(-1, 1) for c in diffs) <= -T)
-    lines.append(f"  robustness: soft decision \"accept\" in {100 * n_acc / ROBUST_SAMPLES:.1f} % of "
-                 f"{ROBUST_SAMPLES} random weight sets (each ×0.5…×2)")
+    lines.append(
+        f'  robustness: soft decision "accept" in {100 * n_acc / ROBUST_SAMPLES:.1f} % of '
+        f"{ROBUST_SAMPLES} random weight sets (each ×0.5…×2)"
+    )
     for label, b in (("official", official), ("candidate", cand)):
         for p in (b.get("details") or {}).get("paths", []):
             if not p.get("connected"):
                 lines.append(f"  path {label}: {p['name']}: not connected")
                 continue
-            lines.append(f"  path {label}: {p['name']}: {p['drop_mv']} mV, min. {p['min_width_mm']} mm, "
-                         f"{p['vias']} vias, inner {p.get('inner_mm', 0)} mm, too narrow {p['under_width_mm']} mm"
-                         + ("  ← violation" if p["violation"] else ""))
+            lines.append(
+                f"  path {label}: {p['name']}: {p['drop_mv']} mV, min. {p['min_width_mm']} mm, "
+                f"{p['vias']} vias, inner {p.get('inner_mm', 0)} mm, too narrow {p['under_width_mm']} mm"
+                + ("  ← violation" if p["violation"] else "")
+            )
     return lines
 
 

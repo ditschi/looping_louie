@@ -18,24 +18,33 @@ Usage (via just):  just charger-pcb      afterwards: just route charger-board
 
 Warning: removes all footprints, tracks and zones of the board and places them anew.
 """
+
 import os
 from pathlib import Path
 
-import pcbnew
-
 import board_outline
-import gen_main_pcb as base
-from gen_main_pcb import add_track, mm, pad_of
+import pcbnew
+from pcb_tools import (
+    Placer,
+    add_track,
+    add_via,
+    clear_board,
+    ground_via_at_pad,
+    mm,
+    pad_of,
+    read_netlist,
+    set_minimum_rules,
+)
 
 HARDWARE = Path(__file__).resolve().parent.parent
 SCH = HARDWARE / "charger-board" / "louie-charger.kicad_sch"
 PCB = HARDWARE / "charger-board" / "louie-charger.kicad_pcb"
 ORIGIN = board_outline.ORIGIN_MM
 BOARD_L, BOARD_W, THICKNESS = 46.0, 12.5, 1.6
-CORNER = 0.5            # outer corner radius of the outline
-EDGE_Y = -BOARD_W / 2   # mating side of the USB-C receptacle
-BRIDGE_TRACK = 1.0      # motor current up to 2 A: approx. 20 mOhm over 43 mm, main board uses 0.4 mm
-BRIDGE_Y = 5.45         # close to the edge so that GND vias still fit above it
+CORNER = 0.5  # outer corner radius of the outline
+EDGE_Y = -BOARD_W / 2  # mating side of the USB-C receptacle
+BRIDGE_TRACK = 1.0  # motor current up to 2 A: approx. 20 mOhm over 43 mm, main board uses 0.4 mm
+BRIDGE_Y = 5.45  # close to the edge so that GND vias still fit above it
 # Own design rules, independent of the main board (its 0.5 mm vias are for the dense 4-layer board); 2 layers,
 # 1.6 mm, enough room: 0.6 mm vias as in the routed board
 RULES = dict(clearance=0.15, track_min=0.15, via_d=0.6, via_drill=0.3, edge=0.3)
@@ -45,9 +54,9 @@ USB_X = -15.0
 PLACEMENT = {
     # USB-C: opening flush with the -y edge (front edge in the footprint at +3.65 mm)
     "J101": (USB_X, EDGE_Y + 3.65, 180, "F"),
-    "U102": (USB_X, 4.5, 0, "F"),          # ESD directly behind the data pins
-    "R101": (USB_X + 3.5, 4.5, 90, "F"),   # CC1
-    "R102": (USB_X - 3.3, 4.5, 90, "F"),   # CC2
+    "U102": (USB_X, 4.5, 0, "F"),  # ESD directly behind the data pins
+    "R101": (USB_X + 3.5, 4.5, 90, "F"),  # CC1
+    "R102": (USB_X - 3.3, 4.5, 90, "F"),  # CC2
     # row at the mating edge: charge indicator (visible from above) and gate pull-down
     "D101": (-7.0, -5.2, 0, "F"),
     "R104": (-4.0, -5.2, 180, "F"),
@@ -58,13 +67,13 @@ PLACEMENT = {
     "C102": (-0.2, -1.2, 90, "F"),
     "R103": (1.8, -1.2, 90, "F"),
     # load sharing
-    "D102": (-5.4, 4.3, 180, "F"),         # cathode (VSYS) on the right
+    "D102": (-5.4, 4.3, 180, "F"),  # cathode (VSYS) on the right
     "Q101": (0.8, 4.3, 0, "F"),
     "C103": (4.0, 4.3, 90, "F"),
     # battery: JST-PH, opening also towards the -y edge; next to it solder pads as alternative
     "J102": (10.5, EDGE_Y + 5.1, 180, "F"),
-    "TP101": (17.0, -3.4, 0, "F"),         # battery +
-    "TP102": (17.0, 3.4, 0, "F"),          # battery -
+    "TP101": (17.0, -3.4, 0, "F"),  # battery +
+    "TP102": (17.0, 3.4, 0, "F"),  # battery -
     # cable to the main board (pinout as J1 there)
     "J103": (20.4, 0.5, 0, "F"),
     # bottom side: end contacts of the bridge
@@ -73,11 +82,11 @@ PLACEMENT = {
 }
 
 SILK = [  # (text, x, y, size, side[, rotation])
-    ("+", 12.6, 4.4, 0.8, "F"),            # pin 1 of the JST = battery +
-    ("+", 15.2, -3.4, 0.8, "F"),           # solder pads TP101 / TP102
+    ("+", 12.6, 4.4, 0.8, "F"),  # pin 1 of the JST = battery +
+    ("+", 15.2, -3.4, 0.8, "F"),  # solder pads TP101 / TP102
     ("-", 15.2, 3.4, 0.8, "F"),
-    ("V", 22.2, -2.5, 0.8, "F"),           # cable solder pads J103: VSYS, D+, D-, GND
-    ("D+", 22.2, -0.5, 0.8, "F", 90),      # vertical, otherwise too wide for the edge
+    ("V", 22.2, -2.5, 0.8, "F"),  # cable solder pads J103: VSYS, D+, D-, GND
+    ("D+", 22.2, -0.5, 0.8, "F", 90),  # vertical, otherwise too wide for the edge
     ("D-", 22.2, 1.5, 0.8, "F", 90),
     ("G", 22.2, 3.5, 0.8, "F"),
     ("CHARGE", -7.0, -3.6, 0.8, "F"),
@@ -95,14 +104,12 @@ def setup_rules(board):
     ds = board.GetDesignSettings()
     ds.SetCopperLayerCount(2)
     ds.SetBoardThickness(mm(THICKNESS))
-    ds.m_TrackMinWidth = mm(RULES["track_min"])
-    ds.m_MinClearance = mm(RULES["clearance"])
-    ds.m_ViasMinSize = mm(RULES["via_d"])
-    ds.m_MinThroughDrill = mm(RULES["via_drill"])
-    ds.m_CopperEdgeClearance = mm(RULES["edge"])
+    set_minimum_rules(ds, RULES)
 
 
-def add_text(board, text, x, y, size, side, angle=0):
+def add_text(board, silk):
+    """Silkscreen text from a SILK entry (text, x, y, size, side[, rotation])."""
+    text, x, y, size, side, angle = (*silk, 0)[:6]
     t = pcbnew.PCB_TEXT(board)
     t.SetTextAngleDegrees(angle)
     t.SetText(text)
@@ -115,31 +122,19 @@ def add_text(board, text, x, y, size, side, angle=0):
     board.Add(t)
 
 
-def add_via(board, net, x, y):
-    via = pcbnew.PCB_VIA(board)
-    via.SetPosition(pcbnew.VECTOR2I(x, y))
-    via.SetWidth(mm(RULES["via_d"]))
-    via.SetDrill(mm(RULES["via_drill"]))
-    via.SetNet(net)
-    via.SetLocked(True)
-    board.Add(via)
-
-
-def ground_via_at_pad(board, footprint, number, dx, dy, width=0.4):
-    """Fixed GND via next to a pad (dx/dy in mm relative to the pad centre) with a stub track."""
-    pad = pad_of(footprint, number)
-    q = pad.GetPosition()
-    v = (q.x + mm(dx), q.y + mm(dy))
-    add_track(board, pad.GetNet(), pcbnew.F_Cu, width, (q.x, q.y), v)
-    add_via(board, pad.GetNet(), *v)
-
-
 def preroute_bridge(board, fps):
     """Wide track on the bottom between the end contacts, past the THT tabs of the USB receptacle."""
     a, b = (pad_of(fps[r], "1").GetPosition() for r in ("BT101", "BT102"))
     y = mm(ORIGIN[1] + BRIDGE_Y)
-    add_track(board, pad_of(fps["BT101"], "1").GetNet(), pcbnew.B_Cu, BRIDGE_TRACK,
-              (a.x, a.y), (a.x, y), (b.x, y), (b.x, b.y))
+    add_track(
+        board,
+        pad_of(fps["BT101"], "1").GetNet(),
+        (pcbnew.B_Cu, BRIDGE_TRACK),
+        (a.x, a.y),
+        (a.x, y),
+        (b.x, y),
+        (b.x, b.y),
+    )
 
 
 def preroute_vbus(board, fps):
@@ -151,19 +146,19 @@ def preroute_vbus(board, fps):
     vias = []
     for num in ("A4", "A9"):
         q = pad_of(usb, num).GetPosition()
-        add_track(board, net, pcbnew.F_Cu, 0.4, (q.x, q.y), (q.x, via_y))
+        add_track(board, net, (pcbnew.F_Cu, 0.4), (q.x, q.y), (q.x, via_y))
         add_via(board, net, q.x, via_y)
         vias.append(q.x)
     anode = pad_of(fps["D102"], "2").GetPosition()
-    add_track(board, net, pcbnew.B_Cu, 0.5, (min(vias), via_y), (anode.x, via_y))
+    add_track(board, net, (pcbnew.B_Cu, 0.5), (min(vias), via_y), (anode.x, via_y))
     add_via(board, net, anode.x, via_y)
-    add_track(board, net, pcbnew.F_Cu, 0.5, (anode.x, via_y), (anode.x, anode.y))
+    add_track(board, net, (pcbnew.F_Cu, 0.5), (anode.x, via_y), (anode.x, anode.y))
     # VBUS pin 5 of the ESD diode: via to its right, on the bottom onto the common track (on top CC1 would cross)
     pin5 = pad_of(fps["U102"], "5").GetPosition()
     v = (pin5.x + mm(1.11), pin5.y)
-    add_track(board, net, pcbnew.F_Cu, 0.3, (pin5.x, pin5.y), v)
+    add_track(board, net, (pcbnew.F_Cu, 0.3), (pin5.x, pin5.y), v)
     add_via(board, net, *v)
-    add_track(board, net, pcbnew.B_Cu, 0.4, v, (v[0], via_y), (max(vias), via_y))
+    add_track(board, net, (pcbnew.B_Cu, 0.4), v, (v[0], via_y), (max(vias), via_y))
 
 
 def copper_zones(board, gnd):
@@ -187,65 +182,41 @@ def copper_zones(board, gnd):
 
 
 def main():
-    comps, nets = base.read_netlist(SCH)
+    comps, nets = read_netlist(SCH)
     missing = set(comps) - set(PLACEMENT)
     if missing:
         raise SystemExit(f"No placement for: {', '.join(sorted(missing))}")
-
     board = pcbnew.LoadBoard(str(PCB)) if PCB.exists() else pcbnew.NewBoard(str(PCB))
-    base.clear_board(board)
-    for d in list(board.GetDrawings()):   # outline and texts are placed anew
+    clear_board(board)
+    for d in list(board.GetDrawings()):  # outline and texts are placed anew
         board.Delete(d)
     # plain rounded rectangle (no tongues: as wide as the tongue), no recess (that is for J4 of the main board)
     board_outline.draw_outline(board, BOARD_L, BOARD_W, recess=None, corner=CORNER)
     setup_rules(board)
-
-    netinfo = {}
-    for name in nets:
-        item = pcbnew.NETINFO_ITEM(board, name)
-        board.Add(item)
-        netinfo[name] = item
-    pad_net = {(ref, pin): net for net, nodes in nets.items() for ref, pin in nodes}
-
-    fps = {}
-    for ref, comp in sorted(comps.items()):
-        fp = base.load_footprint(comp["footprint"])
-        board.Add(fp)
-        fp.SetReference(ref)
-        fp.SetValue(comp["value"])
-        fp.SetPath(pcbnew.KIID_PATH(f"/{comp['uuid']}"))
-        for pad in fp.Pads():
-            net = pad_net.get((ref, pad.GetNumber()))
-            if net:
-                pad.SetNet(netinfo[net])
-        x, y, rot, side = PLACEMENT[ref]
-        fp.SetPosition(pos(x, y))
-        fp.SetOrientationDegrees(rot)
-        fp.Reference().SetLayer(pcbnew.F_Fab)
-        fp.Reference().SetTextSize(pcbnew.VECTOR2I(mm(0.5), mm(0.5)))
-        fp.Reference().SetTextThickness(mm(0.08))
-        fp.Reference().SetPosition(fp.GetPosition())
-        fp.Value().SetVisible(False)
-        # component silkscreen (outlines) stays, designators only on Fab
-        for item in list(fp.GraphicalItems()):
-            on_silk = item.GetLayer() in (pcbnew.F_SilkS, pcbnew.B_SilkS)
-            # remove texts; for the USB receptacle also the outline lines (they run over the board edge)
-            if on_silk and (item.GetClass() == "PCB_TEXT" or ref == "J101"):
-                fp.Remove(item)
-        if side == "B":
-            fp.Flip(fp.GetPosition(), pcbnew.FLIP_DIRECTION_LEFT_RIGHT)
-            fp.Reference().SetLayer(pcbnew.B_Fab)
-        fps[ref] = fp
-
+    placer = Placer(board, nets, pos)
+    fps = {ref: place(placer, ref, comp) for ref, comp in sorted(comps.items())}
     preroute_bridge(board, fps)
     preroute_vbus(board, fps)
-    ground_via_at_pad(board, fps["U102"], "2", -1.06, -0.2, width=0.3)  # otherwise GND island between the pins
-    copper_zones(board, netinfo["/GND"])
-    for args in SILK:
-        add_text(board, *args)
+    ground_via_at_pad(
+        board, pad_of(fps["U102"], "2"), (-1.06, -0.2), width=0.3
+    )  # otherwise GND island between the pins
+    copper_zones(board, placer.netinfo["/GND"])
+    for silk in SILK:
+        add_text(board, silk)
     out = Path(os.environ["PCB_OUT"]).resolve() if os.environ.get("PCB_OUT") else PCB
     pcbnew.SaveBoard(str(out), board)
-    print(f"{out.relative_to(HARDWARE.parent) if out == PCB else out}: {BOARD_L} x {BOARD_W} x {THICKNESS} mm, {len(comps)} components")
+    shown = out.relative_to(HARDWARE.parent) if out == PCB else out
+    print(f"{shown}: {BOARD_L} x {BOARD_W} x {THICKNESS} mm, {len(comps)} components")
+
+
+def place(placer, ref, comp):
+    """Footprint per PLACEMENT; component silkscreen (outlines) stays, its texts go (designators only on Fab)."""
+    fp = placer.place(ref, comp, PLACEMENT[ref])
+    for item in [i for i in fp.GraphicalItems() if i.GetLayer() in (pcbnew.F_SilkS, pcbnew.B_SilkS)]:
+        # the USB receptacle also loses its outline lines (they run over the board edge)
+        if item.GetClass() == "PCB_TEXT" or ref == "J101":
+            fp.Remove(item)
+    return fp
 
 
 if __name__ == "__main__":

@@ -1,4 +1,5 @@
 """Minimal helpers for KiCad S-expression files (symbol libraries)."""
+
 import re
 
 
@@ -29,18 +30,25 @@ def find_symbol(lib_text, name):
     m = re.search(r'\(symbol "' + re.escape(name) + r'"', lib_text)
     if not m:
         raise KeyError(name)
-    return lib_text[m.start():block_end(lib_text, m.start())]
+    return lib_text[m.start() : block_end(lib_text, m.start())]
 
 
 def symbol_pins(sym_text):
     """Pins of a symbol (unit 0/1, body style 1): list of dicts."""
     pins = []
-    for m in re.finditer(r'\(pin (\w+) \w+\s*\(at ([-\d.]+) ([-\d.]+) ([-\d.]+)\)', sym_text):
-        block = sym_text[m.start():block_end(sym_text, m.start())]
+    for m in re.finditer(r"\(pin (\w+) \w+\s*\(at ([-\d.]+) ([-\d.]+) ([-\d.]+)\)", sym_text):
+        block = sym_text[m.start() : block_end(sym_text, m.start())]
         number = re.search(r'\(number "([^"]*)"', block).group(1)
         name = re.search(r'\(name "([^"]*)"', block).group(1)
-        pins.append(dict(
-            type=m.group(1), x=float(m.group(2)), y=float(m.group(3)), rot=float(m.group(4)),
-            number=number, name=name, hidden="(hide yes)" in block,
-        ))
+        pins.append(
+            dict(
+                type=m.group(1),
+                x=float(m.group(2)),
+                y=float(m.group(3)),
+                rot=float(m.group(4)),
+                number=number,
+                name=name,
+                hidden="(hide yes)" in block,
+            )
+        )
     return pins

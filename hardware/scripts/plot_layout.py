@@ -5,6 +5,7 @@ and the area usage.
 
 Usage (via just):  just plot   → build/main-board/placement.png
 """
+
 import itertools
 import math
 import sys
@@ -44,8 +45,10 @@ def mst(points):
         return []
     done, edges = {0}, []
     while len(done) < len(points):
-        best = min(((i, j) for i in done for j in range(len(points)) if j not in done),
-                   key=lambda e: math.dist(points[e[0]], points[e[1]]))
+        best = min(
+            ((i, j) for i in done for j in range(len(points)) if j not in done),
+            key=lambda e: math.dist(points[e[0]], points[e[1]]),
+        )
         edges.append((points[best[0]], points[best[1]]))
         done.add(best[1])
     return edges
@@ -55,8 +58,14 @@ def main():
     board = pcbnew.LoadBoard(str(PCB))
     side_axes = {}
     fig, axes = plt.subplots(2, 1, figsize=(16, 10.5))
-    for ax, (side, layer, title) in zip(axes, [("F", pcbnew.F_CrtYd, "Top side (assembly)"),
-                                               ("B", pcbnew.B_CrtYd, "Bottom side (seen from the top, transparent)")]):
+    for ax, (side, _layer, title) in zip(
+        axes,
+        [
+            ("F", pcbnew.F_CrtYd, "Top side (assembly)"),
+            ("B", pcbnew.B_CrtYd, "Bottom side (seen from the top, transparent)"),
+        ],
+        strict=False,
+    ):
         side_axes[side] = ax
         ax.set_title(title, loc="left", fontsize=11)
         ax.set_aspect("equal")
@@ -88,8 +97,11 @@ def main():
         courtyards[side].append((fp.GetReference(), b))
         area[side] += (b[2] - b[0]) * (b[3] - b[1])
         ax = side_axes[side]
-        ax.add_patch(plt.Rectangle((b[0], b[1]), b[2] - b[0], b[3] - b[1], fill=False,
-                                   color="#1f77b4" if side == "F" else "#2ca02c", lw=1))
+        ax.add_patch(
+            plt.Rectangle(
+                (b[0], b[1]), b[2] - b[0], b[3] - b[1], fill=False, color="#1f77b4" if side == "F" else "#2ca02c", lw=1
+            )
+        )
         for pad in fp.Pads():
             p = box(pad.GetBoundingBox())
             ax.add_patch(plt.Rectangle((p[0], p[1]), p[2] - p[0], p[3] - p[1], color="#e8b04b", alpha=0.8, lw=0))
@@ -117,8 +129,11 @@ def main():
                 problems.append(f"{side}: {ref} extends beyond the board edge")
 
     usable = (ex1 - ex0) * (ey1 - ey0)
-    fig.suptitle(f"Usage (courtyard area): top {area['F']:.0f} mm², bottom {area['B']:.0f} mm² "
-                 f"of {usable:.0f} mm² each  ·  ratsnest: grey GND, red VSYS, orange 3V3", fontsize=11)
+    fig.suptitle(
+        f"Usage (courtyard area): top {area['F']:.0f} mm², bottom {area['B']:.0f} mm² "
+        f"of {usable:.0f} mm² each  ·  ratsnest: grey GND, red VSYS, orange 3V3",
+        fontsize=11,
+    )
     OUT.parent.mkdir(parents=True, exist_ok=True)
     fig.tight_layout()
     fig.savefig(OUT, dpi=110)

@@ -20,25 +20,27 @@ pub static RTC_COUNTER: AtomicU32 = AtomicU32::new(0);
 pub static RTC_MODE: AtomicU32 = AtomicU32::new(0);
 
 pub fn reset_reason() -> sys::esp_reset_reason_t {
+    // SAFETY: query without arguments, valid in any task after startup.
     unsafe { sys::esp_reset_reason() }
 }
 
+/// Readable reset reasons; USB (11), JTAG (12), eFuse (13), power glitch (14), CPU lockup (15) in ESP-IDF 5.x
+/// show as "other".
+const RESET_NAMES: [(sys::esp_reset_reason_t, &str); 10] = [
+    (sys::esp_reset_reason_t_ESP_RST_POWERON, "power-on"),
+    (sys::esp_reset_reason_t_ESP_RST_EXT, "external pin"),
+    (sys::esp_reset_reason_t_ESP_RST_SW, "software (esp_restart)"),
+    (sys::esp_reset_reason_t_ESP_RST_PANIC, "panic/abort"),
+    (sys::esp_reset_reason_t_ESP_RST_INT_WDT, "interrupt watchdog"),
+    (sys::esp_reset_reason_t_ESP_RST_TASK_WDT, "task watchdog"),
+    (sys::esp_reset_reason_t_ESP_RST_WDT, "other watchdog"),
+    (sys::esp_reset_reason_t_ESP_RST_DEEPSLEEP, "deep-sleep wake"),
+    (sys::esp_reset_reason_t_ESP_RST_BROWNOUT, "brownout"),
+    (sys::esp_reset_reason_t_ESP_RST_SDIO, "SDIO"),
+];
+
 pub fn reset_reason_name(r: sys::esp_reset_reason_t) -> &'static str {
-    #[allow(non_upper_case_globals)]
-    match r {
-        sys::esp_reset_reason_t_ESP_RST_POWERON => "power-on",
-        sys::esp_reset_reason_t_ESP_RST_EXT => "external pin",
-        sys::esp_reset_reason_t_ESP_RST_SW => "software (esp_restart)",
-        sys::esp_reset_reason_t_ESP_RST_PANIC => "panic/abort",
-        sys::esp_reset_reason_t_ESP_RST_INT_WDT => "interrupt watchdog",
-        sys::esp_reset_reason_t_ESP_RST_TASK_WDT => "task watchdog",
-        sys::esp_reset_reason_t_ESP_RST_WDT => "other watchdog",
-        sys::esp_reset_reason_t_ESP_RST_DEEPSLEEP => "deep-sleep wake",
-        sys::esp_reset_reason_t_ESP_RST_BROWNOUT => "brownout",
-        sys::esp_reset_reason_t_ESP_RST_SDIO => "SDIO",
-        // USB (11), JTAG (12), eFuse (13), power glitch (14), CPU lockup (15) in ESP-IDF 5.x
-        _ => "other",
-    }
+    RESET_NAMES.iter().find(|(reason, _)| *reason == r).map_or("other", |(_, name)| name)
 }
 
 /// Reset that the motor must not follow with a start (docs/firmware-architecture.md E15).
@@ -52,6 +54,7 @@ pub fn is_unexpected_reset() -> bool {
 }
 
 pub fn wake_cause() -> sys::esp_sleep_wakeup_cause_t {
+    // SAFETY: query without arguments, valid in any task after startup.
     unsafe { sys::esp_sleep_get_wakeup_cause() }
 }
 
@@ -68,6 +71,7 @@ pub fn wake_cause_name(c: sys::esp_sleep_wakeup_cause_t) -> &'static str {
 
 /// GPIOs that triggered the ext1 wake (bit n = GPIOn).
 pub fn ext1_status() -> u64 {
+    // SAFETY: query without arguments, valid in any task after startup.
     unsafe { sys::esp_sleep_get_ext1_wakeup_status() }
 }
 
@@ -82,6 +86,7 @@ pub fn mask_pins(mask: u64) -> String {
 }
 
 pub fn uptime_us() -> i64 {
+    // SAFETY: query without arguments, valid in any task after startup.
     unsafe { sys::esp_timer_get_time() }
 }
 
@@ -100,13 +105,13 @@ pub struct Heap {
 }
 
 pub fn heap() -> Heap {
-    unsafe {
-        Heap {
-            free: sys::esp_get_free_heap_size(),
-            min_free: sys::esp_get_minimum_free_heap_size(),
-            largest_block: sys::heap_caps_get_largest_free_block(sys::MALLOC_CAP_8BIT) as u32,
-        }
-    }
+    // SAFETY: query without arguments, valid in any task after startup.
+    let free = unsafe { sys::esp_get_free_heap_size() };
+    // SAFETY: query without arguments, valid in any task after startup.
+    let min_free = unsafe { sys::esp_get_minimum_free_heap_size() };
+    // SAFETY: plain value argument (capability mask); no memory is shared.
+    let largest_block = unsafe { sys::heap_caps_get_largest_free_block(sys::MALLOC_CAP_8BIT) } as u32;
+    Heap { free, min_free, largest_block }
 }
 
 /// Log a block with firmware, board, reset reason, wake cause and heap. Counts the boot.

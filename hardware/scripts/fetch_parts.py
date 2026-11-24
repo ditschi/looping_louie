@@ -5,6 +5,7 @@ into the project library hardware/lib/lcsc.*
 Usage (via just):  just parts            # missing parts only
                    just parts-update     # fetch all again
 """
+
 import csv
 import re
 import subprocess
@@ -54,8 +55,12 @@ def fix_model_paths():
 # with the 3D model of the C6 (see docs/main-board-c6.md 2.1). Do not use the KiCad footprint:
 # its courtyard contains a 43 × 20 mm antenna keepout zone.
 DERIVED = [
-    ("WIFIM-SMD_ESP32-C6-MINI-1", "WIFIM-SMD_ESP32-C3-MINI-1",
-     "WIFIM-SMD_61P-L16.6-W13.2-P0.80-ESP32-C6-MINI-1-N4", "C42403058"),
+    (
+        "WIFIM-SMD_ESP32-C6-MINI-1",
+        "WIFIM-SMD_ESP32-C3-MINI-1",
+        "WIFIM-SMD_61P-L16.6-W13.2-P0.80-ESP32-C6-MINI-1-N4",
+        "C42403058",
+    )
 ]
 
 
@@ -78,8 +83,14 @@ def derive_footprints():
 # footprint (model Y points to the footprint rear side); the outline in the
 # silkscreen runs over the board edge.
 KICAD_DERIVED = [
-    ("Connector_USB/USB_C_Receptacle_HRO_TYPE-C-31-M-12", "USB_C_Receptacle_HRO_TYPE-C-31-M-12",
-     "USB-C_SMD-TYPE-C-31-M-12_1", (0, -0.85, 0), 180, True),
+    (
+        "Connector_USB/USB_C_Receptacle_HRO_TYPE-C-31-M-12",
+        "USB_C_Receptacle_HRO_TYPE-C-31-M-12",
+        "USB-C_SMD-TYPE-C-31-M-12_1",
+        (0, -0.85, 0),
+        180,
+        True,
+    )
 ]
 KICAD_FP = Path("/usr/share/kicad/footprints")
 
@@ -87,6 +98,7 @@ KICAD_FP = Path("/usr/share/kicad/footprints")
 def derive_kicad_footprints():
     sys.path.insert(0, str(Path(__file__).parent))
     from sexpr import block_end
+
     for src, name, model, (ox, oy, oz), rz, no_silk in KICAD_DERIVED:
         lib, fp = src.split("/")
         path = KICAD_FP / f"{lib}.pretty" / f"{fp}.kicad_mod"
@@ -96,7 +108,7 @@ def derive_kicad_footprints():
         text = path.read_text().replace(f'(footprint "{fp}"', f'(footprint "{name}"', 1)
         m = text.find("(model ")
         if m >= 0:
-            text = text[:m] + text[block_end(text, m):]
+            text = text[:m] + text[block_end(text, m) :]
         if no_silk:
             for kind in ("fp_line", "fp_arc", "fp_poly", "fp_rect", "fp_circle"):
                 i = 0
@@ -106,9 +118,11 @@ def derive_kicad_footprints():
                         text = text[:i] + text[end:]
                     else:
                         i = end
-        model_block = (f'\t(model "${{KIPRJMOD}}/../lib/lcsc.3dshapes/{model}.wrl"\n'
-                       f'\t\t(offset (xyz {ox} {oy} {oz}))\n\t\t(scale (xyz 1 1 1))\n'
-                       f'\t\t(rotate (xyz 0 0 {rz}))\n\t)\n')
+        model_block = (
+            f'\t(model "${{KIPRJMOD}}/../lib/lcsc.3dshapes/{model}.wrl"\n'
+            f"\t\t(offset (xyz {ox} {oy} {oz}))\n\t\t(scale (xyz 1 1 1))\n"
+            f"\t\t(rotate (xyz 0 0 {rz}))\n\t)\n"
+        )
         end = text.rstrip().rfind(")")
         text = text[:end] + model_block + ")\n"
         (LIB.parent / "louie.pretty" / f"{name}.kicad_mod").write_text(text)
@@ -119,26 +133,37 @@ def fix_courtyards():
     pads + 0.25 mm so that the placement check and the DRC are correct."""
     for mod in (LIB.parent / "lcsc.pretty").glob("*.kicad_mod"):
         text = mod.read_text()
-        crt = re.findall(r"\(fp_line \(start ([-\d.]+) ([-\d.]+)\) \(end ([-\d.]+) ([-\d.]+)\) \(layer F\.CrtYd\)", text)
+        crt = re.findall(
+            r"\(fp_line \(start ([-\d.]+) ([-\d.]+)\) \(end ([-\d.]+) ([-\d.]+)\) \(layer F\.CrtYd\)", text
+        )
         if len(crt) != 4:
             continue
         xs = [float(v) for c in crt for v in (c[0], c[2])]
         ys = [float(v) for c in crt for v in (c[1], c[3])]
         box = [min(xs), min(ys), max(xs), max(ys)]
         new = list(box)
-        for m in re.finditer(r"\(pad \S+ smd rect \(at ([-\d.]+) ([-\d.]+)(?: ([-\d.]+))?\) \(size ([\d.]+) ([\d.]+)\)", text):
+        for m in re.finditer(
+            r"\(pad \S+ smd rect \(at ([-\d.]+) ([-\d.]+)(?: ([-\d.]+))?\) \(size ([\d.]+) ([\d.]+)\)", text
+        ):
             x, y, rot, w, h = (float(m.group(i) or 0) for i in range(1, 6))
             if round(rot) % 180 == 90:
                 w, h = h, w
-            new = [min(new[0], x - w / 2 - 0.25), min(new[1], y - h / 2 - 0.25),
-                   max(new[2], x + w / 2 + 0.25), max(new[3], y + h / 2 + 0.25)]
+            new = [
+                min(new[0], x - w / 2 - 0.25),
+                min(new[1], y - h / 2 - 0.25),
+                max(new[2], x + w / 2 + 0.25),
+                max(new[3], y + h / 2 + 0.25),
+            ]
         if new == box:
             continue
         x0, y0, x1, y1 = (f"{v:.2f}" for v in new)
         rect = [(x0, y0, x1, y0), (x1, y0, x1, y1), (x1, y1, x0, y1), (x0, y1, x0, y0)]
         lines = iter(f"(fp_line (start {a} {b}) (end {c} {d}) (layer F.CrtYd)" for a, b, c, d in rect)
-        text = re.sub(r"\(fp_line \(start [-\d.]+ [-\d.]+\) \(end [-\d.]+ [-\d.]+\) \(layer F\.CrtYd\)",
-                      lambda _m: next(lines), text)
+        text = re.sub(
+            r"\(fp_line \(start [-\d.]+ [-\d.]+\) \(end [-\d.]+ [-\d.]+\) \(layer F\.CrtYd\)",
+            lambda _m, lines=lines: next(lines),
+            text,
+        )
         mod.write_text(text)
 
 

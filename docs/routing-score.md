@@ -13,7 +13,7 @@ force; sections 5 and 8 are the prototype measurement from 2026-11-03 (history, 
 - Board knowledge (nets, antenna, via-in-pad list, module, current paths) lives under `[boards.<board>]`; the
   general sections are defaults. `thermal_vias_u2` is called `thermal_vias` (pad from `[boards.*.module]`).
 - `routing.json` additionally stores `details` and `score.parts`; `ranking` is dropped (`"decision": "hard+weighted"`).
-- Findings 8.1 (VSYS path too narrow) and 8.3 (net classes) are fixed: `gen_main_pcb.py` pre-routes Q1 → C1/C2 at 0.5 mm
+- Findings 8.1 (VSYS path too narrow) and 8.3 (net classes) are fixed: the pre-routing (`preroute_main.py`, called by `gen_main_pcb.py`) lays Q1 → C1/C2 at 0.5 mm
   on the outer layers only, `route_fix.py` never routes VSYS below 0.3 mm, and the net classes are set again on
   generation (main-board-c6.md 11.7).
 

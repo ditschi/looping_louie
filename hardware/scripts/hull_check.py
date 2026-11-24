@@ -10,6 +10,7 @@ unpopulated parts on the bottom) and checks all vertices:
 
 Usage: hull_check.py [file.stl]   (just hull); returns 1 if a limit is violated.
 """
+
 import re
 import sys
 from pathlib import Path
@@ -19,12 +20,12 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent.parent
 STL = ROOT / "build" / "main-board" / "3d" / "louie-main.stl"
 AA_RADIUS = 7.25
-PCB_TOP_ABOVE_AXIS = 0.5   # sleeve.scad pcb_top
+PCB_TOP_ABOVE_AXIS = 0.5  # sleeve.scad pcb_top
 PCB_T = 0.8
-POCKET_HALF = 10.4 / 2     # sleeve.scad pocket_w
-POCKET_DEPTH = 2.0         # sleeve.scad pocket_depth
-SOLDER_GAP = 0.5           # clearance under the bottom components (solder, tolerance)
-CAP_X = 22.2               # inner face of the end caps (pcb_l / 2 - overlap)
+POCKET_HALF = 10.4 / 2  # sleeve.scad pocket_w
+POCKET_DEPTH = 2.0  # sleeve.scad pocket_depth
+SOLDER_GAP = 0.5  # clearance under the bottom components (solder, tolerance)
+CAP_X = 22.2  # inner face of the end caps (pcb_l / 2 - overlap)
 EPS = 0.02
 
 
@@ -34,7 +35,7 @@ def vertices(path):
         nums = re.findall(rb"vertex\s+(\S+)\s+(\S+)\s+(\S+)", data)
         return np.array(nums, dtype=float)
     count = int.from_bytes(data[80:84], "little")
-    rec = np.frombuffer(data[84:84 + 50 * count], dtype=np.dtype([("n", "<3f4"), ("v", "<9f4"), ("a", "<u2")]))
+    rec = np.frombuffer(data[84 : 84 + 50 * count], dtype=np.dtype([("n", "<3f4"), ("v", "<9f4"), ("a", "<u2")]))
     return rec["v"].reshape(-1, 3).astype(float)
 
 
@@ -59,8 +60,10 @@ def main(path=STL):
     if below.any():
         depth = (bottom - (top - PCB_TOP_ABOVE_AXIS)) - z[below]
         wide = np.abs(y[below]).max()
-        print(f"  bottom: largest component height {depth.max():.2f} mm (limit {POCKET_DEPTH - SOLDER_GAP:.1f}), "
-              f"largest |y| {wide:.2f} mm (pocket {POCKET_HALF})")
+        print(
+            f"  bottom: largest component height {depth.max():.2f} mm (limit {POCKET_DEPTH - SOLDER_GAP:.1f}), "
+            f"largest |y| {wide:.2f} mm (pocket {POCKET_HALF})"
+        )
         ok &= depth.max() <= POCKET_DEPTH - SOLDER_GAP + EPS and wide <= POCKET_HALF + EPS
     caps = (np.abs(x) > CAP_X + EPS) & ((v[:, 2] > top + EPS) | (v[:, 2] < bottom - EPS))
     print(f"  under the end caps (|x| > {CAP_X}): {int(caps.sum())} points outside the board")

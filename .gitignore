@@ -28,3 +28,6 @@ firmware/louie-fw/.embuild/
 
 # Datasheets (copyrighted, download with: just datasheets)
 datasheets/
+
+# Claude Code worktrees (project skills in .claude/skills are versioned)
+.claude/worktrees/

@@ -1,0 +1,44 @@
+# Commit gate (docs/code-health.md). Install once: pre-commit install (setup.sh does it); all files: just lint
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.6
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: code-health
+        name: code health (ai-health delta of the staged changes, must not get worse)
+        entry: just code-health-delta --staged
+        language: system
+        pass_filenames: false
+        files: ^(firmware/louie-fw/.*\.rs|hardware/scripts/.*\.py|.*\.aihealth\.toml)$
+
+      - id: code-health-config
+        name: code health configs share the profile
+        entry: just code-health-config
+        language: system
+        pass_filenames: false
+        files: \.aihealth\.toml$
+
+      - id: aihealth-suppression-reason
+        name: ai-health suppressions carry a reason (aihealth disable=<smell> -- <reason>)
+        entry: 'aihealth:[ \t]*disable=(?![\w, \t]+-- .{10})'
+        language: pygrep
+        types_or: [python, rust]
+
+      - id: fw-lint
+        name: firmware clippy and rustfmt (just fw-lint)
+        entry: just fw-lint
+        language: system
+        pass_filenames: false
+        files: ^firmware/louie-fw/(.*\.rs|Cargo\.(toml|lock)|rust-toolchain\.toml|sdkconfig\.defaults|\.cargo/config\.toml)$
+
+      - id: hw-check
+        name: hardware checks (ERC, DRC, generator drift)
+        entry: just hw-check
+        language: system
+        pass_filenames: false
+        files: ^hardware/(.*\.kicad_(sch|pcb|sym|dru|pro)|scripts/(gen_symbols|gen_main_schematic|gen_charger_schematic|check_generated)\.py)$

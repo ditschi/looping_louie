@@ -115,7 +115,8 @@ All outputs go to `build/<board>/` (not in Git).
   [decision-history.md](decision-history.md)). The charger board has 2 layers.
 - `just pcb` recreates the board by script (`gen_main_pcb.py`): outline, stack-up, footprints with
   nets, design rules (also `louie-main.kicad_dru`), net classes, antenna keep-outs, pre-routes, thermal vias,
-  ground planes on all layers. The placement is in `placement.py`: everything assembled on top; bottom only solder
+  ground planes on all layers. The pre-routes are in `preroute_main.py`, helpers shared with the charger board
+  (`gen_charger_pcb.py`) in `pcb_tools.py`. The placement is in `placement.py`: everything assembled on top; bottom only solder
   pads, test points and optional, unassembled footprints (DNP, [idea-optional-hardware.md](idea-optional-hardware.md) 0b).
 - `just plot` draws top and bottom with ratsnest and reports overlaps.
 - `just route` routes with the own router `route_fix.py` (`ROUTER=freerouting` as an alternative). Then `just drc`.
@@ -264,3 +265,9 @@ therefore refused with Freerouting. `freerouting_round()` raises an error when F
   are missing from the placement list and BOM (`--exclude-dnp`); `…-bom-all.csv` lists them with a DNP column.
   This keeps assembly single-sided (top).
 - For manufacturers with their own format (e.g. JLCPCB column names), the CSVs are adapted as needed.
+
+## Code health and commit gate
+
+Code is scored with ai-health per component (firmware, Python scripts), goal 10; pre-commit runs ruff, the
+code-health delta, `just fw-lint` and the hardware checks (`just hw-check`). Details, thresholds and results:
+[code-health.md](code-health.md). `./setup.sh` installs the hooks; `just lint` runs them on all files.
