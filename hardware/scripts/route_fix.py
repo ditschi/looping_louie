@@ -46,14 +46,14 @@ CLEAR = 0.158  # clearance 0.15 mm + margin (grid error < 0.005 mm)
 HOLE_CLEAR = 0.31  # component hole–copper inner 0.3 mm + margin
 VIA_HOLE_CLEAR = 0.26  # via hole–copper 0.25 mm + margin
 EDGE = 0.32  # copper–edge 0.3 mm + margin
-VIA_D, VIA_DRILL = 0.5, 0.3  # like RULES_4L in gen_main_pcb.py
+VIA_D, VIA_DRILL = 0.5, 0.3  # like RULES in pcb_tools.py
 # Hole edge to hole edge for vias of other nets and drilled pads (board rule min_hole_to_hole 0.25 mm; at 0.25 the via
 # spacing from the copper clearance is larger anyway, so this only acts above about 0.36 mm, e.g. JLC's 0.45 mm)
 HOLE_TO_HOLE = 0.25
 SKIP_NETS = {"/GND"}  # GND through the In1 zone and stitch.py
 # Track widths per net (the first one first, the others at bottlenecks). The last one is the net's minimum width:
 # nothing is ever routed below it (formerly VSYS 0.2 mm, docs/routing-score.md 8.1). The main motor paths
-# (Schottky/Q1 → buffer → VM, OUT_A/OUT_B, VBUS, BAT_IN) are pre-routed in gen_main_pcb.py with 0.4–0.5 mm on the
+# (Schottky/Q1 → buffer → VM, OUT_A/OUT_B, VBUS, BAT_IN) are pre-routed in preroute_main.py with 0.4–0.5 mm on the
 # outer layers; here only the LDO input (up to about 0.4 A), LED LDO U6 and VLED (up to 0.5 A, PTC F1).
 # Per IPC-2221 (20 K) 0.3 mm carries about 0.7 A outside, about 0.37 A inside (In2, 15 µm); so VLED at least 0.4 mm.
 WIDTHS = {"/VSYS": (0.4, 0.3), "/BAT_IN": (0.4,), "/+3V3": (0.25, 0.15), "/VLED": (0.4,), "/VLED_SW": (0.4,)}

@@ -27,6 +27,7 @@ import datetime
 import os
 import shutil
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 import board_outline  # outline (width 14.1 mm, tongues at the ends, recess in front of J4)
@@ -423,11 +424,11 @@ def main():
     setup_rules(board)
     placer = Placer(board, nets, pos)
     footprints = {ref: place(placer, ref, comp, placement[ref]) for ref, comp in sorted(comps.items())}
-    keepout, module_vias = fixed_copper(board, footprints, placer.netinfo["/GND"])
+    fixed = fixed_copper(board, footprints, placer.netinfo["/GND"])
     pcbnew.SaveBoard(str(pcb_file), board)
     write_stackup(pcb_file)
     ignore_silk_edge(pcb_file.with_suffix(".kicad_pro"))
-    report(pcb_file, (placement, comps), keepout, module_vias)
+    report(pcb_file, placement, comps, fixed)
 
 
 def output_file():
@@ -448,8 +449,16 @@ def place(placer, ref, comp, where):
     return fp
 
 
+@dataclass(frozen=True)
+class FixedCopper:
+    """What fixed_copper() placed, for the report."""
+
+    antenna_keepout_mm: float
+    module_vias: int
+
+
 def fixed_copper(board, footprints, gnd):
-    """Keepouts, pre-routed tracks, fixed vias and ground pours; returns (antenna keepout mm, module vias)."""
+    """Keepouts, pre-routed tracks, fixed vias and ground pours."""
     keepout = antenna_keepout(board, footprints["U1"])
     edge_keepout(board)
     plane_keepout(board)
@@ -462,17 +471,16 @@ def fixed_copper(board, footprints, gnd):
     for ref, num, dx, dy in GROUND_VIAS:
         ground_via_at_pad(board, pad_of(footprints[ref], num), (dx, dy), width=0.3)
     copper_zones(board, gnd)
-    return keepout, module_vias
+    return FixedCopper(keepout, module_vias)
 
 
-def report(pcb_file, layout, keepout, module_vias):
-    placement, comps = layout
+def report(pcb_file, placement, comps, fixed):
     top = sum(1 for p in placement.values() if p[3] == "F")
     shown = pcb_file.relative_to(HARDWARE.parent) if pcb_file.is_relative_to(HARDWARE.parent) else pcb_file
     dnp = sum(1 for c in comps.values() if c["dnp"])
     print(
         f"{shown}: {LAYERS} layers, {len(comps)} components ({top} top, {len(comps) - top} bottom, {dnp} of them DNP), "
-        f"antenna keepout {keepout:.1f} mm, {module_vias} GND vias in the module pad"
+        f"antenna keepout {fixed.antenna_keepout_mm:.1f} mm, {fixed.module_vias} GND vias in the module pad"
     )
 
 

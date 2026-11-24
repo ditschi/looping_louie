@@ -40,6 +40,7 @@ import re
 import shutil
 import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 import pcbnew
@@ -377,7 +378,7 @@ def attempt(n, start, project):
     grid = stitch_grid(pcb)  # connect GND zones top/bottom on a grid
     removed = remove_dangling_vias(pcb)
     label = f"{passes} passes, track {track}/{supply} mm" if BOARD == "main-board" else f"{passes} passes"
-    return n, label, unrouted, route_gate.measure(pcb, board=BOARD), grid, removed, pcb
+    return AttemptResult(n, label, unrouted, route_gate.measure(pcb, board=BOARD), (grid, removed), pcb)
 
 
 def set_track_widths(pcb, track, supply):
@@ -421,7 +422,7 @@ def attempt_own(n, pcb):
     removed = remove_dangling_vias(pcb)
     label = f"own router, via cost {via_cost}, F {f_cost}, B {b_cost}"
     label += (f", seed {seed}" if seed else "") + (f", pre-router {pre}" if pre != "none" else "")
-    return n, label, still_open, route_gate.measure(pcb, board=BOARD), grid, removed, pcb
+    return AttemptResult(n, label, still_open, route_gate.measure(pcb, board=BOARD), (grid, removed), pcb)
 
 
 def main():
@@ -439,7 +440,7 @@ def main():
 
     cfg = route_score.load_config(BOARD)
     numbers = attempt_numbers()
-    best, results = run_attempts(cfg, numbers, attempt_starts(numbers, start, project))
+    best, results = run_attempts(cfg, numbers, attempt_starts(numbers, start, project), project)
     print_lines(route_score.table(cfg, sorted(results, key=lambda r: rank(cfg, r[1]))))
     print_lines(route_score.pareto(cfg, results))
     print(f"best attempt of this invocation: {best[1]} ({best[2]})")
@@ -476,32 +477,43 @@ def rank(cfg, meas):
     return route_score.rank_key(cfg, meas["metrics"], meas["details"])
 
 
-def run_attempts(cfg, numbers, starts):
+@dataclass
+class AttemptResult:
+    """One routing attempt: number, variant label, open connections after the router, measurement, stitching
+    (grid vias, removed dangling items) and the routed board."""
+
+    n: int
+    label: str
+    unrouted: int
+    meas: dict
+    stitching: tuple[int, int]
+    pcb: Path
+
+
+def run_attempts(cfg, numbers, starts, project):
     """Attempts in parallel; the best (first feasible, smallest violation, smallest S) is copied to BEST.
     Returns ((key, n, label, measurement), [(name, measurement)])."""
     from concurrent.futures import ProcessPoolExecutor
 
     best, results = None, []
     with ProcessPoolExecutor(max_workers=PARALLEL) as pool:
-        for n, label, unrouted, meas, grid, removed, pcb in pool.map(
-            attempt, numbers, starts, [PCB.with_suffix(".kicad_pro")] * len(numbers)
-        ):
-            report_attempt((n, label, unrouted), meas, (grid, removed), cfg)
-            key = rank(cfg, meas)
-            results.append((f"attempt {n}", meas))
+        for result in pool.map(attempt, numbers, starts, [project] * len(numbers)):
+            report_attempt(result, cfg)
+            key = rank(cfg, result.meas)
+            results.append((f"attempt {result.n}", result.meas))
             if best is None or key < best[0]:
-                best = (key, n, label, meas)
-                shutil.copy(pcb, BEST)
+                best = (key, result.n, result.label, result.meas)
+                shutil.copy(result.pcb, BEST)
     return best, results
 
 
-def report_attempt(run, meas, stitching, cfg):
-    n, label, unrouted = run
-    grid, removed = stitching
+def report_attempt(result, cfg):
+    grid, removed = result.stitching
     first = "Router" if ROUTER == "own" else "Freerouting"
     extra = f", {removed} dangling vias/track pieces removed" if removed else ""
+    meas = result.meas
     print(
-        f"Attempt {n} ({label}): {first} {unrouted} open → after stitching "
+        f"Attempt {result.n} ({result.label}): {first} {result.unrouted} open → after stitching "
         f"{route_gate.short(meas['metrics'], cfg, meas['details'])}, {grid} stitching vias{extra}",
         flush=True,
     )

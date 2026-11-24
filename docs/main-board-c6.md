@@ -455,7 +455,7 @@ twice the JLC minimum (0.05 mm at 0.15/0.25). The vias of the pre-routes are als
 
 | File | Task |
 |---|---|
-| `gen_main_pcb.py` | generates the 4-layer board in `hardware/main-board/`: `RULES`, `DRU` (rule file), `STACKUP`, outline from `board_outline.py`, In1 = GND plane + keepout area "GND layer" (no tracks), In2 = GND fill, pre-routes (USB, VBUS, BAT_IN, motor, VSYS), `PLACEMENT_OVERRIDES` (among others **R15 rotated by 180°**, otherwise its GND pad is enclosed between VBUS tracks and the USB pair) |
+| `gen_main_pcb.py` | generates the 4-layer board in `hardware/main-board/`: `DRU` (rule file), `STACKUP`, outline from `board_outline.py`, In1 = GND plane + keepout area "GND layer" (no tracks), In2 = GND fill, pre-routes (USB, VBUS, BAT_IN, motor, VSYS) from `preroute_main.py`, design rules `RULES` in `pcb_tools.py`, `PLACEMENT_OVERRIDES` (among others **R15 rotated by 180°**, otherwise its GND pad is enclosed between VBUS tracks and the USB pair) |
 | `placement.py` | placement (assembled on one side, parts on the bottom only pads/DNP) |
 | `route_fix.py` | custom maze router: A* over F.Cu/In2.Cu/B.Cu on a 0.05 mm grid, vias 0.3/0.5 only where they fit on all layers, escape lanes in front of the module pads, rip-up and reroute with history costs, then GND islands via a via to In1, restart with priority for unrouted nets; deterministic |
 | `route.py`, `route_gate.py` | `main-board` (4 layers, `ROUTER=own` default with 6 cost variants, or `ROUTER=freerouting` + post-routing) and `charger-board` (2 layers, Freerouting); keep-best gate against `routing.json` |
