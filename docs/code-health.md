@@ -137,7 +137,10 @@ Hardware checks (not part of the score), run by pre-commit:
 2. `just generate`: regenerates the symbol library, the footprints and both schematics when a generator or a
    generated file changes; the hook fails if that changes a file (a hand edit the next generator run would lose,
    or a generator change that was not regenerated). Outside pre-commit, `just generate` overwrites uncommitted
-   edits of generated files, which must not be edited by hand anyway (AGENTS.md).
+   edits of generated files, which must not be edited by hand anyway (AGENTS.md). Limits: only tracked files are
+   compared, so a newly generated or deleted output file is not caught; the schematics embed symbols from the
+   installed KiCad libraries, so after a KiCad library update the hook fails once and the regenerated schematics
+   are committed.
 
 Further options, not chosen for now: BOM consistency (LCSC number for every fitted part), routing score
 regression against `routing.json`, envelope check `just hull` (needs `just model`), a CI job with the KiCad

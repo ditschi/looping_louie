@@ -47,4 +47,4 @@ repos:
         entry: just generate
         language: system
         pass_filenames: false
-        files: ^hardware/(lib/louie\.(kicad_sym|pretty/.*)|.*\.kicad_sch|scripts/(gen_symbols|gen_main_schematic|gen_charger_schematic)\.py)$
+        files: ^hardware/(lib/louie\.(kicad_sym|pretty/.*)|.*\.kicad_sch|scripts/(gen_symbols|gen_main_schematic|gen_charger_schematic|sexpr)\.py)$
