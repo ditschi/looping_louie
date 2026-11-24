@@ -4,7 +4,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-APT_PACKAGES=(kicad kicad-packages3d just zip python3 python3-matplotlib python3-numpy default-jre curl openscad inkscape jq)
+APT_PACKAGES=(kicad kicad-packages3d just zip python3 python3-matplotlib python3-numpy default-jre curl openscad inkscape)
 
 echo "== System packages (apt)"
 missing=()

@@ -28,7 +28,7 @@ else
     bad "easyeda2kicad missing  → uv tool install easyeda2kicad"
 fi
 
-for tool in pre-commit jq; do
+for tool in pre-commit; do
     if command -v "$tool" >/dev/null; then ok "$tool"; else bad "$tool missing  → ./setup.sh (commit gate, docs/code-health.md)"; fi
 done
 

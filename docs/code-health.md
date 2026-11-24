@@ -80,6 +80,10 @@ Formula and weights: ai-health's (`src/aihealth/scoring.py`), unchanged. The two
 `large_file`; `just code-health-config` checks that the rest is identical, so the profile changes in one
 step for both.
 
+Primitive Obsession is off in test code (owner decision Q18.1) via a separate config with
+`[weights] primitive_obsession = 0`. Not needed here: the only tests are the two untyped router test scripts, where
+the smell does not apply, and there are no Rust test modules.
+
 Embedded patterns (interrupt callbacks, state machines as `match`, register values as integers) get no own
 thresholds; where one is justified, the file carries `// aihealth: disable=<smell> -- <reason>` (see 6).
 
@@ -97,7 +101,15 @@ just lint                        # all pre-commit hooks on all files
 
 Every recipe passes `--config <component config>` explicitly: `aihealth scan <dir>` would otherwise look for
 `<dir>/.aihealth.toml` and silently fall back to the defaults. With `--format json` the recipe returns one
-object keyed by component (merged with jq). Runtime: about 1.3 s for both components (uv cache warm).
+document per component on stdout (the component name goes to stderr). Runtime: about 1.3 s for both components (uv cache warm).
+
+Own logic beyond calling ai-health (owner principle: only where nothing else works, as thin as possible):
+
+- the loop over the two components in `just code-health` / `code-health-delta`: one call per component, because
+  each has its own config; no output processing
+- `just code-health-config`: a three-line diff of the two configs, because ai-health has no include and the profile
+  must change in one place for both
+- `hardware/scripts/check_generated.py` (about 40 lines): the generator drift check, no tool covers it
 
 ### 6. Gate
 

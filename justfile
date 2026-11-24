@@ -286,16 +286,12 @@ fw-ports:
 aihealth := "uvx -q --from git+https://github.com/epatel/ai-health@033d1867fe514867d944d9387ee72db0188eed47 aihealth"
 health_components := "firmware/louie-fw hardware/scripts"
 
-# Code health scan per component (firmware, Python scripts); e.g. -v, --format markdown, --format json (one object per component)
+# Code health scan per component (firmware, Python scripts); e.g. -v, --format markdown, --format json
+# (stdout: one JSON document per component, the component name goes to stderr)
 code-health *args:
     #!/usr/bin/env bash
     set -euo pipefail
-    if [[ " {{args}} " == *" json "* || " {{args}} " == *"--format=json"* ]]; then
-        out=$(for c in {{health_components}}; do {{aihealth}} scan "$c" --config "$c/.aihealth.toml" {{args}} | jq -c --arg c "$c" '{($c): .}'; done)
-        jq -s 'add' <<< "$out"
-    else
-        for c in {{health_components}}; do echo "== $c"; {{aihealth}} scan "$c" --config "$c/.aihealth.toml" {{args}}; done
-    fi
+    for c in {{health_components}}; do echo "== $c" >&2; {{aihealth}} scan "$c" --config "$c/.aihealth.toml" {{args}}; done
 
 # Code health delta per component, exit 1 if anything got worse: working tree vs HEAD; e.g. --staged, --base origin/main
 code-health-delta *args:
