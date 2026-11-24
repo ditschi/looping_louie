@@ -72,6 +72,7 @@ fn main() -> anyhow::Result<()> {
                 RTC_COUNTER.store(0, Ordering::Relaxed);
                 sleep_with(true)?;
             }
+            // SAFETY: no arguments; software reset, does not return.
             Some(b'r') => unsafe { esp_idf_svc::sys::esp_restart() },
             Some(b'p') => panic!("deliberate panic (pin_probe case a)"),
             Some(b'd') => {

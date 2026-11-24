@@ -100,6 +100,7 @@ fn main() -> anyhow::Result<()> {
                 live = !live;
                 last.clear();
             }
+            // SAFETY: no arguments; software reset, does not return.
             Some(b'r') => unsafe { esp_idf_svc::sys::esp_restart() },
             _ => {}
         }

@@ -29,20 +29,26 @@ pub fn deep_sleep(wake: &Wake) -> Result<(), EspError> {
     let high = mask(&wake.high);
     let low = mask(&wake.low) | mask(&wake.low_pullup);
     if high | low != 0 {
+        // SAFETY: plain value arguments (pin and channel numbers from the board definition); no memory is shared.
         esp!(unsafe { sys::esp_sleep_enable_ext1_wakeup_with_level_mask(high | low, high) })?;
     }
     // Levels during sleep come from the LP IO (RTC IO) pulls. Pins with an external circuit keep the internal
     // pulls off, so that the measurement sees the board circuit only.
     for &p in wake.high.iter().chain(&wake.low) {
+        // SAFETY: plain value arguments (pin and channel numbers from the board definition); no memory is shared.
         esp!(unsafe { sys::rtc_gpio_pullup_dis(p) })?;
+        // SAFETY: plain value arguments (pin and channel numbers from the board definition); no memory is shared.
         esp!(unsafe { sys::rtc_gpio_pulldown_dis(p) })?;
     }
     for &p in &wake.low_pullup {
+        // SAFETY: plain value arguments (pin and channel numbers from the board definition); no memory is shared.
         esp!(unsafe { sys::rtc_gpio_pulldown_dis(p) })?;
+        // SAFETY: plain value arguments (pin and channel numbers from the board definition); no memory is shared.
         esp!(unsafe { sys::rtc_gpio_pullup_en(p) })?;
     }
     if !wake.low_pullup.is_empty() {
         // keep the LP IO pulls powered (unverified whether the C6 needs this, see ESP-IDF example ext_wakeup)
+        // SAFETY: plain value arguments (pin and channel numbers from the board definition); no memory is shared.
         esp!(unsafe {
             sys::esp_sleep_pd_config(
                 sys::esp_sleep_pd_domain_t_ESP_PD_DOMAIN_RTC_PERIPH,
@@ -51,6 +57,7 @@ pub fn deep_sleep(wake: &Wake) -> Result<(), EspError> {
         })?;
     }
     if let Some(ms) = wake.timer_ms {
+        // SAFETY: plain value arguments (pin and channel numbers from the board definition); no memory is shared.
         esp!(unsafe { sys::esp_sleep_enable_timer_wakeup(ms * 1000) })?;
     }
     log::info!(
@@ -62,5 +69,6 @@ pub fn deep_sleep(wake: &Wake) -> Result<(), EspError> {
     let _ = std::io::stdout().flush();
     // let the UART FIFO drain
     std::thread::sleep(std::time::Duration::from_millis(50));
+    // SAFETY: no arguments; does not return (the chip resets on wake-up), wake sources are configured above.
     unsafe { sys::esp_deep_sleep_start() }
 }

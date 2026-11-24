@@ -1,4 +1,7 @@
 # Dated nightly (docs/firmware-architecture.md 9): raise only deliberately and with a golden/HIL run.
+# nightly-2026-09-15: first one found that builds (2026-11-24). From 2026-10-16 the std lockfile has libc 0.2.191,
+# whose newlib `stat` uses st_atim/st_mtim while std's ESP-IDF code still reads st_atime (E0609); nightly-2026-10-15
+# hits a compiler panic in esp-idf-svc 0.53. Re-check both before raising.
 [toolchain]
-channel = "nightly-2026-11-01"
-components = ["rust-src"]
+channel = "nightly-2026-09-15"
+components = ["rust-src", "clippy", "rustfmt"]

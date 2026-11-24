@@ -29,6 +29,13 @@ repos:
         language: pygrep
         types_or: [python, rust]
 
+      - id: fw-lint
+        name: firmware clippy and rustfmt (just fw-lint)
+        entry: just fw-lint
+        language: system
+        pass_filenames: false
+        files: ^firmware/louie-fw/(.*\.rs|Cargo\.(toml|lock)|rust-toolchain\.toml)$
+
       - id: hw-check
         name: hardware checks (ERC, DRC, generator drift)
         entry: just hw-check

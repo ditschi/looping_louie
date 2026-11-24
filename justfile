@@ -262,6 +262,15 @@ fw-run target="louie-fw" port="":
     if [[ -n "{{port}}" ]]; then export ESPFLASH_PORT="{{port}}"; fi
     if [[ "{{target}}" == "louie-fw" ]]; then cargo run --release; else cargo run --release --example {{target}}; fi
 
+# Firmware: clippy (embedded lints from Cargo.toml, warnings are errors) and rustfmt check for all binaries
+fw-lint:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd {{fw_dir}}
+    export CARGO_TARGET_DIR="{{fw_target}}" CARGO_WORKSPACE_DIR="$PWD/"
+    cargo fmt --check
+    cargo clippy --release --bins --examples -- -D warnings
+
 # Firmware: serial monitor only (port as in fw-run)
 fw-monitor port="":
     espflash monitor {{ if port != "" { "--port " + port } else { "" } }}

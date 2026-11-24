@@ -32,6 +32,16 @@ default = ["board-devkitc-c6"]
 board-devkitc-c6 = []
 board-louie-v1 = []
 
+# clippy for embedded concerns (docs/code-health.md). Structure (size, complexity, arguments, nesting) is
+# measured by ai-health only, so clippy's structural lints stay off.
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"     # every FFI call states why it is sound
+multiple_unsafe_ops_per_block = "warn"
+large_stack_arrays = "warn"             # task stacks are small (sdkconfig.defaults)
+large_stack_frames = "warn"
+mem_forget = "warn"
+too_many_arguments = "allow"            # ai-health: excess_arguments
+
 [profile.release]
 opt-level = "s"
 

@@ -21,7 +21,7 @@ manufacturing costs [cost-estimate.md](cost-estimate.md).
   module ESP32-C6-WROOM-1-N8. **Pin header identical to the Espressif DevKitC-1** (verified, Waveshare schematic vs.
   Espressif user guide); one USB-C port with hub, two serial ports (section 3.1). Alternative: Espressif
   **ESP32-C6-DevKitC-1-N8** (approx. 21 € incl. shipping at Reichelt, unverified).
-- **Test firmware ready (not built yet):** [firmware/louie-fw](../firmware/louie-fw/README.md) with the bring-up in LED
+- **Test firmware ready (builds, not yet run on a board):** [firmware/louie-fw](../firmware/louie-fw/README.md) with the bring-up in LED
   mode and one probe per check (`lever_probe`, `boot_probe`, `pin_probe`, `adc_probe`), started with
   `just fw-run <name> <port>` (section 8).
 - **Everything else exists:** parts drawer (R, C, buttons, switches, LEDs, pots), the real Looping Louie (old and new

@@ -1,6 +1,6 @@
 # louie-fw – ESP32-C6 firmware, step 0
 
-Status: 2026-11-07 · **Written, not built yet** (toolchain setup on the dev machine still open, see "First build").
+Status: 2026-11-24 · **Builds** (all binaries and examples, clippy clean with `just fw-lint`), not yet run on a board.
 
 Step 0 of [firmware-architecture.md](../../docs/firmware-architecture.md) 11: board definition, bring-up in LED mode and
 the test binaries for the pre-order checks in [test-hardware.md](../../docs/test-hardware.md) 4. Rust std on ESP-IDF
@@ -62,7 +62,12 @@ Prerequisites (Ubuntu): `rustup` with the nightly from `rust-toolchain.toml` and
 spaces in its paths (ESP-IDF getting-started guide). Therefore ESP-IDF goes to `~/.espressif` (`.cargo/config.toml`) and
 `just fw-*` puts the Cargo target directory (where the ESP-IDF CMake project is generated) at
 `~/.cache/louie-fw/target`. Whether that is enough is **unverified**; if the first build still fails on paths,
-work from a clone without spaces (e.g. `~/src/looping-louie`).
+work from a clone without spaces (e.g. `~/src/looping-louie`). Verified 2026-11-24: the build works from the path
+with spaces.
+
+**Toolchain:** `nightly-2026-09-15` (`rust-toolchain.toml`). Newer nightlies fail: from 2026-10-16 the std lockfile
+has libc 0.2.191 (newlib `stat` field names no longer match std's ESP-IDF code, E0609), nightly-2026-10-15 hits a
+compiler panic in `esp-idf-svc` 0.53.
 
 ## What was checked
 
@@ -70,4 +75,5 @@ work from a clone without spaces (e.g. `~/src/looping-louie`).
 - ESP-IDF v5.5 API used here against the headers: `esp_sleep_enable_ext1_wakeup_with_level_mask` (C6 has per-pin
   ext1 level), `gpio_hold_en` in deep sleep (C6: `SOC_GPIO_SUPPORT_HOLD_SINGLE_IO_IN_DSLP`), `adc_oneshot_io_to_channel`,
   curve-fitting calibration per channel, `LEDC_AUTO_CLK`.
-- **Not checked:** compilation (bindgen names of the ESP-IDF constants, `esp-idf-svc` 0.53 API), behaviour on the board.
+- Compilation (bindgen names of the ESP-IDF constants, `esp-idf-svc` 0.53 API): builds since 2026-11-24.
+- **Not checked:** behaviour on the board.
