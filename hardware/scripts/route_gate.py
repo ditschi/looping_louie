@@ -366,16 +366,16 @@ def gate(board, candidate, fingerprint, metrics=None, info=None, force=False, lo
 
 
 def preroute_board(board, out_dir):
-    """Create the unrouted board like `just pcb`, but into out_dir (official files unchanged)."""
-    if board != "main-board":
-        sys.exit(f"{board}: please specify the unrouted board with --preroute")
+    """Create the unrouted board like `just pcb` / `just charger-pcb` (generator only, no routing), but into
+    out_dir (official files unchanged)."""
     out = Path(out_dir) / pcb_path(board).name
     out.parent.mkdir(parents=True, exist_ok=True)
     for f in pcb_path(board).parent.iterdir():  # project file, rules, library tables as in the original
         if f.suffix in (".kicad_pro", ".kicad_dru") or f.name in ("fp-lib-table", "sym-lib-table"):
             shutil.copy(f, out.parent / f.name)
     python = os.environ.get("KICAD_PYTHON", sys.executable)
-    subprocess.run([python, str(Path(__file__).parent / "gen_main_pcb.py")],
+    generator = "gen_main_pcb.py" if board == "main-board" else "gen_charger_pcb.py"
+    subprocess.run([python, str(Path(__file__).parent / generator)],
                    check=True, env=dict(os.environ, PCB_OUT=str(out)), capture_output=True)
     return out
 

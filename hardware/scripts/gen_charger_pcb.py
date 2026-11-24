@@ -13,9 +13,12 @@ Bottom: only the bridge (wide track between the end contacts) and ground pour.
 
 Must run with the system Python that contains the KiCad module pcbnew.
 Usage (via just):  just charger-pcb      afterwards: just route charger-board
+  - PCB_OUT=<file.kicad_pcb>: write there instead, the official files stay unchanged
+    (route_gate.py: fingerprint of the unrouted board, just route-baseline charger-board).
 
 Warning: removes all footprints, tracks and zones of the board and places them anew.
 """
+import os
 from pathlib import Path
 
 import pcbnew
@@ -240,8 +243,9 @@ def main():
     copper_zones(board, netinfo["/GND"])
     for args in SILK:
         add_text(board, *args)
-    pcbnew.SaveBoard(str(PCB), board)
-    print(f"{PCB.relative_to(HARDWARE.parent)}: {BOARD_L} x {BOARD_W} x {THICKNESS} mm, {len(comps)} components")
+    out = Path(os.environ["PCB_OUT"]).resolve() if os.environ.get("PCB_OUT") else PCB
+    pcbnew.SaveBoard(str(out), board)
+    print(f"{out.relative_to(HARDWARE.parent) if out == PCB else out}: {BOARD_L} x {BOARD_W} x {THICKNESS} mm, {len(comps)} components")
 
 
 if __name__ == "__main__":

@@ -63,7 +63,8 @@ just route-baseline  recreate hardware/<board>/routing.json from the official bo
 just score         routing score of the official board (and other versions: just score main-board build/main-board/keep/*.kicad_pcb)
 just explain       explain the gate decision for a candidate: just explain [board] <file.kicad_pcb>
 just charger-schematic  generate the charger board schematic (overwrites!) + ERC
-just charger-pcb   create, place and route the charger board (overwrites the layout!)
+just charger-pcb   create, place and route the charger board (overwrites the layout; the routing gate keeps
+                   the committed routing unless the new run is better)
 just erc           check the schematic
 just drc           check the board, incl. comparison with the schematic
 just sch-pdf       schematic as PDF
@@ -186,8 +187,9 @@ and its hash is the fingerprint. A routed board changed in the GUI therefore cou
 **Further commands:**
 
 ```
-just route-baseline main-board        create routing.json from the official board (generates the unrouted
-                                      board for it in a temporary folder, checks that placement, zones,
+just route-baseline <board>           create routing.json from the official board (generates the unrouted
+                                      board for it in a temporary folder with gen_main_pcb.py or
+                                      gen_charger_pcb.py and PCB_OUT, checks that placement, zones,
                                       rules and all pre-routes match the official one)
 route_gate.py check <board> <file>    send a board through the gate as a trial (changes nothing without --apply)
 route_gate.py fingerprint <file>      fingerprint/content hash of a board

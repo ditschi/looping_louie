@@ -102,6 +102,7 @@ charger-schematic:
     @just erc charger-board
 
 # Create the charger board: outline, placement, bridge, zones (overwrites the layout!), then route
+# (the routing gate keeps the committed routing unless the new run is better, hardware/charger-board/routing.json)
 charger-pcb:
     @{{kicad_python}} {{hw}}/scripts/gen_charger_pcb.py 2>&1 | grep -v "swig/python detected a memory leak"
     @just route charger-board
