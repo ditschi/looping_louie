@@ -18,7 +18,8 @@ web UI prototype. Start with [README.md](README.md) (directories, status) and
 
 ```bash
 just lint          # all pre-commit hooks: ruff, code health, suppressions, hardware checks
-just hw-check      # ERC + DRC of both boards, generators reproduce the committed files
+just hw-check      # ERC + DRC of both boards
+just generate      # regenerate symbols, footprints and schematics (overwrites them; commit or stash first)
 just fw-build      # firmware release build (devkitc-c6)
 just fw-lint       # firmware rustfmt check + clippy (embedded lints, warnings are errors)
 just route-check   # own router on the official board (about 1 min), after router changes

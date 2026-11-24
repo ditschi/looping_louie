@@ -290,8 +290,10 @@ health_components := "firmware/louie-fw hardware/scripts"
 # (stdout: one JSON document per component, the component name goes to stderr)
 code-health *args:
     #!/usr/bin/env bash
-    set -euo pipefail
-    for c in {{health_components}}; do echo "== $c" >&2; {{aihealth}} scan "$c" --config "$c/.aihealth.toml" {{args}}; done
+    set -uo pipefail
+    rc=0
+    for c in {{health_components}}; do echo "== $c" >&2; {{aihealth}} scan "$c" --config "$c/.aihealth.toml" {{args}} || rc=1; done
+    exit $rc
 
 # Code health delta per component, exit 1 if anything got worse: working tree vs HEAD; e.g. --staged, --base origin/main
 code-health-delta *args:
@@ -309,13 +311,15 @@ code-health-config:
     set -- {{health_components}}
     diff <(profile "$1") <(profile "$2") || { echo "code-health configs differ beyond large_file"; exit 1; }
 
-# Hardware checks: ERC and DRC of both boards, generators reproduce the committed symbols and schematics
-hw-check:
-    @just erc main-board
-    @just drc main-board
-    @just erc charger-board
-    @just drc charger-board
-    @python3 {{hw}}/scripts/check_generated.py
+# Hardware checks: ERC and DRC (with schematic parity) of both boards
+hw-check: (erc "main-board") (drc "main-board") (erc "charger-board") (drc "charger-board")
+
+# Regenerate the symbol library, footprints and both schematics (no ERC); the pre-commit hook fails if this
+# changes a file, i.e. a generated file was edited by hand or a generator change was not regenerated
+generate:
+    @python3 {{hw}}/scripts/gen_symbols.py >/dev/null
+    @python3 {{hw}}/scripts/gen_main_schematic.py >/dev/null
+    @python3 {{hw}}/scripts/gen_charger_schematic.py >/dev/null
 
 # All pre-commit hooks on all files (ruff, code health, suppressions, hardware checks)
 lint:
