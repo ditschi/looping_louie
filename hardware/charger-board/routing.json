@@ -1,0 +1,137 @@
+{
+  "board": "charger-board",
+  "fingerprint": "30c3cb243b2ec96a8a037f18502bdbf8a24bbe44e6c8c6d1b256276f7870a385",
+  "board_hash": "4a124c126ce19006f52992b104d82ba93780f8cff70be7361255052848aa1b02",
+  "metrics": {
+    "drc_violations": 0,
+    "via_count": 50,
+    "track_length_mm": 392.6,
+    "drc_errors": 0,
+    "unconnected": 0,
+    "antenna_intrusions": 0,
+    "power_width_violations": 0,
+    "drc_warnings": 0,
+    "gnd_islands": 0,
+    "signal_vias": 16,
+    "gnd_vias": 34,
+    "signal_length_mm": 307.88,
+    "detour_total": 1.295,
+    "detour_worst5": 1.643,
+    "bends": 90,
+    "acute_angles": 3,
+    "overlapping_segments": 0,
+    "tight_clearance": 62,
+    "power_drop_mv": 0,
+    "sense_coupling_mm": 0.0,
+    "sense_length_mm": 0,
+    "return_gap_mm": 84.94,
+    "antenna_proximity_mm": 0.0,
+    "via_in_pad": 1,
+    "stitch_gap_p95_mm": 26.28,
+    "stitch_gap_max_mm": 29.32,
+    "gnd_vias_module": null,
+    "thermal_vias": null,
+    "ref_plane_mm2": 0.0,
+    "layer_length_mm": {
+      "F.Cu": 161.4,
+      "B.Cu": 231.2
+    },
+    "usb_len_dp": 56.25,
+    "usb_len_dm": 62.39,
+    "usb_skew_mm": 6.13,
+    "usb_vias": 5,
+    "usb_stubs": 0
+  },
+  "score": {
+    "S": 181.547,
+    "hard": {},
+    "hard_total": 0,
+    "under_mm": 0,
+    "parts": {
+      "drc_warnings": 0.0,
+      "gnd_islands": 0.0,
+      "signal_vias": 3.2,
+      "signal_length_mm": 6.1576,
+      "detour_worst5": 3.286,
+      "bends": 0.9,
+      "acute_angles": 3.0,
+      "overlapping_segments": 0.0,
+      "via_in_pad": 2.0,
+      "tight_clearance": 6.2,
+      "power_drop_mv": 0.0,
+      "sense_coupling_mm": 0.0,
+      "sense_length_mm": 0.0,
+      "return_gap_mm": 127.41,
+      "antenna_proximity_mm": 0.0,
+      "stitch_gap_p95_mm": 26.28,
+      "usb_vias": 2.5,
+      "usb_skew_mm": 0.613,
+      "usb_stubs": 0.0
+    }
+  },
+  "decision": "hard+weighted",
+  "score_config_sha256": "a2709b0ce57afffb248436ada5326b1b7747acff66584124f578135974ad28cf",
+  "metrics_version": 1,
+  "details": {
+    "paths": [],
+    "detour_worst": [
+      [
+        "/CC2",
+        2.768
+      ],
+      [
+        "/USB_D-",
+        1.481
+      ],
+      [
+        "/USB_D+",
+        1.356
+      ],
+      [
+        "/BAT",
+        1.353
+      ],
+      [
+        "/BRIDGE",
+        1.255
+      ]
+    ],
+    "coupling_per_net": {},
+    "return_gap_worst": [
+      [
+        "/USB_D+",
+        24.15
+      ],
+      [
+        "/USB_D-",
+        23.55
+      ],
+      [
+        "/BRIDGE",
+        21.4
+      ],
+      [
+        "/PROG",
+        5.0
+      ],
+      [
+        "/CC1",
+        4.42
+      ]
+    ],
+    "via_in_pad": [
+      "C101:2"
+    ],
+    "antenna_fill_mm2": 0.0,
+    "plane_layers": [],
+    "drc_types": [],
+    "clearance_mm": 0.15
+  },
+  "router": "freerouting",
+  "note": "created from the official board (route_gate.py init)",
+  "timestamp": "2026-11-24T01:01:40+01:00",
+  "tools": {
+    "kicad": "9.0.8",
+    "repo": "rev-a-spx3819-10-g3723aea-dirty"
+  }
+}

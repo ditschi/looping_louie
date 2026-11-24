@@ -76,13 +76,13 @@ def drc_json(pcb):
         return json.loads(report.read_text())
 
 
-def set_minimum_rules(ds):
-    """Minimum track width, clearance, via size/drill and edge clearance from RULES (both boards)."""
-    ds.m_TrackMinWidth = mm(RULES["track_min"])
-    ds.m_MinClearance = mm(RULES["clearance"])
-    ds.m_ViasMinSize = mm(RULES["via_d"])
-    ds.m_MinThroughDrill = mm(RULES["via_drill"])
-    ds.m_CopperEdgeClearance = mm(RULES["edge"])
+def set_minimum_rules(ds, rules=RULES):
+    """Minimum track width, clearance, via size/drill and edge clearance (the charger board passes its own)."""
+    ds.m_TrackMinWidth = mm(rules["track_min"])
+    ds.m_MinClearance = mm(rules["clearance"])
+    ds.m_ViasMinSize = mm(rules["via_d"])
+    ds.m_MinThroughDrill = mm(rules["via_drill"])
+    ds.m_CopperEdgeClearance = mm(rules["edge"])
 
 
 def load_footprint(lib_id):
@@ -155,10 +155,12 @@ def add_track(board, net, layer_width, *points):
 
 
 def add_via(board, net, x, y):
+    """Locked via with the board's via size and drill (set by set_minimum_rules before)."""
+    ds = board.GetDesignSettings()
     via = pcbnew.PCB_VIA(board)
     via.SetPosition(pcbnew.VECTOR2I(x, y))
-    via.SetWidth(mm(RULES["via_d"]))
-    via.SetDrill(mm(RULES["via_drill"]))
+    via.SetWidth(ds.m_ViasMinSize)
+    via.SetDrill(ds.m_MinThroughDrill)
     via.SetNet(net)
     via.SetLocked(True)
     board.Add(via)

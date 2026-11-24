@@ -83,6 +83,8 @@ Generated with `just charger-pcb` (outline, placement, pre-routing, then Freerou
   the bridge and power traces would otherwise split the plane into islands
 - VBUS is pre-routed (via behind each VBUS pad, collected on the bottom); Freerouting cannot handle the fine pads
 - Net classes: VSYS, BAT, bridge 0.8 mm; VBUS 0.5 mm; rest 0.2 mm
+- Own design rules in `gen_charger_pcb.py` (`RULES`), independent of the main board: vias 0.6/0.3 mm, minimum
+  track 0.15 mm, clearance 0.15 mm, copper to edge 0.3 mm
 
 | Top | Bottom |
 |---|---|

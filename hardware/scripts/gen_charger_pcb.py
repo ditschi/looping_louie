@@ -13,10 +13,13 @@ Bottom: only the bridge (wide track between the end contacts) and ground pour.
 
 Must run with the system Python that contains the KiCad module pcbnew.
 Usage (via just):  just charger-pcb      afterwards: just route charger-board
+  - PCB_OUT=<file.kicad_pcb>: write there instead, the official files stay unchanged
+    (route_gate.py: fingerprint of the unrouted board, just route-baseline charger-board).
 
 Warning: removes all footprints, tracks and zones of the board and places them anew.
 """
 
+import os
 from pathlib import Path
 
 import board_outline
@@ -38,9 +41,13 @@ SCH = HARDWARE / "charger-board" / "louie-charger.kicad_sch"
 PCB = HARDWARE / "charger-board" / "louie-charger.kicad_pcb"
 ORIGIN = board_outline.ORIGIN_MM
 BOARD_L, BOARD_W, THICKNESS = 46.0, 12.5, 1.6
+CORNER = 0.5  # outer corner radius of the outline
 EDGE_Y = -BOARD_W / 2  # mating side of the USB-C receptacle
 BRIDGE_TRACK = 1.0  # motor current up to 2 A: approx. 20 mOhm over 43 mm, main board uses 0.4 mm
 BRIDGE_Y = 5.45  # close to the edge so that GND vias still fit above it
+# Own design rules, independent of the main board (its 0.5 mm vias are for the dense 4-layer board); 2 layers,
+# 1.6 mm, enough room: 0.6 mm vias as in the routed board
+RULES = dict(clearance=0.15, track_min=0.15, via_d=0.6, via_drill=0.3, edge=0.3)
 
 USB_X = -15.0
 # reference -> (x, y, rotation, side); mm relative to the board centre
@@ -93,11 +100,11 @@ def pos(x, y):
 
 
 def setup_rules(board):
-    """As the main board; net classes come from louie-charger.kicad_pro (Power 0.8 mm)."""
+    """Charger RULES; net classes come from louie-charger.kicad_pro (Power 0.8 mm)."""
     ds = board.GetDesignSettings()
     ds.SetCopperLayerCount(2)
     ds.SetBoardThickness(mm(THICKNESS))
-    set_minimum_rules(ds)
+    set_minimum_rules(ds, RULES)
 
 
 def add_text(board, silk):
@@ -183,7 +190,8 @@ def main():
     clear_board(board)
     for d in list(board.GetDrawings()):  # outline and texts are placed anew
         board.Delete(d)
-    board_outline.draw_outline(board, BOARD_L, BOARD_W)
+    # plain rounded rectangle (no tongues: as wide as the tongue), no recess (that is for J4 of the main board)
+    board_outline.draw_outline(board, BOARD_L, BOARD_W, recess=None, corner=CORNER)
     setup_rules(board)
     placer = Placer(board, nets, pos)
     fps = {ref: place(placer, ref, comp) for ref, comp in sorted(comps.items())}
@@ -195,8 +203,10 @@ def main():
     copper_zones(board, placer.netinfo["/GND"])
     for silk in SILK:
         add_text(board, silk)
-    pcbnew.SaveBoard(str(PCB), board)
-    print(f"{PCB.relative_to(HARDWARE.parent)}: {BOARD_L} x {BOARD_W} x {THICKNESS} mm, {len(comps)} components")
+    out = Path(os.environ["PCB_OUT"]).resolve() if os.environ.get("PCB_OUT") else PCB
+    pcbnew.SaveBoard(str(out), board)
+    shown = out.relative_to(HARDWARE.parent) if out == PCB else out
+    print(f"{shown}: {BOARD_L} x {BOARD_W} x {THICKNESS} mm, {len(comps)} components")
 
 
 def place(placer, ref, comp):
