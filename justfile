@@ -263,7 +263,7 @@ fw-run target="louie-fw" port="":
     if [[ -n "{{port}}" ]]; then export ESPFLASH_PORT="{{port}}"; fi
     if [[ "{{target}}" == "louie-fw" ]]; then cargo run --release; else cargo run --release --example {{target}}; fi
 
-# Firmware: clippy (embedded lints from Cargo.toml, warnings are errors) and rustfmt check for all binaries
+# Firmware: rustfmt check and clippy (embedded lints from Cargo.toml, warnings are errors) for all binaries, both boards
 fw-lint:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -271,6 +271,7 @@ fw-lint:
     export CARGO_TARGET_DIR="{{fw_target}}" CARGO_WORKSPACE_DIR="$PWD/"
     cargo fmt --check
     cargo clippy --release --bins --examples -- -D warnings
+    cargo clippy --release --no-default-features --features board-louie-v1 --bins --examples -- -D warnings
 
 # Firmware: serial monitor only (port as in fw-run)
 fw-monitor port="":
@@ -289,7 +290,7 @@ health_components := "firmware/louie-fw hardware/scripts"
 code-health *args:
     #!/usr/bin/env bash
     set -euo pipefail
-    if [[ " {{args}} " == *" json "* ]]; then
+    if [[ " {{args}} " == *" json "* || " {{args}} " == *"--format=json"* ]]; then
         out=$(for c in {{health_components}}; do {{aihealth}} scan "$c" --config "$c/.aihealth.toml" {{args}} | jq -c --arg c "$c" '{($c): .}'; done)
         jq -s 'add' <<< "$out"
     else

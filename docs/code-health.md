@@ -42,8 +42,8 @@ Not scored:
 
 ai-health runs via `uvx --from git+https://github.com/epatel/ai-health@033d1867fe514867d944d9387ee72db0188eed47
 aihealth` (the commit behind v0.4.0): no venv in the repo, the pin lives in one justfile variable. A commit pin
-is served from the uv cache (about 0.2 s, offline too); a tag pin resolves over the network on every call
-(about 1.6 s). One source per smell: structure comes from ai-health alone, so clippy's structural lints
+is served from the uv cache (about 0.2 s for uvx to start, offline too); a tag pin resolves over the network on
+every call (about 1.6 s). One source per smell: structure comes from ai-health alone, so clippy's structural lints
 (`cognitive_complexity`, `too_many_lines`, `too_many_arguments`, `excessive_nesting`) and ruff's (`C901`,
 `PLR09xx`, `PLR1702`) stay off. ruff uses line length 120 like the existing code; its first formatting run is
 a commit of its own (formatting only, outputs unchanged).
@@ -88,7 +88,7 @@ thresholds; where one is justified, the file carries `// aihealth: disable=<smel
 ```bash
 just code-health                 # scan of both components (text)
 just code-health --format json   # for agents (also: markdown)
-just code-health-delta           # staged changes against HEAD, exit 1 if worse
+just code-health-delta           # working tree vs HEAD (the hook uses --staged), exit 1 if worse
 just code-health-delta --base origin/main
 just fw-lint                     # firmware: rustfmt check + clippy -D warnings
 just hw-check                    # ERC, DRC, generator drift
@@ -126,8 +126,9 @@ regression against `routing.json`, envelope check `just hull` (needs `just model
 image.
 
 The hooks are not installed by this change: `pre-commit install` writes into the `.git/hooks` shared by all
-worktrees and would block commits on branches without `.pre-commit-config.yaml`. After the merge,
-`./setup.sh` installs them.
+worktrees. After the merge, `./setup.sh` installs them. Branches or worktrees created before the merge have no
+`.pre-commit-config.yaml`, and the hook refuses to commit there ("No .pre-commit-config.yaml file was found"):
+merge main into them, or commit with `PRE_COMMIT_ALLOW_NO_CONFIG=1`.
 
 ### 7. Result
 
@@ -146,11 +147,11 @@ Remaining (worst first), not yet released for refactoring:
 
 | File | Score | Note |
 |---|---|---|
-| `route_fix.py` | 1.01 | own router, 1201 LoC, 85 findings; router refactoring deferred by the owner |
+| `route_fix.py` | 1.01 | own router, 1194 LoC, 84 findings; router refactoring deferred by the owner |
 | `route_score.py` | 1.21 | routing score, 740 LoC; part of the router refactoring |
 | `test_route_speed.py`, `test_route_fix.py` | 3.56, 3.65 | router tests (scripts against KiCad) |
 | `plot_layout.py`, `fetch_parts.py` | 6.46, 6.88 | one long `main` each |
-| `route_finish.py`, `board_outline.py` | 8.23, 8.47 | `board_outline` is being fixed in a separate task (charger outline crash) |
+| `route_finish.py`, `board_outline.py` | 8.23, 7.97 | `board_outline` got two more parameters with the charger outline fix on main (8.47 before) |
 
 ### 8. Skills
 
@@ -180,7 +181,7 @@ What worked:
 What did not work or needs care:
 
 - ai-health counts physical lines: the first ruff formatting run grew some files (e.g. `route_fix.py` 1110 →
-  1201 LoC) and lowered their score slightly. Format first, before the gate exists.
+  1194 LoC) and lowered their score slightly. Format first, before the gate exists.
 - Extracting helpers can create Primitive Obsession (many `u32`/`bool` parameters) in firmware; methods that
   read the tick state are the better cut than free functions with raw values.
 - Measurement noise in the routing score (project-specific): the DRC-based metrics of the same board vary by a
@@ -188,8 +189,8 @@ What did not work or needs care:
   close to the threshold (min_improvement 1.0) can flip; worth a look in `route_score.py`.
 - The pinned firmware nightly had never been built and did not build; `nightly-2026-09-15` does (details in
   `firmware/louie-fw/README.md`).
-- `just charger-pcb` crashes on main (`board_outline` with a 12.5 mm wide board); the comparison stubbed the
-  outline. Fixed separately.
+- `just charger-pcb` crashed on main (`board_outline` with a 12.5 mm wide board); the comparison stubbed the
+  outline until the fix from a separate task was merged in, then compared against main's generator.
 
 Transferable to other repos: the commit pin and explicit `--config`, the suppression regex, comparing generated
 artefacts semantically, formatting before introducing the gate. Project-specific: KiCad checks

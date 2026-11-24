@@ -24,8 +24,8 @@ just fw-lint       # firmware rustfmt check + clippy (embedded lints, warnings a
 just route-check   # own router on the official board (about 1 min), after router changes
 ```
 
-Behaviour of a script refactoring is shown through its outputs: byte-identical symbols, schematics and boards,
-unchanged routing score (`just score`).
+Behaviour of a script refactoring is shown through its outputs: byte-identical symbols and schematics, boards
+compared item by item without UUIDs (KiCad orders items by random UUIDs), unchanged routing score (`just score`).
 
 ## Code health
 

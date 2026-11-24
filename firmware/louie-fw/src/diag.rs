@@ -109,7 +109,7 @@ pub fn heap() -> Heap {
     let free = unsafe { sys::esp_get_free_heap_size() };
     // SAFETY: query without arguments, valid in any task after startup.
     let min_free = unsafe { sys::esp_get_minimum_free_heap_size() };
-    // SAFETY: plain value arguments (pin and channel numbers from the board definition); no memory is shared.
+    // SAFETY: plain value argument (capability mask); no memory is shared.
     let largest_block = unsafe { sys::heap_caps_get_largest_free_block(sys::MALLOC_CAP_8BIT) } as u32;
     Heap { free, min_free, largest_block }
 }

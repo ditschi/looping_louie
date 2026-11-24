@@ -333,9 +333,9 @@ def sense_coupling(B, cfg, planes):
             continue
         px, py, dl = samples(s)
         ax = np.array([a["a"][0] for a in cand])
-        ay = np.array([a["a"][1] for a in cand])  # noqa: E702
+        ay = np.array([a["a"][1] for a in cand])
         bx = np.array([a["b"][0] for a in cand])
-        by = np.array([a["b"][1] for a in cand])  # noqa: E702
+        by = np.array([a["b"][1] for a in cand])
         hw = np.array([a["w"] / 2 for a in cand])
         d = seg_point_dist(px, py, ax, ay, bx, by) - hw[None] - s["w"] / 2
         hit = (d.min(axis=1) < gap).sum() * dl

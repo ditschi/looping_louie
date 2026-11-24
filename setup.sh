@@ -34,6 +34,7 @@ command -v pre-commit >/dev/null || uv tool install pre-commit
 
 echo "== Commit gate (pre-commit: ruff, code health, hardware checks; docs/code-health.md)"
 pre-commit install
+echo "Branches from before the commit gate: merge main into them or commit with PRE_COMMIT_ALLOW_NO_CONFIG=1"
 
 echo "== Autorouter Freerouting (tools/freerouting.jar)"
 if [[ -f tools/freerouting.jar ]]; then

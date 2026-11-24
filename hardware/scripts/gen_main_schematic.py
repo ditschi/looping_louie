@@ -50,6 +50,7 @@ def two_pin(lib, default_fp):
     """Factory for resistors/capacitors: X(ref, value, (net1, net2), at=(x, y), fp=..., lcsc=...)."""
 
     def make(ref, value, nets, **extra):
+        require_position(ref, extra)
         n1, n2 = nets
         return dict(ref=ref, lib=lib, value=value, fp=extra.pop("fp", default_fp), pins={"1": n1, "2": n2}, **extra)
 
@@ -66,8 +67,15 @@ def DNP(part):
     return dict(part, dnp=True)
 
 
+def require_position(ref, extra):
+    """Every part needs at=(x, y); fail where the part is written, not later while drawing."""
+    if "at" not in extra:
+        raise TypeError(f"{ref}: missing at=(x, y)")
+
+
 def TP(ref, value, net, **extra):
     # bare copper pad: not in the BOM
+    require_position(ref, extra)
     fp = extra.pop("fp", TP_SMALL)
     return dict(ref=ref, lib="Connector:TestPoint", value=value, fp=fp, pins={"1": net}, bom=False, **extra)
 
@@ -446,13 +454,13 @@ def label_effects(angle):
     return f"(effects (font (size 1.27 1.27)) (justify {justify} bottom))"
 
 
-@dataclass(frozen=True)
+@dataclass
 class Sheet:
     """One schematic: output file, circuit and title block. gen_charger_schematic.py passes its own."""
 
     path: Path
-    parts: list
-    blocks: list
+    parts: list[dict[str, object]]
+    blocks: list[tuple[str, tuple[float, float]]]
     title: str
     comment: str
     project: str

@@ -355,7 +355,7 @@ class Candidate:
     path: Path
     fingerprint: str
     meas: dict | None = None
-    info: dict = field(default_factory=dict)
+    info: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -591,9 +591,14 @@ def option(args, name):
 
 
 def without_option(args, name):
-    """args without --name and its value."""
-    skip = {args.index(name), args.index(name) + 1} if name in args else set()
-    return [a for i, a in enumerate(args) if i not in skip]
+    """args without every --name and the value after it."""
+    return [a for i, a in enumerate(args) if not is_option(args, i, name)]
+
+
+def is_option(args, i, name):
+    """Is args[i] the option name itself or the value right after it?"""
+    follows = i > 0 and args[i - 1] == name
+    return args[i] == name or follows
 
 
 def cmd_fingerprint(args):

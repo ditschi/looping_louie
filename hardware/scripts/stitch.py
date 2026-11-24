@@ -159,7 +159,7 @@ def stitch_pad(copper, pad):
 
 
 def unconnected_pads(board_file, nets):
-    """Pads of the given nets that DRC reports as unconnected: list of (reference, pad number)."""
+    """Pads of the given nets that DRC reports as unconnected: sorted list of (reference, pad number, net)."""
     data = drc_json(board_file)
     descriptions = [
         item.get("description", "") for v in data.get("unconnected_items", []) for item in v.get("items", [])

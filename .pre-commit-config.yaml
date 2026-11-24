@@ -34,11 +34,11 @@ repos:
         entry: just fw-lint
         language: system
         pass_filenames: false
-        files: ^firmware/louie-fw/(.*\.rs|Cargo\.(toml|lock)|rust-toolchain\.toml)$
+        files: ^firmware/louie-fw/(.*\.rs|Cargo\.(toml|lock)|rust-toolchain\.toml|sdkconfig\.defaults|\.cargo/config\.toml)$
 
       - id: hw-check
         name: hardware checks (ERC, DRC, generator drift)
         entry: just hw-check
         language: system
         pass_filenames: false
-        files: ^hardware/(.*\.kicad_(sch|pcb|sym)|scripts/(gen_symbols|gen_main_schematic|gen_charger_schematic)\.py)$
+        files: ^hardware/(.*\.kicad_(sch|pcb|sym|dru|pro)|scripts/(gen_symbols|gen_main_schematic|gen_charger_schematic|check_generated)\.py)$

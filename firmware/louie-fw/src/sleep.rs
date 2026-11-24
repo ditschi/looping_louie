@@ -29,7 +29,7 @@ pub fn deep_sleep(wake: &Wake) -> Result<(), EspError> {
     let high = mask(&wake.high);
     let low = mask(&wake.low) | mask(&wake.low_pullup);
     if high | low != 0 {
-        // SAFETY: plain value arguments (pin and channel numbers from the board definition); no memory is shared.
+        // SAFETY: plain value arguments (GPIO bit masks of the wake pins); no memory is shared.
         esp!(unsafe { sys::esp_sleep_enable_ext1_wakeup_with_level_mask(high | low, high) })?;
     }
     // Levels during sleep come from the LP IO (RTC IO) pulls. Pins with an external circuit keep the internal
@@ -48,7 +48,7 @@ pub fn deep_sleep(wake: &Wake) -> Result<(), EspError> {
     }
     if !wake.low_pullup.is_empty() {
         // keep the LP IO pulls powered (unverified whether the C6 needs this, see ESP-IDF example ext_wakeup)
-        // SAFETY: plain value arguments (pin and channel numbers from the board definition); no memory is shared.
+        // SAFETY: plain value arguments (power domain and option enums); no memory is shared.
         esp!(unsafe {
             sys::esp_sleep_pd_config(
                 sys::esp_sleep_pd_domain_t_ESP_PD_DOMAIN_RTC_PERIPH,
@@ -57,7 +57,7 @@ pub fn deep_sleep(wake: &Wake) -> Result<(), EspError> {
         })?;
     }
     if let Some(ms) = wake.timer_ms {
-        // SAFETY: plain value arguments (pin and channel numbers from the board definition); no memory is shared.
+        // SAFETY: plain value argument (wake-up time in µs); no memory is shared.
         esp!(unsafe { sys::esp_sleep_enable_timer_wakeup(ms * 1000) })?;
     }
     log::info!(

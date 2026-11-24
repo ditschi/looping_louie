@@ -82,7 +82,7 @@ firmware/
   louie-fw/               separate workspace: ESP-IDF, nightly, target riscv32imac-esp-espidf
     Cargo.lock            checked in
     .cargo/config.toml    target, linker = ldproxy, build-std, ESP_IDF_VERSION
-    rust-toolchain.toml   dated nightly (e.g. nightly-2026-10-15) + rust-src
+    rust-toolchain.toml   dated nightly (e.g. nightly-2026-09-15) + rust-src
     sdkconfig.defaults    shared; sdkconfig.defaults.<board> per board
     partitions-4mb.csv, partitions-4mb-www.csv, partitions-8mb.csv
     src/board/            louie_v1.rs, devkitm_c6.rs, devkitc_c6.rs
