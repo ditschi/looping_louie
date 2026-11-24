@@ -54,22 +54,30 @@ from stitch import stitch, stitch_grid  # noqa: E402
 def parse_args(argv):
     """board, attempts, force, pre-routers from "main-board runs=10 force=1 pre=none,krt" or "main-board --runs 10
     --force --pre none,krt"."""
-    board, runs, force, pre = "main-board", None, False, None
+    opts = {"board": "main-board", "runs": None, "force": False, "pre": None}
     args = list(argv)
     while args:
         a = args.pop(0)
         key, _, value = a.lstrip("-").partition("=")
-        if key in ("runs", "attempts"):
-            runs = int(value or args.pop(0))
-        elif key == "force":
-            force = value.lower() not in ("0", "no", "false") if value else True
-        elif key == "pre":
-            pre = [x.strip() for x in (value or args.pop(0)).split(",") if x.strip()]
+        key = "runs" if key == "attempts" else key
+        if key in OPTION_PARSERS:
+            opts[key] = OPTION_PARSERS[key](value, args)
         elif not a.startswith("-") and "=" not in a:
-            board = a
+            opts["board"] = a
         else:
             sys.exit(f"Unknown option: {a} (allowed: runs=N, force=1, pre=none,krt,krt-novip)")
-    return board, runs, force, pre
+    return opts["board"], opts["runs"], opts["force"], opts["pre"]
+
+
+def _flag(value, _args):
+    return value.lower() not in ("0", "no", "false") if value else True
+
+
+OPTION_PARSERS = {
+    "runs": lambda value, args: int(value or args.pop(0)),
+    "force": _flag,
+    "pre": lambda value, args: [x.strip() for x in (value or args.pop(0)).split(",") if x.strip()],
+}
 
 
 def env(name, old, default):
@@ -165,62 +173,73 @@ def plane_layer_off(dsn):
     dsn.write_text(text)
 
 
-def freerouting_round(dsn, ses, keep_tracks, passes=None, pcb=None, work=None):
-    """One Freerouting round. keep_tracks=False: remove all unlocked tracks first."""
-    PCB, WORK = pcb or globals()["PCB"], work or globals()["WORK"]
-    board = pcbnew.LoadBoard(str(PCB))
-    if not keep_tracks:
-        for track in list(board.GetTracks()):
-            if not track.IsLocked():
-                board.Delete(track)
-        pcbnew.SaveBoard(str(PCB), board)
+def strip_unlocked(pcb):
+    """Remove all unlocked tracks and vias (only the locked pre-routes stay)."""
+    board = pcbnew.LoadBoard(str(pcb))
+    for track in list(board.GetTracks()):
+        if not track.IsLocked():
+            board.Delete(track)
+    pcbnew.SaveBoard(str(pcb), board)
 
-    # Export for Freerouting without copper zones: otherwise the filled zones count as occupied
-    # copper and block routing. The zones are filled after the import.
-    export = pcbnew.LoadBoard(str(PCB))
+
+def freerouting_round(pcb, work, passes):
+    """One Freerouting round on pcb (unlocked tracks removed first); files in work. Returns the unrouted count."""
+    dsn, ses = work / f"{BOARDS[BOARD]}.dsn", work / f"{BOARDS[BOARD]}.ses"
+    strip_unlocked(pcb)
+    export_dsn(pcb, dsn)
+    unrouted = run_freerouting(dsn, ses, passes, work)
+    import_ses(pcb, ses)
+    return unrouted
+
+
+def export_dsn(pcb, dsn):
+    """Export for Freerouting without copper zones: otherwise the filled zones count as occupied copper and block
+    routing. The zones are filled after the import."""
+    export = pcbnew.LoadBoard(str(pcb))
     for zone in list(export.Zones()):
-        if not zone.GetIsRuleArea() and not (PLANE_EXPORT and zone.GetLayer() == pcbnew.In1_Cu):
+        if not zone.GetIsRuleArea() and not is_exported_plane(zone):
             export.Delete(zone)
     if not pcbnew.ExportSpecctraDSN(export, str(dsn)):
         sys.exit("DSN export failed")
     drop_nets(dsn, PLANE_NETS)
-    if FOUR_LAYER:
-        if not PLANE_EXPORT:
-            sys.exit(
-                "ROUTE_PLANE=0 no longer works with Freerouting 2.5: without a GND plane in the DSN "
-                "Freerouting would put signals on In1 (disabling it via layer_rule empties the board)"
-            )
-        plane_layer_off(dsn)
+    if not FOUR_LAYER:
+        return
+    if not PLANE_EXPORT:
+        sys.exit(
+            "ROUTE_PLANE=0 no longer works with Freerouting 2.5: without a GND plane in the DSN "
+            "Freerouting would put signals on In1 (disabling it via layer_rule empties the board)"
+        )
+    plane_layer_off(dsn)
 
+
+def is_exported_plane(zone):
+    return PLANE_EXPORT and zone.GetLayer() == pcbnew.In1_Cu
+
+
+def run_freerouting(dsn, ses, passes, work):
+    cmd = ["java", "-jar", str(JAR), "-de", str(dsn), "-do", str(ses), "-mp", str(passes or PASSES)]
     result = subprocess.run(
-        [
-            "java",
-            "-jar",
-            str(JAR),
-            "-de",
-            str(dsn),
-            "-do",
-            str(ses),
-            "-mp",
-            str(passes or PASSES),
-            "--gui.enabled=false",
-            "--router.automatic_neckdown=false",
-        ],
-        capture_output=True,
-        text=True,
+        [*cmd, "--gui.enabled=false", "--router.automatic_neckdown=false"], capture_output=True, text=True
     )
     log = result.stdout + result.stderr
-    (WORK / "freerouting.log").write_text(log)
+    (work / "freerouting.log").write_text(log)
     m = re.findall(r"final score: [\d.]+ \((\d+) unrouted", log)
-    unrouted = int(m[-1]) if m else -1
     # empty board read (DSN unreadable): "baseline … for 0 unrouted items" and no track in the SES
     start_open = re.findall(r"baseline score [\d.]+ for (\d+) unrouted", log)
-    if start_open and int(start_open[0]) == 0 and ses.exists() and "(wire" not in ses.read_text():
+    read_nothing = bool(start_open) and int(start_open[0]) == 0
+    if read_nothing and empty_ses(ses):
         raise RuntimeError(
-            f"Freerouting read no open connections and routed nothing – check the DSN ({WORK / 'freerouting.log'})"
+            f"Freerouting read no open connections and routed nothing – check the DSN ({work / 'freerouting.log'})"
         )
+    return int(m[-1]) if m else -1
 
-    board = pcbnew.LoadBoard(str(PCB))
+
+def empty_ses(ses):
+    return ses.exists() and "(wire" not in ses.read_text()
+
+
+def import_ses(pcb, ses):
+    board = pcbnew.LoadBoard(str(pcb))
     if not pcbnew.ImportSpecctraSES(board, str(ses)):
         sys.exit("SES import failed")
     # Freerouting necks down tracks at small pads; nothing below the minimum width of the design rules
@@ -229,45 +248,55 @@ def freerouting_round(dsn, ses, keep_tracks, passes=None, pcb=None, work=None):
         if track.GetClass() == "PCB_TRACK" and track.GetWidth() < min_w:
             track.SetWidth(min_w)
     pcbnew.ZONE_FILLER(board).Fill(board.Zones())
-    pcbnew.SaveBoard(str(PCB), board)
-    return unrouted
+    pcbnew.SaveBoard(str(pcb), board)
 
 
-def remove_dangling_vias(PCB=PCB):
+def remove_dangling_vias(pcb=PCB):
     """Remove vias and track pieces that Freerouting left without a connection (DRC: via_dangling,
     track_dangling); repeatedly, because new dangling ends can appear afterwards."""
     removed = 0
     for _ in range(4):
-        with tempfile.TemporaryDirectory() as tmp:
-            report = Path(tmp) / "drc.json"
-            subprocess.run(
-                ["kicad-cli", "pcb", "drc", "--format", "json", "-o", str(report), str(PCB)], capture_output=True
-            )
-            data = json.loads(report.read_text())
-        spots = {v["type"]: [] for v in data.get("violations", [])}
-        for v in data.get("violations", []):
-            if v["type"] in ("via_dangling", "track_dangling"):
-                spots[v["type"]] += [(item["pos"]["x"], item["pos"]["y"]) for item in v["items"]]
-        if not spots.get("via_dangling") and not spots.get("track_dangling"):
+        spots = dangling_spots(pcb)
+        if not spots["via_dangling"] and not spots["track_dangling"]:
             break
-        board = pcbnew.LoadBoard(str(PCB))
-        n = 0
-        for t in [t for t in board.GetTracks() if not t.IsLocked()]:
-            kind = "via_dangling" if t.GetClass() == "PCB_VIA" else "track_dangling"
-            ends = [t.GetPosition()] if kind == "via_dangling" else [t.GetStart(), t.GetEnd()]
-            if any(
-                abs(pcbnew.ToMM(e.x) - sx) < 0.01 and abs(pcbnew.ToMM(e.y) - sy) < 0.01
-                for e in ends
-                for sx, sy in spots.get(kind, [])
-            ):
-                board.Delete(t)
-                n += 1
-        if not n:
+        board = pcbnew.LoadBoard(str(pcb))
+        doomed = [t for t in board.GetTracks() if not t.IsLocked() and is_dangling(t, spots)]
+        for t in doomed:
+            board.Delete(t)
+        if not doomed:
             break
-        removed += n
+        removed += len(doomed)
         pcbnew.ZONE_FILLER(board).Fill(board.Zones())
-        pcbnew.SaveBoard(str(PCB), board)
+        pcbnew.SaveBoard(str(pcb), board)
     return removed
+
+
+def dangling_spots(pcb):
+    """DRC positions (mm) of dangling vias and track ends: {"via_dangling": [...], "track_dangling": [...]}."""
+    with tempfile.TemporaryDirectory() as tmp:
+        report = Path(tmp) / "drc.json"
+        subprocess.run(
+            ["kicad-cli", "pcb", "drc", "--format", "json", "-o", str(report), str(pcb)], capture_output=True
+        )
+        data = json.loads(report.read_text())
+    spots = {"via_dangling": [], "track_dangling": []}
+    for v in data.get("violations", []):
+        if v["type"] in spots:
+            spots[v["type"]] += [(item["pos"]["x"], item["pos"]["y"]) for item in v["items"]]
+    return spots
+
+
+def is_dangling(track, spots):
+    """Is a via or an end of the track at one of the dangling positions of its kind (within 0.01 mm)?"""
+    is_via = track.GetClass() == "PCB_VIA"
+    ends = [track.GetPosition()] if is_via else [track.GetStart(), track.GetEnd()]
+    marks = spots["via_dangling" if is_via else "track_dangling"]
+    return any(near(e, spot) for e in ends for spot in marks)
+
+
+def near(point, spot):
+    sx, sy = spot
+    return abs(pcbnew.ToMM(point.x) - sx) < 0.01 and abs(pcbnew.ToMM(point.y) - sy) < 0.01
 
 
 def krt_preroute(start, project, name):
@@ -280,45 +309,46 @@ def krt_preroute(start, project, name):
     work = WORK / f"pre_{name}"
     shutil.rmtree(work, ignore_errors=True)
     work.mkdir(parents=True)
-    src, out = work / PCB.name, work / f"routed{PCB.suffix}"
-    shutil.copy(start, src)
-    for f in (project, project.with_suffix(".kicad_dru")):
-        if f.exists():
-            shutil.copy(f, work / f.name)
-    board = pcbnew.LoadBoard(str(src))  # like attempt_own: only pre-routes (locked) remain
-    for track in list(board.GetTracks()):
-        if not track.IsLocked():
-            board.Delete(track)
-    pcbnew.SaveBoard(str(src), board)
+    src, out = copy_board(start, project, work), work / f"routed{PCB.suffix}"
+    strip_unlocked(src)  # like attempt_own: only pre-routes (locked) remain
     import route_fix
 
     if route_fix.GND_FANOUT_FIRST:  # GND vias before KRT, else KRT takes the space (test: 31 pads without via)
         done, failed = route_fix.gnd_fanout(src, log=lambda m: None)
         print(f"Pre-router {name}: GND fanout beforehand {done} vias, no space {len(failed)}", flush=True)
-    cmd = [
-        str(KRT_PYTHON),
-        str(KRT_DIR / "py_router" / "route.py"),
-        src.name,
-        out.name,
-        "--nets",
-        "*",
-        *[f"!{n}" for n in STITCH_NETS],
-        "--layers",
-        "F.Cu",
-        "In2.Cu",
-        "B.Cu",
-        "--no-fix-drc-settings",
-        "--escalation",
-        "board",
-        *PREROUTERS[name],
-    ]
     t0 = time.time()
     with open(work / "krt.log", "w") as log:
-        result = subprocess.run(cmd, cwd=work, stdout=log, stderr=subprocess.STDOUT, timeout=1800)
+        result = subprocess.run(
+            krt_command(src, out, name), cwd=work, stdout=log, stderr=subprocess.STDOUT, timeout=1800
+        )
     if result.returncode != 0 or not out.exists():
         sys.exit(f"Pre-router {name} failed (exit code {result.returncode}), see {work / 'krt.log'}")
     print(f"Pre-router {name}: {time.time() - t0:.0f} s → {out}", flush=True)
     return out
+
+
+def krt_command(src, out, name):
+    nets = ["--nets", "*", *[f"!{n}" for n in STITCH_NETS]]
+    rules = ["--layers", "F.Cu", "In2.Cu", "B.Cu", "--no-fix-drc-settings", "--escalation", "board"]
+    return [
+        str(KRT_PYTHON),
+        str(KRT_DIR / "py_router" / "route.py"),
+        src.name,
+        out.name,
+        *nets,
+        *rules,
+        *PREROUTERS[name],
+    ]
+
+
+def copy_board(start, project, work):
+    """Copy the starting board and its project file and rules into work; returns the board copy."""
+    pcb = work / PCB.name
+    shutil.copy(start, pcb)
+    for f in (project, project.with_suffix(".kicad_dru")):
+        if f.exists():
+            shutil.copy(f, work / f.name)
+    return pcb
 
 
 def plan(n):
@@ -335,37 +365,43 @@ def attempt(n, start, project):
     pre-router its result)."""
     work = WORK / f"attempt_{n}"
     work.mkdir(parents=True, exist_ok=True)
-    pcb = work / PCB.name
-    shutil.copy(start, pcb)
-    for f in (project, project.with_suffix(".kicad_dru")):
-        if f.exists():
-            shutil.copy(f, work / f.name)
+    pcb = copy_board(start, project, work)
     if ROUTER == "own":
         return attempt_own(n, pcb)
     passes = PASS_VARIANTS[(n - 1) % len(PASS_VARIANTS)]
     track, supply = WIDTH_VARIANTS[(n - 1) % len(WIDTH_VARIANTS)]
     if BOARD == "main-board":
-        board = pcbnew.LoadBoard(str(pcb))
-        ns = board.GetDesignSettings().m_NetSettings
-        ns.GetDefaultNetclass().SetTrackWidth(pcbnew.FromMM(track))
-        if ns.HasNetclass("Supply"):
-            ns.GetNetClassByName("Supply").SetTrackWidth(pcbnew.FromMM(supply))
-        pcbnew.SaveBoard(str(pcb), board)
-    dsn, ses = work / f"{BOARDS[BOARD]}.dsn", work / f"{BOARDS[BOARD]}.ses"
-    unrouted = freerouting_round(dsn, ses, keep_tracks=False, passes=passes, pcb=pcb, work=work)
+        set_track_widths(pcb, track, supply)
+    unrouted = freerouting_round(pcb, work, passes)
     if FOUR_LAYER:  # remaining connections with the own router
         import route_fix
 
         with open(work / "route_fix.log", "w") as log:
             route_fix.fix(pcb, log=lambda m: print(m, file=log, flush=True))
-    for _ in range(2 if STITCH_NETS else 0):  # connect GND pads without zone contact with a via
-        done, _failed = stitch(pcb, STITCH_NETS)
-        if not done:
-            break
+    if STITCH_NETS:
+        stitch_pads(pcb)
     grid = stitch_grid(pcb)  # connect GND zones top/bottom on a grid
     removed = remove_dangling_vias(pcb)
     label = f"{passes} passes, track {track}/{supply} mm" if BOARD == "main-board" else f"{passes} passes"
     return n, label, unrouted, route_gate.measure(pcb, board=BOARD), grid, removed, pcb
+
+
+def set_track_widths(pcb, track, supply):
+    """Default and Supply net class track widths (mm) of a Freerouting variant."""
+    board = pcbnew.LoadBoard(str(pcb))
+    ns = board.GetDesignSettings().m_NetSettings
+    ns.GetDefaultNetclass().SetTrackWidth(pcbnew.FromMM(track))
+    if ns.HasNetclass("Supply"):
+        ns.GetNetClassByName("Supply").SetTrackWidth(pcbnew.FromMM(supply))
+    pcbnew.SaveBoard(str(pcb), board)
+
+
+def stitch_pads(pcb):
+    """Connect pads without zone contact with a via; a second round if the first placed any."""
+    for _ in range(2):
+        done, _failed = stitch(pcb, STITCH_NETS)
+        if not done:
+            break
 
 
 def attempt_own(n, pcb):
@@ -379,28 +415,18 @@ def attempt_own(n, pcb):
     route_fix.LAYER_COST[pcbnew.F_Cu] = f_cost
     route_fix.LAYER_COST[pcbnew.B_Cu] = b_cost
     if pre == "none":  # otherwise keep the pre-router tracks (unlocked, so rip-up-able)
-        board = pcbnew.LoadBoard(str(pcb))
-        for track in list(board.GetTracks()):
-            if not track.IsLocked():
-                board.Delete(track)
-        pcbnew.SaveBoard(str(pcb), board)
+        strip_unlocked(pcb)
     (pcb.parent / "route_fix.trace.csv").unlink(missing_ok=True)
     with open(pcb.parent / "route_fix.log", "w") as log:
         out = lambda m: print(m, file=log, flush=True)  # noqa: E731
         done, still_open = route_fix.route_all(pcb, log=out, trace=pcb.parent / "route_fix.trace.csv")
-        for _ in range(2):  # GND pads without zone contact to the GND layer In1 with a via
-            stitched, _failed = stitch(pcb, STITCH_NETS)
-            if not stitched:
-                break
+        stitch_pads(pcb)  # GND pads without zone contact to the GND layer In1 with a via
         grid = stitch_grid(pcb)
         out(f"GND islands connected: {route_fix.gnd_islands(pcb, log=out)}")
         grid += stitch_grid(pcb)
     removed = remove_dangling_vias(pcb)
-    label = (
-        f"own router, via cost {via_cost}, F {f_cost}, B {b_cost}"
-        + (f", seed {seed}" if seed else "")
-        + (f", pre-router {pre}" if pre != "none" else "")
-    )
+    label = f"own router, via cost {via_cost}, F {f_cost}, B {b_cost}"
+    label += (f", seed {seed}" if seed else "") + (f", pre-router {pre}" if pre != "none" else "")
     return n, label, still_open, route_gate.measure(pcb, board=BOARD), grid, removed, pcb
 
 
@@ -409,64 +435,87 @@ def main():
         sys.exit(f"Freerouting not found: {JAR}\n→ run ./setup.sh or set FREEROUTING_JAR")
     WORK.mkdir(parents=True, exist_ok=True)
     start = WORK / "start.kicad_pcb"
-    best_file = WORK / "best.kicad_pcb"
     shutil.copy(PCB, start)
     project = PCB.with_suffix(".kicad_pro")
     # fingerprint of the design at the start (before routing), see route_gate.py
     fingerprint, why = route_gate.run_fingerprint(start, route_gate.load_record(BOARD), project)
     print(f"Design fingerprint {fingerprint[:12]} ({why})", flush=True)
 
-    from concurrent.futures import ProcessPoolExecutor
-
     import route_score
 
     cfg = route_score.load_config(BOARD)
+    numbers = attempt_numbers()
+    best, results = run_attempts(cfg, numbers, attempt_starts(numbers, start, project))
+    print_lines(route_score.table(cfg, sorted(results, key=lambda r: rank(cfg, r[1]))))
+    print_lines(route_score.pareto(cfg, results))
+    print(f"best attempt of this invocation: {best[1]} ({best[2]})")
+    info = {"router": ROUTER, "variant": f"attempt {best[1]}: {best[2]}", "runs": len(numbers)}
+    route_gate.gate(BOARD, route_gate.Candidate(BEST, fingerprint, best[3], info), route_gate.GateMode(force=FORCE))
+    print(f"next: just drc {BOARD}")
+
+
+BEST = WORK / "best.kicad_pcb"
+
+
+def attempt_numbers():
+    """ROUTE_VARIANTS="3,4": only these attempts (repetition/scatter), otherwise 1..runs."""
+    if os.environ.get("ROUTE_VARIANTS"):
+        return [int(x) for x in os.environ["ROUTE_VARIANTS"].split(",")]
+    return list(range(1, ATTEMPTS + 1))
+
+
+def attempt_starts(numbers, start, project):
+    """Starting board per attempt. Pre-routers run once beforehand per start type used (deterministic)."""
+    if ROUTER != "own":
+        if PRE != ["none"]:
+            sys.exit("pre=… is only available with the own router (ROUTER=own)")
+        return [start] * len(numbers)
+    starts = {"none": start}
+    for name in sorted({plan(n)[0] for n in numbers} - {"none"}):
+        starts[name] = krt_preroute(start, project, name)
+    return [starts[plan(n)[0]] for n in numbers]
+
+
+def rank(cfg, meas):
+    import route_score
+
+    return route_score.rank_key(cfg, meas["metrics"], meas["details"])
+
+
+def run_attempts(cfg, numbers, starts):
+    """Attempts in parallel; the best (first feasible, smallest violation, smallest S) is copied to BEST.
+    Returns ((key, n, label, measurement), [(name, measurement)])."""
+    from concurrent.futures import ProcessPoolExecutor
+
     best, results = None, []
     with ProcessPoolExecutor(max_workers=PARALLEL) as pool:
-        # ROUTE_VARIANTS="3,4": only these attempts (repetition/scatter), otherwise 1..runs
-        numbers = (
-            [int(x) for x in os.environ["ROUTE_VARIANTS"].split(",")]
-            if os.environ.get("ROUTE_VARIANTS")
-            else list(range(1, ATTEMPTS + 1))
-        )
-        # pre-routers: once beforehand per start type used (deterministic), attempts start from its result
-        starts = {"none": start}
-        if ROUTER == "own":
-            for name in sorted({plan(n)[0] for n in numbers} - {"none"}):
-                starts[name] = krt_preroute(start, project, name)
-        elif PRE != ["none"]:
-            sys.exit("pre=… is only available with the own router (ROUTER=own)")
         for n, label, unrouted, meas, grid, removed, pcb in pool.map(
-            attempt,
-            numbers,
-            [starts[plan(n)[0]] if ROUTER == "own" else start for n in numbers],
-            [project] * len(numbers),
+            attempt, numbers, starts, [PCB.with_suffix(".kicad_pro")] * len(numbers)
         ):
-            first = "Router" if ROUTER == "own" else "Freerouting"
-            extra = f", {removed} dangling vias/track pieces removed" if removed else ""
-            print(
-                f"Attempt {n} ({label}): {first} {unrouted} open → after stitching "
-                f"{route_gate.short(meas['metrics'], cfg, meas['details'])}, {grid} stitching vias{extra}",
-                flush=True,
-            )
-            # best attempt: first feasible, then smallest violation, then smallest score S (route_score.rank_key)
-            key = route_score.rank_key(cfg, meas["metrics"], meas["details"])
+            report_attempt((n, label, unrouted), meas, (grid, removed), cfg)
+            key = rank(cfg, meas)
             results.append((f"attempt {n}", meas))
             if best is None or key < best[0]:
                 best = (key, n, label, meas)
-                shutil.copy(pcb, best_file)
-    for line in route_score.table(
-        cfg, sorted(results, key=lambda r: route_score.rank_key(cfg, r[1]["metrics"], r[1]["details"]))
-    ):
-        print(line)
-    for line in route_score.pareto(cfg, results):
-        print(line)
-    print(f"best attempt of this invocation: {best[1]} ({best[2]})")
-    info = {"router": ROUTER, "variant": f"attempt {best[1]}: {best[2]}", "runs": len(numbers)}
-    route_gate.gate(
-        BOARD, route_gate.Candidate(best_file, fingerprint, best[3], info), route_gate.GateMode(force=FORCE)
+                shutil.copy(pcb, BEST)
+    return best, results
+
+
+def report_attempt(run, meas, stitching, cfg):
+    n, label, unrouted = run
+    grid, removed = stitching
+    first = "Router" if ROUTER == "own" else "Freerouting"
+    extra = f", {removed} dangling vias/track pieces removed" if removed else ""
+    print(
+        f"Attempt {n} ({label}): {first} {unrouted} open → after stitching "
+        f"{route_gate.short(meas['metrics'], cfg, meas['details'])}, {grid} stitching vias{extra}",
+        flush=True,
     )
-    print(f"next: just drc {BOARD}")
+
+
+def print_lines(lines):
+    for line in lines:
+        print(line)
 
 
 if __name__ == "__main__":
