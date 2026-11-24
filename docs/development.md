@@ -263,3 +263,9 @@ therefore refused with Freerouting. `freerouting_round()` raises an error when F
   are missing from the placement list and BOM (`--exclude-dnp`); `…-bom-all.csv` lists them with a DNP column.
   This keeps assembly single-sided (top).
 - For manufacturers with their own format (e.g. JLCPCB column names), the CSVs are adapted as needed.
+
+## Code health and commit gate
+
+Code is scored with ai-health per component (firmware, Python scripts), goal 10; pre-commit runs ruff, the
+code-health delta, `just fw-lint` and the hardware checks (`just hw-check`). Details, thresholds and results:
+[code-health.md](code-health.md). `./setup.sh` installs the hooks; `just lint` runs them on all files.
