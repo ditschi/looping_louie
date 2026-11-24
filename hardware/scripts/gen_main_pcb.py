@@ -44,6 +44,7 @@ from pcb_tools import (
     pad_of,
     read_netlist,
     rule_area,
+    set_minimum_rules,
 )
 from preroute_main import POWER_TRACK, SUPPLY_TRACK, preroute_all
 from sexpr import block_end
@@ -120,11 +121,7 @@ def setup_rules(board):
     board.SetLayerType(pcbnew.In1_Cu, pcbnew.LT_POWER)
     board.SetLayerName(pcbnew.In1_Cu, "In1.Cu")
     board.SetLayerType(pcbnew.In2_Cu, pcbnew.LT_SIGNAL)
-    ds.m_TrackMinWidth = mm(RULES["track_min"])
-    ds.m_MinClearance = mm(RULES["clearance"])
-    ds.m_ViasMinSize = mm(RULES["via_d"])
-    ds.m_MinThroughDrill = mm(RULES["via_drill"])
-    ds.m_CopperEdgeClearance = mm(RULES["edge"])
+    set_minimum_rules(ds)
     ds.m_HoleClearance = mm(RULES["hole_clearance"])
     ds.m_HoleToHoleMin = mm(RULES["hole_to_hole"])
     ds.m_ViasMinAnnularWidth = mm(RULES["annular"])

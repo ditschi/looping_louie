@@ -8,13 +8,10 @@ opposite layer) lies inside a zone of the same net.
 all four layers.
 """
 
-import json
 import math
-import subprocess
-import tempfile
-from pathlib import Path
 
 import pcbnew
+from pcb_tools import drc_json
 
 VIA_D, VIA_DRILL, TRACK_W, CLEARANCE = 0.6, 0.3, 0.25, 0.2
 EDGE_MARGIN = 0.6
@@ -163,12 +160,7 @@ def stitch_pad(copper, pad):
 
 def unconnected_pads(board_file, nets):
     """Pads of the given nets that DRC reports as unconnected: list of (reference, pad number)."""
-    with tempfile.TemporaryDirectory() as tmp:
-        report = Path(tmp) / "drc.json"
-        subprocess.run(
-            ["kicad-cli", "pcb", "drc", "--format", "json", "-o", str(report), str(board_file)], capture_output=True
-        )
-        data = json.loads(report.read_text())
+    data = drc_json(board_file)
     descriptions = [
         item.get("description", "") for v in data.get("unconnected_items", []) for item in v.get("items", [])
     ]

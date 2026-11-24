@@ -32,16 +32,14 @@ Usage: via route.py main-board or directly: route_fix.py <board.kicad_pcb> [nets
 """
 
 import heapq
-import json
 import math
 import random
-import subprocess
-import tempfile
 import time
 from pathlib import Path
 
 import numpy as np
 import pcbnew
+from pcb_tools import drc_json
 
 GRID = 0.05  # mm
 CLEAR = 0.158  # clearance 0.15 mm + margin (grid error < 0.005 mm)
@@ -118,12 +116,7 @@ def mm(v):
 
 
 def drc_unconnected(pcb):
-    with tempfile.TemporaryDirectory() as tmp:
-        report = Path(tmp) / "drc.json"
-        subprocess.run(
-            ["kicad-cli", "pcb", "drc", "--format", "json", "-o", str(report), str(pcb)], capture_output=True
-        )
-        data = json.loads(report.read_text())
+    data = drc_json(pcb)
     return data.get("unconnected_items", [])
 
 

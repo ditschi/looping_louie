@@ -35,19 +35,18 @@ Main board, 4 layers (main-board, docs/main-board-c6.md chapter 11):
 Must run with the system Python that contains the KiCad module pcbnew.
 """
 
-import json
 import os
 import re
 import shutil
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 import pcbnew
 
 sys.path.insert(0, str(Path(__file__).parent))
 import route_gate  # noqa: E402
+from pcb_tools import drc_json  # noqa: E402
 from stitch import stitch, stitch_grid  # noqa: E402
 
 
@@ -273,12 +272,7 @@ def remove_dangling_vias(pcb=PCB):
 
 def dangling_spots(pcb):
     """DRC positions (mm) of dangling vias and track ends: {"via_dangling": [...], "track_dangling": [...]}."""
-    with tempfile.TemporaryDirectory() as tmp:
-        report = Path(tmp) / "drc.json"
-        subprocess.run(
-            ["kicad-cli", "pcb", "drc", "--format", "json", "-o", str(report), str(pcb)], capture_output=True
-        )
-        data = json.loads(report.read_text())
+    data = drc_json(pcb)
     spots = {"via_dangling": [], "track_dangling": []}
     for v in data.get("violations", []):
         if v["type"] in spots:

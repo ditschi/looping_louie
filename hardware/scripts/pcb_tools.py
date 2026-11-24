@@ -3,6 +3,7 @@
 Coordinates are absolute nanometres unless a function says mm. Must run with KiCad's Python (pcbnew).
 """
 
+import json
 import re
 import subprocess
 import tempfile
@@ -63,6 +64,25 @@ def read_netlist(sch):
         block = text[m.start() : block_end(text, m.start())]
         nets[m.group(1)] = re.findall(r'\(node \(ref "([^"]+)"\) \(pin "([^"]+)"\)', block)
     return comps, nets
+
+
+def drc_json(pcb):
+    """kicad-cli DRC report of a board as parsed JSON (default severities)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        report = Path(tmp) / "drc.json"
+        subprocess.run(
+            ["kicad-cli", "pcb", "drc", "--format", "json", "-o", str(report), str(pcb)], capture_output=True
+        )
+        return json.loads(report.read_text())
+
+
+def set_minimum_rules(ds):
+    """Minimum track width, clearance, via size/drill and edge clearance from RULES (both boards)."""
+    ds.m_TrackMinWidth = mm(RULES["track_min"])
+    ds.m_MinClearance = mm(RULES["clearance"])
+    ds.m_ViasMinSize = mm(RULES["via_d"])
+    ds.m_MinThroughDrill = mm(RULES["via_drill"])
+    ds.m_CopperEdgeClearance = mm(RULES["edge"])
 
 
 def load_footprint(lib_id):

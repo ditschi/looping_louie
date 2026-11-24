@@ -21,7 +21,17 @@ from pathlib import Path
 
 import board_outline
 import pcbnew
-from pcb_tools import RULES, Placer, add_track, add_via, clear_board, ground_via_at_pad, mm, pad_of, read_netlist
+from pcb_tools import (
+    Placer,
+    add_track,
+    add_via,
+    clear_board,
+    ground_via_at_pad,
+    mm,
+    pad_of,
+    read_netlist,
+    set_minimum_rules,
+)
 
 HARDWARE = Path(__file__).resolve().parent.parent
 SCH = HARDWARE / "charger-board" / "louie-charger.kicad_sch"
@@ -87,11 +97,7 @@ def setup_rules(board):
     ds = board.GetDesignSettings()
     ds.SetCopperLayerCount(2)
     ds.SetBoardThickness(mm(THICKNESS))
-    ds.m_TrackMinWidth = mm(RULES["track_min"])
-    ds.m_MinClearance = mm(RULES["clearance"])
-    ds.m_ViasMinSize = mm(RULES["via_d"])
-    ds.m_MinThroughDrill = mm(RULES["via_drill"])
-    ds.m_CopperEdgeClearance = mm(RULES["edge"])
+    set_minimum_rules(ds)
 
 
 def add_text(board, silk):
