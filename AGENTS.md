@@ -35,5 +35,8 @@ Scored with ai-health per component (firmware, Python scripts); goal 10, i.e. no
 - Before every commit: `just code-health-delta` (working tree vs HEAD; the pre-commit hook runs it with
   `--staged`). Exit 1 means something got worse.
 - Overview: `just code-health` (`--format json` for machine use, `-v` for all findings).
+- Never remove or weaken type hints (and no cosmetic type aliases) to get rid of a smell such as Primitive
+  Obsession. Real fixes are parameter objects or dataclasses where they improve the code; otherwise the finding
+  stays for now, with a suppression and its reason.
 - Fix smells instead of suppressing them. A suppression is per file only and needs a reason:
   `# aihealth: disable=<smell> -- <reason>` (`//` in Rust).

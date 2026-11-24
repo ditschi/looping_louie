@@ -192,7 +192,7 @@ class Keepout:
     """Rule area: name, layer set and what it forbids (vias and copper pour are always forbidden unless allowed)."""
 
     name: str
-    layers: object  # pcbnew.LSET
+    layers: pcbnew.LSET
     tracks: bool = True
     vias: bool = True
     pour: bool = True
