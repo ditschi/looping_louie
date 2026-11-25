@@ -30,8 +30,8 @@ Not scored:
   `web/prototype/` is outdated (README).
 - KiCad projects, libraries, OpenSCAD, datasheets, docs: data, not code. Hardware gets its own checks
   (see 6, options).
-- Shell scripts (`setup.sh`, `hardware/scripts/*.sh`) and the justfile: small, rarely changed; ai-health scores
-  shell, so they can join the Python component later if wanted.
+- `setup.sh` and the justfile: outside both component folders. The shell scripts in `hardware/scripts/`
+  (`check_tools.sh`, `fetch_datasheets.sh`) are scored as part of the Python component (ai-health scores bash).
 
 ### 2. Tools and versions
 
@@ -80,6 +80,10 @@ Formula and weights: ai-health's (`src/aihealth/scoring.py`), unchanged. The two
 `large_file`; `just code-health-config` checks that the rest is identical, so the profile changes in one
 step for both.
 
+Primitive Obsession is off in test code (owner decision Q18.1) via a separate config with
+`[weights] primitive_obsession = 0`. Not needed here: the only tests are the two untyped router test scripts, where
+the smell does not apply, and there are no Rust test modules.
+
 Embedded patterns (interrupt callbacks, state machines as `match`, register values as integers) get no own
 thresholds; where one is justified, the file carries `// aihealth: disable=<smell> -- <reason>` (see 6).
 
@@ -91,13 +95,26 @@ just code-health --format json   # for agents (also: markdown)
 just code-health-delta           # working tree vs HEAD (the hook uses --staged), exit 1 if worse
 just code-health-delta --base origin/main
 just fw-lint                     # firmware: rustfmt check + clippy -D warnings
-just hw-check                    # ERC, DRC, generator drift
+just hw-check                    # ERC and DRC of both boards
+just generate                    # regenerate symbols, footprints, schematics (pre-commit drift check)
 just lint                        # all pre-commit hooks on all files
 ```
 
-Every recipe passes `--config <component config>` explicitly: `aihealth scan <dir>` would otherwise look for
-`<dir>/.aihealth.toml` and silently fall back to the defaults. With `--format json` the recipe returns one
-object keyed by component (merged with jq). Runtime: about 1.3 s for both components (uv cache warm).
+Every recipe passes `--config <component config>` explicitly. `aihealth delta` would otherwise read the config at
+the repository root (there is none, so it would silently use the defaults); for `scan` it turns a missing file
+into an error instead of a silent fallback. With `--format json` the recipe returns one document per component on
+stdout (the component name goes to stderr). Runtime: about 1.3 s for both components (uv cache warm).
+
+Own logic beyond calling ai-health (owner principle: only where nothing else works, as thin as possible):
+
+- the loop over the two components in `just code-health` / `code-health-delta`: one call per component, because
+  each has its own config; no output processing
+- `just code-health-config`: a three-line diff of the two configs, because ai-health has no include and the profile
+  must change in one place for both
+
+No own script is left: the generator drift check is `just generate` as a pre-commit hook (pre-commit fails when a
+hook changes files), which works since all generators are deterministic (the charger schematic was regenerated
+once with fixed UUIDs and its board relinked; ERC/DRC with schematic parity stay at 0).
 
 ### 6. Gate
 
@@ -113,13 +130,17 @@ object keyed by component (merged with jq). Runtime: about 1.3 s for both compon
   silently does nothing. A check in the hook enforces a reason of at least 10 characters with the regex
   `aihealth:[ \t]*disable=(?![\w, \t]+-- .{10})` (a match is a violation).
 
-Hardware checks (not part of the score), `just hw-check`, run by pre-commit when a KiCad file or a schematic
-generator changes (about 4 s):
+Hardware checks (not part of the score), run by pre-commit:
 
-1. ERC and DRC (with schematic parity) of both boards via kicad-cli.
-2. Drift check (`hardware/scripts/check_generated.py`): the generators reproduce the committed symbol library
-   and schematics (UUIDs ignored, the charger schematic was committed with random ones); the files are
-   restored afterwards.
+1. `just hw-check`: ERC and DRC (with schematic parity) of both boards via kicad-cli, when a KiCad file changes
+   (about 4 s).
+2. `just generate`: regenerates the symbol library, the footprints and both schematics when a generator or a
+   generated file changes; the hook fails if that changes a file (a hand edit the next generator run would lose,
+   or a generator change that was not regenerated). Outside pre-commit, `just generate` overwrites uncommitted
+   edits of generated files, which must not be edited by hand anyway (AGENTS.md). Limits: only tracked files are
+   compared, so a newly generated or deleted output file is not caught; the schematics embed symbols from the
+   installed KiCad libraries, so after a KiCad library update the hook fails once and the regenerated schematics
+   are committed.
 
 Further options, not chosen for now: BOM consistency (LCSC number for every fitted part), routing score
 regression against `routing.json`, envelope check `just hull` (needs `just model`), a CI job with the KiCad
@@ -157,9 +178,10 @@ Remaining (worst first), not yet released for refactoring:
 
 Checked on skills.sh (SKILL.md read): `wondelai/skills@refactoring-patterns` (recommended),
 `apollographql/skills@rust-best-practices`, `kucherenko/jscpd@dry-refactoring`, `aklofas/kicad-happy@kicad`;
-not suitable: `adamlipecz/esp32-firmware-engineer` (C/C++, no license), `mohitmishra786/low-level-dev-skills@embedded-rust`
-(bare-metal `no_std`), `*@codehealth-mcp` (paid token). Installed (project-local, `.claude/skills/`, `skills-lock.json`):
-`refactoring-patterns`, read in full before installing (refactoring catalogue, no executable instructions).
+not suitable: `adamlipecz/esp32-firmware-engineer` (C/C++, no license),
+`mohitmishra786/low-level-dev-skills@embedded-rust` (bare-metal `no_std`), `*@codehealth-mcp` (paid token).
+Installed (project-local, `.claude/skills/`, `skills-lock.json`): `refactoring-patterns`, read in full before
+installing (refactoring catalogue, no executable instructions).
 
 ### 9. Experience
 

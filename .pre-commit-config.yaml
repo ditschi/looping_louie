@@ -14,7 +14,6 @@ repos:
         entry: just code-health-delta --staged
         language: system
         pass_filenames: false
-        files: ^(firmware/louie-fw/.*\.rs|hardware/scripts/.*\.py|.*\.aihealth\.toml)$
 
       - id: code-health-config
         name: code health configs share the profile
@@ -37,8 +36,15 @@ repos:
         files: ^firmware/louie-fw/(.*\.rs|Cargo\.(toml|lock)|rust-toolchain\.toml|sdkconfig\.defaults|\.cargo/config\.toml)$
 
       - id: hw-check
-        name: hardware checks (ERC, DRC, generator drift)
+        name: hardware checks (ERC, DRC with schematic parity)
         entry: just hw-check
         language: system
         pass_filenames: false
-        files: ^hardware/(.*\.kicad_(sch|pcb|sym|dru|pro)|scripts/(gen_symbols|gen_main_schematic|gen_charger_schematic|check_generated)\.py)$
+        files: ^hardware/.*\.kicad_(sch|pcb|sym|dru|pro)$
+
+      - id: generated
+        name: generated symbols, footprints and schematics are up to date (just generate)
+        entry: just generate
+        language: system
+        pass_filenames: false
+        files: ^hardware/(lib/louie\.(kicad_sym|pretty/.*)|.*\.kicad_sch|scripts/(gen_symbols|gen_main_schematic|gen_charger_schematic|sexpr)\.py)$

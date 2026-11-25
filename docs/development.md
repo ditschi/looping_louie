@@ -269,5 +269,6 @@ therefore refused with Freerouting. `freerouting_round()` raises an error when F
 ## Code health and commit gate
 
 Code is scored with ai-health per component (firmware, Python scripts), goal 10; pre-commit runs ruff, the
-code-health delta, `just fw-lint` and the hardware checks (`just hw-check`). Details, thresholds and results:
+code-health delta, `just fw-lint`, the hardware checks (`just hw-check`) and the generator drift check
+(`just generate`). Details, thresholds and results:
 [code-health.md](code-health.md). `./setup.sh` installs the hooks; `just lint` runs them on all files.
